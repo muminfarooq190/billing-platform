@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [api-gateway, identity-service, billing-service, webhook-service]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        if: matrix.service != 'webhook-service'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup Node 20
+        if: matrix.service == 'webhook-service'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Restore/build .NET service
+        if: matrix.service != 'webhook-service'
+        working-directory: services/${{ matrix.service }}/src
+        run: |
+          dotnet restore
+          dotnet build --configuration Release --no-restore
+
+      - name: Install/build webhook-service
+        if: matrix.service == 'webhook-service'
+        working-directory: services/webhook-service
+        run: |
+          npm ci
+          npm run build
+
+      - name: Validate Dockerfile build
+        run: docker build -t billing-${{ matrix.service }}:ci services/${{ matrix.service }}
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: dotnet format check (placeholder)
+        run: echo "dotnet format checks will be enforced in Phase 6 hardening."
+
+      - name: eslint/prettier check (placeholder)
+        run: echo "eslint + prettier checks will be enforced once webhook lint config is added."
