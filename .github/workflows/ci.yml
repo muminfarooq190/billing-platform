@@ -51,7 +51,7 @@ jobs:
       - name: Run .NET unit tests
         if: matrix.service != 'webhook-service'
         working-directory: services/${{ matrix.service }}/tests
-        run: dotnet test --configuration Release --filter Category=Unit || dotnet test --configuration Release
+        run: dotnet test ./*/*.csproj --configuration Release --filter Category=Unit || dotnet test ./*/*.csproj --configuration Release
 
       - name: Install/build/test webhook-service
         if: matrix.service == 'webhook-service'
