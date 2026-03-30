@@ -6,7 +6,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Worker } from 'bullmq';
 import { BillingEventsConsumer } from './consumers/billing-events.consumer';
 import { WebhookDeliveryProcessor } from './jobs/webhook-delivery.processor';
-import { WebhookDeliveryQueue } from './jobs/webhook-delivery.queue';
 import { DeliveryLogModule } from './modules/delivery-log/delivery-log.module';
 import { WebhookModule } from './modules/webhook/webhook.module';
 import { WebhookSignerService } from './signing/webhook-signer.service';
@@ -25,7 +24,7 @@ import { WebhookSubscriptionEntity } from './entities/webhook-subscription.entit
     DeliveryLogModule,
   ],
   controllers: [HealthController],
-  providers: [WebhookSignerService, WebhookDeliveryProcessor, WebhookDeliveryQueue, BillingEventsConsumer],
+  providers: [WebhookSignerService, WebhookDeliveryProcessor, BillingEventsConsumer],
 })
 class AppModule {}
 

@@ -5,6 +5,7 @@ import { DeliveryLogService } from '../modules/delivery-log/delivery-log.service
 import { WebhookService } from '../modules/webhook/webhook.service';
 import { WebhookSignerService } from '../signing/webhook-signer.service';
 import { WebhookDeliveryJob } from './webhook-delivery.job';
+import { WebhookDeliveryQueue } from './webhook-delivery.queue';
 
 @Injectable()
 export class WebhookDeliveryProcessor {
@@ -14,6 +15,7 @@ export class WebhookDeliveryProcessor {
     private readonly webhookService: WebhookService,
     private readonly signerService: WebhookSignerService,
     private readonly deliveryLogService: DeliveryLogService,
+    private readonly deliveryQueue: WebhookDeliveryQueue,
   ) {}
 
   public async process(job: Job<WebhookDeliveryJob>): Promise<void> {
@@ -43,11 +45,33 @@ export class WebhookDeliveryProcessor {
     } catch (error) {
       const statusCode = axios.isAxiosError(error) ? (error.response?.status ?? null) : null;
       const responseBody = axios.isAxiosError(error) ? JSON.stringify(error.response?.data ?? null) : String(error);
-      const isDead = payload.attemptNumber >= 5;
-      await this.deliveryLogService.markResult(payload.deliveryLogId, isDead ? 'Dead' : 'Failed', payload.attemptNumber, statusCode, responseBody);
-      if (!isDead) {
-        throw error;
+
+      if (payload.attemptNumber >= 5) {
+        await this.deliveryLogService.markResult(payload.deliveryLogId, 'Dead', payload.attemptNumber, statusCode, responseBody);
+        return;
       }
+
+      await this.deliveryLogService.markResult(payload.deliveryLogId, 'Failed', payload.attemptNumber, statusCode, responseBody);
+      const nextAttempt = payload.attemptNumber + 1;
+      await this.deliveryQueue.enqueue(
+        {
+          ...payload,
+          attemptNumber: nextAttempt,
+        },
+        this.getRetryDelayMs(nextAttempt),
+      );
     }
+  }
+
+  private getRetryDelayMs(attempt: number): number {
+    return (
+      {
+        1: 0,
+        2: 30_000,
+        3: 5 * 60_000,
+        4: 30 * 60_000,
+        5: 2 * 60 * 60_000,
+      }[attempt] ?? 0
+    );
   }
 }

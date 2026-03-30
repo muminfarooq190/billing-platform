@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
+import { WebhookDeliveryQueue } from '../../jobs/webhook-delivery.queue';
 import { DeliveryLogService } from '../delivery-log/delivery-log.service';
 import { WebhookService } from './webhook.service';
 
@@ -7,6 +8,7 @@ export class WebhookController {
   public constructor(
     private readonly webhookService: WebhookService,
     private readonly deliveryLogService: DeliveryLogService,
+    private readonly deliveryQueue: WebhookDeliveryQueue,
   ) {}
 
   @Get('deliveries')
@@ -24,6 +26,20 @@ export class WebhookController {
 
   @Post('deliveries/:id/replay')
   public async replay(@Param('id') id: string): Promise<{ replayRequested: boolean; id: string }> {
+    const log = await this.deliveryLogService.getById(id);
+    if (log) {
+      await this.deliveryQueue.enqueue(
+        {
+          webhookSubscriptionId: log.webhookSubscriptionId,
+          deliveryLogId: log.id,
+          eventType: log.eventType,
+          payload: log.payload,
+          attemptNumber: 1,
+        },
+        0,
+      );
+    }
+
     return { replayRequested: true, id };
   }
 

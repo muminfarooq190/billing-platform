@@ -11,18 +11,16 @@ export class WebhookDeliveryQueue {
     this.queue = new Queue<WebhookDeliveryJob>('webhook-delivery', {
       connection: { url: redisUrl },
       defaultJobOptions: {
-        attempts: 5,
-        backoff: {
-          type: 'exponential',
-          delay: 30_000,
-        },
         removeOnComplete: false,
         removeOnFail: false,
       },
     });
   }
 
-  public async enqueue(job: WebhookDeliveryJob): Promise<void> {
-    await this.queue.add(`delivery-${job.deliveryLogId}-${job.attemptNumber}`, job);
+  public async enqueue(job: WebhookDeliveryJob, delayMs = 0): Promise<void> {
+    await this.queue.add(`delivery-${job.deliveryLogId}-attempt-${job.attemptNumber}`, job, {
+      delay: delayMs,
+      jobId: `${job.deliveryLogId}-attempt-${job.attemptNumber}`,
+    });
   }
 }
