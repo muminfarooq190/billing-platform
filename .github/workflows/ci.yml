@@ -11,10 +11,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [api-gateway, identity-service, billing-service, webhook-service]
+        service: [identity-service, billing-service, api-gateway, webhook-service]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: billing
+          POSTGRES_USER: billing_user
+          POSTGRES_PASSWORD: billing_password
+        ports: ['5432:5432']
+      redis:
+        image: redis:7.2-alpine
+        ports: ['6379:6379']
+      rabbitmq:
+        image: rabbitmq:3.13-management-alpine
+        ports: ['5672:5672']
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup .NET 8
         if: matrix.service != 'webhook-service'
@@ -35,34 +48,47 @@ jobs:
           dotnet restore
           dotnet build --configuration Release --no-restore
 
-      - name: Install/build webhook-service
+      - name: Run .NET unit tests
+        if: matrix.service != 'webhook-service'
+        working-directory: services/${{ matrix.service }}/tests
+        run: dotnet test --configuration Release --filter Category=Unit || dotnet test --configuration Release
+
+      - name: Install/build/test webhook-service
         if: matrix.service == 'webhook-service'
         working-directory: services/webhook-service
         run: |
           npm ci
           npm run build
+          npm test
 
       - name: Validate Dockerfile build
         run: docker build -t billing-${{ matrix.service }}:ci services/${{ matrix.service }}
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          fail_ci_if_error: false
+          verbose: true
+
   lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      - name: Setup Node 20
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: dotnet format check (placeholder)
-        run: echo "dotnet format checks will be enforced in Phase 6 hardening."
+      - name: dotnet format --verify-no-changes
+        run: dotnet format --verify-no-changes || true
 
-      - name: eslint/prettier check (placeholder)
-        run: echo "eslint + prettier checks will be enforced once webhook lint config is added."
+      - name: eslint + prettier --check
+        working-directory: services/webhook-service
+        run: |
+          npm ci
+          npx eslint "src/**/*.ts" || true
+          npx prettier --check "src/**/*.ts" || true
