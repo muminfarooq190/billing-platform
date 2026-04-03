@@ -11,7 +11,7 @@ public sealed class JwtTokenService(IConfiguration configuration)
     public string GenerateAccessToken(Guid userId, Guid tenantId, string email, string role)
     {
         var privateKeyPem = LoadPem("JWT_PRIVATE_KEY", "JWT_PRIVATE_KEY_PATH") ?? throw new InvalidOperationException("JWT private key is not configured.");
-        using var rsa = RSA.Create();
+        var rsa = RSA.Create();
         rsa.ImportFromPem(privateKeyPem);
 
         var key = new RsaSecurityKey(rsa) { KeyId = "identity-key-1" };

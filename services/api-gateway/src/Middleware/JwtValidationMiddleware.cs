@@ -50,7 +50,7 @@ public sealed class JwtValidationMiddleware(RequestDelegate next, IConfiguration
 
         try
         {
-            using var rsa = RSA.Create();
+            var rsa = RSA.Create();
             rsa.ImportFromPem(keyPem);
             var handler = new JwtSecurityTokenHandler();
             var principal = handler.ValidateToken(token, new TokenValidationParameters
