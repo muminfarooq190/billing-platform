@@ -6,7 +6,7 @@ COPY ./src/. ./
 RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime
-RUN addgroup -S app && adduser -S app -G app
+RUN addgroup app && adduser -D -G app app
 WORKDIR /app
 COPY --from=build /app/publish ./
 RUN chown -R app:app /app
