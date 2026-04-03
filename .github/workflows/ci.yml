@@ -11,7 +11,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [identity-service, billing-service, api-gateway, webhook-service]
+        include:
+          - service: identity-service
+            project: services/identity-service/src/IdentityService.csproj
+            test_project: services/identity-service/tests/IdentityService.Tests/IdentityService.Tests.csproj
+          - service: billing-service
+            project: services/billing-service/src/BillingService.csproj
+            test_project: services/billing-service/tests/BillingService.Tests/BillingService.Tests.csproj
+          - service: api-gateway
+            project: services/api-gateway/src/ApiGateway.csproj
+            test_project: services/api-gateway/tests/ApiGateway.Tests/ApiGateway.Tests.csproj
+          - service: webhook-service
     services:
       postgres:
         image: postgres:16-alpine
@@ -41,17 +51,17 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Restore/build .NET service
+      - name: Restore .NET service
         if: matrix.service != 'webhook-service'
-        working-directory: services/${{ matrix.service }}/src
-        run: |
-          dotnet restore
-          dotnet build --configuration Release --no-restore
+        run: dotnet restore ${{ matrix.project }}
 
-      - name: Run .NET unit tests
+      - name: Build .NET service
         if: matrix.service != 'webhook-service'
-        working-directory: services/${{ matrix.service }}/tests
-        run: dotnet test --configuration Release --filter Category=Unit || dotnet test --configuration Release
+        run: dotnet build ${{ matrix.project }} --configuration Release --no-restore
+
+      - name: Run .NET tests
+        if: matrix.service != 'webhook-service'
+        run: dotnet test ${{ matrix.test_project }} --configuration Release
 
       - name: Install/build/test webhook-service
         if: matrix.service == 'webhook-service'
@@ -84,7 +94,7 @@ jobs:
           node-version: '20'
 
       - name: dotnet format --verify-no-changes
-        run: dotnet format --verify-no-changes || true
+        run: dotnet format billing-platform.sln --verify-no-changes || true
 
       - name: eslint + prettier --check
         working-directory: services/webhook-service
