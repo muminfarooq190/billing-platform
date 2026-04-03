@@ -18,10 +18,12 @@ services:
     environment:
       ASPNETCORE_URLS: http://+:8080
       ASPNETCORE_ENVIRONMENT: Production
-      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH}
       REDIS_URL: ${REDIS_URL}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
       OTEL_SERVICE_NAME: api-gateway
+    volumes:
+      - ./docker/keys/jwt-public.pem:/run/secrets/jwt-public.pem:ro
     ports:
       - "5000:8080"
     networks:
@@ -52,10 +54,13 @@ services:
       DATABASE_URL: ${IDENTITY_DATABASE_URL}
       RABBITMQ_URL: ${RABBITMQ_URL}
       REDIS_URL: ${REDIS_URL}
-      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
-      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH}
+      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
       OTEL_SERVICE_NAME: identity-service
+    volumes:
+      - ./docker/keys/jwt-private.pem:/run/secrets/jwt-private.pem:ro
+      - ./docker/keys/jwt-public.pem:/run/secrets/jwt-public.pem:ro
     ports:
       - "5001:8080"
     networks:
@@ -145,6 +150,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh:ro
     networks:
       - billing-network
     restart: unless-stopped

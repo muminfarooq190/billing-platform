@@ -11,9 +11,15 @@ public sealed class GetTenantByEmailQueryHandler(IReadDbConnectionFactory connec
     {
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         const string sql = """
-            SELECT id, name, email, plan::text AS plan, status::text AS status, created_at AS CreatedAt, updated_at AS UpdatedAt
+            SELECT "Id" AS Id,
+                   "Name" AS Name,
+                   "Email" AS Email,
+                   "Plan"::text AS Plan,
+                   "Status"::text AS Status,
+                   created_at AS CreatedAt,
+                   COALESCE(updated_at, created_at) AS UpdatedAt
             FROM tenants
-            WHERE email = @Email AND deleted_at IS NULL;
+            WHERE "Email" = @Email AND deleted_at IS NULL;
             """;
 
         return await connection.QuerySingleOrDefaultAsync<TenantReadModel>(new CommandDefinition(sql, new { request.Email }, cancellationToken: cancellationToken));

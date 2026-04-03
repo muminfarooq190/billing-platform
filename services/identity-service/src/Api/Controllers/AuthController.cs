@@ -36,9 +36,12 @@ public sealed class AuthController(IMediator mediator, JwtTokenService jwtTokenS
         await connection.OpenAsync(cancellationToken);
 
         const string sql = """
-            SELECT id, tenant_id AS TenantId, password_hash AS PasswordHash, role::text AS Role
+            SELECT "Id" AS Id,
+                   "TenantId" AS TenantId,
+                   "PasswordHash" AS PasswordHash,
+                   "Role" AS Role
             FROM users
-            WHERE tenant_id = @TenantId AND email = @Email AND deleted_at IS NULL;
+            WHERE "TenantId" = @TenantId AND "Email" = @Email AND deleted_at IS NULL;
             """;
 
         var user = await connection.QuerySingleOrDefaultAsync<UserAuthRow>(new CommandDefinition(sql, new { TenantId = tenant.Id, Email = request.Email.ToLowerInvariant() }, cancellationToken: cancellationToken));
