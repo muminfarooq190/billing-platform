@@ -13,15 +13,19 @@ jobs:
       matrix:
         include:
           - service: identity-service
-            project: services/identity-service/src/IdentityService.csproj
-            test_project: services/identity-service/tests/IdentityService.Tests/IdentityService.Tests.csproj
+            working_directory: services/identity-service
+            project: src/IdentityService.csproj
+            test_project: tests/IdentityService.Tests/IdentityService.Tests.csproj
           - service: billing-service
-            project: services/billing-service/src/BillingService.csproj
-            test_project: services/billing-service/tests/BillingService.Tests/BillingService.Tests.csproj
+            working_directory: services/billing-service
+            project: src/BillingService.csproj
+            test_project: tests/BillingService.Tests/BillingService.Tests.csproj
           - service: api-gateway
-            project: services/api-gateway/src/ApiGateway.csproj
-            test_project: services/api-gateway/tests/ApiGateway.Tests/ApiGateway.Tests.csproj
+            working_directory: services/api-gateway
+            project: src/ApiGateway.csproj
+            test_project: tests/ApiGateway.Tests/ApiGateway.Tests.csproj
           - service: webhook-service
+            working_directory: services/webhook-service
     services:
       postgres:
         image: postgres:16-alpine
@@ -53,19 +57,22 @@ jobs:
 
       - name: Restore .NET service
         if: matrix.service != 'webhook-service'
+        working-directory: ${{ matrix.working_directory }}
         run: dotnet restore ${{ matrix.project }}
 
       - name: Build .NET service
         if: matrix.service != 'webhook-service'
+        working-directory: ${{ matrix.working_directory }}
         run: dotnet build ${{ matrix.project }} --configuration Release --no-restore
 
       - name: Run .NET tests
         if: matrix.service != 'webhook-service'
+        working-directory: ${{ matrix.working_directory }}
         run: dotnet test ${{ matrix.test_project }} --configuration Release
 
       - name: Install/build/test webhook-service
         if: matrix.service == 'webhook-service'
-        working-directory: services/webhook-service
+        working-directory: ${{ matrix.working_directory }}
         run: |
           npm ci
           npm run build
