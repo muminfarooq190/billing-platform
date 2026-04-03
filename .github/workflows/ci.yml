@@ -11,7 +11,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [identity-service, billing-service, api-gateway, webhook-service]
+        include:
+          - service: identity-service
+            working_directory: services/identity-service
+            project: src/IdentityService.csproj
+            test_project: tests/IdentityService.Tests/IdentityService.Tests.csproj
+          - service: billing-service
+            working_directory: services/billing-service
+            project: src/BillingService.csproj
+            test_project: tests/BillingService.Tests/BillingService.Tests.csproj
+          - service: api-gateway
+            working_directory: services/api-gateway
+            project: src/ApiGateway.csproj
+            test_project: tests/ApiGateway.Tests/ApiGateway.Tests.csproj
+          - service: webhook-service
+            working_directory: services/webhook-service
     services:
       postgres:
         image: postgres:16-alpine
@@ -41,21 +55,24 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Restore/build .NET service
+      - name: Restore .NET service
         if: matrix.service != 'webhook-service'
-        working-directory: services/${{ matrix.service }}/src
-        run: |
-          dotnet restore
-          dotnet build --configuration Release --no-restore
+        working-directory: ${{ matrix.working_directory }}
+        run: dotnet restore ${{ matrix.project }}
 
-      - name: Run .NET unit tests
+      - name: Build .NET service
         if: matrix.service != 'webhook-service'
-        working-directory: services/${{ matrix.service }}/tests
-        run: dotnet test --configuration Release --filter Category=Unit || dotnet test --configuration Release
+        working-directory: ${{ matrix.working_directory }}
+        run: dotnet build ${{ matrix.project }} --configuration Release --no-restore
+
+      - name: Run .NET tests
+        if: matrix.service != 'webhook-service'
+        working-directory: ${{ matrix.working_directory }}
+        run: dotnet test ${{ matrix.test_project }} --configuration Release
 
       - name: Install/build/test webhook-service
         if: matrix.service == 'webhook-service'
-        working-directory: services/webhook-service
+        working-directory: ${{ matrix.working_directory }}
         run: |
           npm ci
           npm run build
@@ -84,7 +101,7 @@ jobs:
           node-version: '20'
 
       - name: dotnet format --verify-no-changes
-        run: dotnet format --verify-no-changes || true
+        run: dotnet format billing-platform.sln --verify-no-changes || true
 
       - name: eslint + prettier --check
         working-directory: services/webhook-service
