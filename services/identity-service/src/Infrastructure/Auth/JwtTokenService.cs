@@ -3,13 +3,14 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using Microsoft.IdentityModel.Tokens;
 
+
 namespace IdentityService.Infrastructure.Auth;
 
 public sealed class JwtTokenService(IConfiguration configuration)
 {
     public string GenerateAccessToken(Guid userId, Guid tenantId, string email, string role)
     {
-        var privateKeyPem = configuration["JWT_PRIVATE_KEY"] ?? throw new InvalidOperationException("JWT_PRIVATE_KEY is not configured.");
+        var privateKeyPem = LoadPem("JWT_PRIVATE_KEY", "JWT_PRIVATE_KEY_PATH") ?? throw new InvalidOperationException("JWT private key is not configured.");
         using var rsa = RSA.Create();
         rsa.ImportFromPem(privateKeyPem);
 
@@ -40,7 +41,7 @@ public sealed class JwtTokenService(IConfiguration configuration)
 
     public string BuildJwks()
     {
-        var publicKeyPem = configuration["JWT_PUBLIC_KEY"] ?? throw new InvalidOperationException("JWT_PUBLIC_KEY is not configured.");
+        var publicKeyPem = LoadPem("JWT_PUBLIC_KEY", "JWT_PUBLIC_KEY_PATH") ?? throw new InvalidOperationException("JWT public key is not configured.");
         using var rsa = RSA.Create();
         rsa.ImportFromPem(publicKeyPem);
         var parameters = rsa.ExportParameters(false);
@@ -60,5 +61,22 @@ public sealed class JwtTokenService(IConfiguration configuration)
                 }
             }
         });
+    }
+
+    private string? LoadPem(string inlineKeyName, string pathKeyName)
+    {
+        var inlinePem = configuration[inlineKeyName];
+        if (!string.IsNullOrWhiteSpace(inlinePem))
+        {
+            return inlinePem;
+        }
+
+        var path = configuration[pathKeyName];
+        if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+        {
+            return File.ReadAllText(path);
+        }
+
+        return null;
     }
 }

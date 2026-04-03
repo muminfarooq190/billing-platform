@@ -11,7 +11,12 @@ public sealed class JwtValidationMiddleware(RequestDelegate next, IConfiguration
 {
     public async Task InvokeAsync(HttpContext context)
     {
-        if (context.Request.Path.StartsWithSegments("/health") || context.Request.Path.StartsWithSegments("/metrics"))
+        if (context.Request.Path.StartsWithSegments("/health") ||
+            context.Request.Path.StartsWithSegments("/metrics") ||
+            context.Request.Path.StartsWithSegments("/api/auth/register") ||
+            context.Request.Path.StartsWithSegments("/api/auth/login") ||
+            context.Request.Path.StartsWithSegments("/api/auth/refresh") ||
+            context.Request.Path.StartsWithSegments("/.well-known/jwks.json"))
         {
             await next(context);
             return;
@@ -27,6 +32,15 @@ public sealed class JwtValidationMiddleware(RequestDelegate next, IConfiguration
 
         var token = authorizationHeader["Bearer ".Length..].Trim();
         var keyPem = configuration["JWT_PUBLIC_KEY"];
+        if (string.IsNullOrWhiteSpace(keyPem))
+        {
+            var keyPath = configuration["JWT_PUBLIC_KEY_PATH"];
+            if (!string.IsNullOrWhiteSpace(keyPath) && File.Exists(keyPath))
+            {
+                keyPem = File.ReadAllText(keyPath);
+            }
+        }
+
         if (string.IsNullOrWhiteSpace(keyPem))
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
