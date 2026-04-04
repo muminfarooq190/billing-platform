@@ -30,7 +30,7 @@ public sealed class UnitOfWork(IdentityDbContext dbContext) : IUnitOfWork
                     AggregateType = aggregate.GetType().Name,
                     AggregateId = TryResolveAggregateId(aggregate),
                     EventType = domainEvent.GetType().Name,
-                    Payload = JsonSerializer.Serialize(domainEvent),
+                    Payload = JsonSerializer.Serialize(domainEvent, domainEvent.GetType()),
                     CreatedAt = DateTimeOffset.UtcNow
                 });
             }

@@ -28,10 +28,20 @@ public sealed class OutboxPublisherService(IServiceScopeFactory scopeFactory, IC
 
         foreach (var message in pending)
         {
-            channel.BasicPublish("billing.events", message.EventType, null, System.Text.Encoding.UTF8.GetBytes(message.Payload));
+            channel.BasicPublish("billing.events", ResolveRoutingKey(message.EventType), null, System.Text.Encoding.UTF8.GetBytes(message.Payload));
             message.PublishedAt = DateTimeOffset.UtcNow;
         }
 
         await db.SaveChangesAsync(cancellationToken);
     }
+
+    private static string ResolveRoutingKey(string eventType) => eventType switch
+    {
+        "InvoiceCreatedEvent" => "billing.invoice.created",
+        "InvoicePaidEvent" => "billing.invoice.paid",
+        "PaymentProcessedEvent" => "billing.payment.processed",
+        "SubscriptionCreatedEvent" => "billing.subscription.created",
+        "SubscriptionCancelledEvent" => "billing.subscription.cancelled",
+        _ => eventType
+    };
 }

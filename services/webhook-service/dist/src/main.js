@@ -13,6 +13,7 @@ const core_1 = require("@nestjs/core");
 const typeorm_1 = require("@nestjs/typeorm");
 const bullmq_1 = require("bullmq");
 const billing_events_consumer_1 = require("./consumers/billing-events.consumer");
+const rabbitmq_events_listener_1 = require("./consumers/rabbitmq-events.listener");
 const webhook_delivery_processor_1 = require("./jobs/webhook-delivery.processor");
 const delivery_log_module_1 = require("./modules/delivery-log/delivery-log.module");
 const webhook_module_1 = require("./modules/webhook/webhook.module");
@@ -34,7 +35,7 @@ AppModule = __decorate([
             delivery_log_module_1.DeliveryLogModule,
         ],
         controllers: [health_controller_1.HealthController],
-        providers: [webhook_signer_service_1.WebhookSignerService, webhook_delivery_processor_1.WebhookDeliveryProcessor, billing_events_consumer_1.BillingEventsConsumer],
+        providers: [webhook_signer_service_1.WebhookSignerService, webhook_delivery_processor_1.WebhookDeliveryProcessor, billing_events_consumer_1.BillingEventsConsumer, rabbitmq_events_listener_1.RabbitMqEventsListener],
     })
 ], AppModule);
 async function bootstrap() {

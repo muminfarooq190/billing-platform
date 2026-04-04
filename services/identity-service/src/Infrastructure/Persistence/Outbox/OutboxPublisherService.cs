@@ -51,10 +51,19 @@ public sealed class OutboxPublisherService(
         foreach (var message in pendingMessages)
         {
             var body = System.Text.Encoding.UTF8.GetBytes(message.Payload);
-            channel.BasicPublish("identity.events", routingKey: message.EventType, basicProperties: null, body: body);
+            channel.BasicPublish("identity.events", routingKey: ResolveRoutingKey(message.EventType), basicProperties: null, body: body);
             message.PublishedAt = DateTimeOffset.UtcNow;
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    private static string ResolveRoutingKey(string eventType) => eventType switch
+    {
+        "TenantCreatedEvent" => "identity.tenant.created",
+        "TenantSuspendedEvent" => "identity.tenant.suspended",
+        "UserCreatedEvent" => "identity.user.created",
+        "UserPasswordChangedEvent" => "identity.user.password.changed",
+        _ => eventType
+    };
 }
