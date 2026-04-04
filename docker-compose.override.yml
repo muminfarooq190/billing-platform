@@ -23,6 +23,12 @@ services:
     ports:
       - "5003:3000"
 
+  travel-service:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "5004:8080"
+
   postgres:
     ports:
       - "5432:5432"

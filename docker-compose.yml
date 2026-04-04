@@ -13,6 +13,8 @@ services:
         condition: service_healthy
       webhook-service:
         condition: service_healthy
+      travel-service:
+        condition: service_healthy
       redis:
         condition: service_healthy
     environment:
@@ -134,6 +136,38 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  travel-service:
+    build:
+      context: ./services/travel-service
+      dockerfile: Dockerfile
+    container_name: billing-travel-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_ENVIRONMENT: Production
+      DATABASE_URL: ${TRAVEL_DATABASE_URL}
+      RABBITMQ_URL: ${RABBITMQ_URL}
+      REDIS_URL: ${REDIS_URL}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_SERVICE_NAME: travel-service
+    ports:
+      - "5004:8080"
+    networks:
+      - billing-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
       interval: 15s
       timeout: 5s
       retries: 5

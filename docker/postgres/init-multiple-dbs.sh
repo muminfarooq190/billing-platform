@@ -18,3 +18,4 @@ EOSQL
 create_db "billing_identity"
 create_db "billing_billing"
 create_db "billing_webhook"
+create_db "billing_travel"

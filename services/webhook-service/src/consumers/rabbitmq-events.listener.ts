@@ -5,7 +5,7 @@ import { BillingEventsConsumer } from './billing-events.consumer';
 import { DomainEventEnvelope } from './domain-events.types';
 
 interface ExchangeBindingConfig {
-  exchange: 'billing.events' | 'identity.events';
+  exchange: 'billing.events' | 'identity.events' | 'travel.events';
   queue: string;
 }
 
@@ -21,6 +21,7 @@ export class RabbitMqEventsListener implements OnModuleInit, OnModuleDestroy {
     const bindings: ExchangeBindingConfig[] = [
       { exchange: 'billing.events', queue: process.env.BILLING_EVENTS_QUEUE ?? 'webhook-service.billing.events' },
       { exchange: 'identity.events', queue: process.env.IDENTITY_EVENTS_QUEUE ?? 'webhook-service.identity.events' },
+      { exchange: 'travel.events', queue: process.env.TRAVEL_EVENTS_QUEUE ?? 'webhook-service.travel.events' },
     ];
 
     this.connection = connect([process.env.RABBITMQ_URL ?? 'amqp://guest:guest@rabbitmq:5672']);
@@ -125,7 +126,21 @@ export class RabbitMqEventsListener implements OnModuleInit, OnModuleDestroy {
       UserPasswordChangedEvent: 'identity.user.password.changed',
     };
 
-    const eventMap = exchange === 'billing.events' ? billingEventMap : identityEventMap;
+    const travelEventMap: Record<string, string> = {
+      FollowUpCreatedEvent: 'travel.follow-up.created',
+      FollowUpCompletedEvent: 'travel.follow-up.completed',
+      QuotationCreatedEvent: 'travel.quotation.created',
+      QuotationSentEvent: 'travel.quotation.sent',
+      QuotationAcceptedEvent: 'travel.quotation.accepted',
+      ItineraryCreatedEvent: 'travel.itinerary.created',
+      ItineraryConfirmedEvent: 'travel.itinerary.confirmed',
+    };
+
+    const eventMap = exchange === 'billing.events'
+      ? billingEventMap
+      : exchange === 'identity.events'
+        ? identityEventMap
+        : travelEventMap;
     return eventMap[normalizedRoutingKey] ?? normalizedRoutingKey;
   }
 }

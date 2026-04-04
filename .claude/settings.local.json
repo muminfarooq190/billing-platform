@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(python3:*)",
+      "Bash(uuidgen)",
+      "Read(//proc/sys/kernel/random/**)",
+      "Bash(powershell.exe -Command \"[guid]::NewGuid\\(\\).ToString\\(\\).ToUpper\\(\\); [guid]::NewGuid\\(\\).ToString\\(\\).ToUpper\\(\\); [guid]::NewGuid\\(\\).ToString\\(\\).ToUpper\\(\\)\")",
+      "Bash(dotnet build:*)",
+      "Bash(gh pr:*)",
+      "Bash(where gh:*)"
+    ]
+  }
+}
