@@ -1,25 +1,30 @@
 using CommunicationService.Application.Abstractions;
 using CommunicationService.Domain.Enums;
+using Microsoft.Extensions.Options;
 
 namespace CommunicationService.Infrastructure.Channels;
 
-public sealed class EmailDispatcher(IConfiguration configuration, ILogger<EmailDispatcher> logger) : IChannelDispatcher
+public sealed class EmailDispatcher(
+    EmailProviderResolver providerResolver,
+    IOptions<EmailChannelOptions> options,
+    ILogger<EmailDispatcher> logger) : IChannelDispatcher
 {
     public ChannelType Channel => ChannelType.Email;
 
     public async Task<ChannelDispatchResult> SendAsync(string recipient, string subject, string body, CancellationToken cancellationToken)
     {
-        var provider = configuration["EMAIL_PROVIDER"] ?? "log";
+        if (!ChannelValidators.IsKnownEmail(recipient))
+            return new ChannelDispatchResult(false, null, $"Recipient '{recipient}' is not a valid email address.");
 
-        if (provider.Equals("log", StringComparison.OrdinalIgnoreCase))
-        {
-            logger.LogInformation("EMAIL to={Recipient} subject={Subject} body_length={BodyLength}", recipient, subject, body.Length);
-            await Task.CompletedTask;
-            return new ChannelDispatchResult(true, $"log-{Guid.NewGuid():N}", null);
-        }
+        var settings = options.Value;
+        var provider = providerResolver.Resolve();
+        if (provider.Name.Equals("sendgrid", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(subject))
+            return new ChannelDispatchResult(false, null, "Email subject is required for SendGrid delivery.");
 
-        // Future: SMTP, SendGrid, SES integration points
-        logger.LogWarning("Unknown email provider: {Provider}, falling back to log", provider);
-        return new ChannelDispatchResult(true, $"log-{Guid.NewGuid():N}", null);
+        var result = await provider.SendAsync(new EmailMessage(recipient, settings.DefaultFromEmail ?? string.Empty, settings.DefaultFromName, subject, body), cancellationToken);
+        if (!result.Success)
+            logger.LogWarning("Email dispatch failed via provider {Provider}: {Error}", provider.Name, result.ErrorMessage);
+
+        return new ChannelDispatchResult(result.Success, result.ProviderMessageId, result.ErrorMessage);
     }
 }
