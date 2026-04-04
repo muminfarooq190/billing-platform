@@ -22,7 +22,7 @@ public sealed class ItineraryConfiguration : IEntityTypeConfiguration<Itinerary>
         builder.Property(x => x.Currency).HasColumnName("currency").HasMaxLength(3);
         builder.Property(x => x.QuotationId).HasColumnName("quotation_id");
         builder.Property(x => x.Status).HasConversion<string>().HasColumnName("status");
-        builder.Property(x => x.TotalCost).HasColumnName("total_cost").HasColumnType("decimal(18,2)");
+        builder.Ignore(x => x.TotalCost);
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
