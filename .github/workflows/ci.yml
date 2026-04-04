@@ -29,6 +29,7 @@ jobs:
           - service: travel-service
             working_directory: services/travel-service
             project: src/TravelService.csproj
+            test_project: tests/TravelService.Tests/TravelService.Tests.csproj
     services:
       postgres:
         image: postgres:16-alpine
