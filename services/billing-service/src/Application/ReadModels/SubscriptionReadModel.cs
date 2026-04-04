@@ -1,3 +1,11 @@
 namespace BillingService.Application.ReadModels;
 
-public sealed record SubscriptionReadModel(Guid Id, Guid TenantId, string PlanType, string BillingCycle, string Status, DateTimeOffset NextBillingDate);
+public sealed class SubscriptionReadModel
+{
+    public Guid Id { get; init; }
+    public Guid TenantId { get; init; }
+    public string PlanType { get; init; } = string.Empty;
+    public string BillingCycle { get; init; } = string.Empty;
+    public string Status { get; init; } = string.Empty;
+    public DateTimeOffset NextBillingDate { get; init; }
+}

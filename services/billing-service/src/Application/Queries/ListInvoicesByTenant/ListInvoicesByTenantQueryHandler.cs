@@ -10,7 +10,7 @@ public sealed class ListInvoicesByTenantQueryHandler(IReadDbConnectionFactory co
     public async Task<IReadOnlyList<InvoiceReadModel>> Handle(ListInvoicesByTenantQuery request, CancellationToken cancellationToken)
     {
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
-        const string sql = "SELECT id, subscription_id AS SubscriptionId, tenant_id AS TenantId, status, total_amount AS TotalAmount, total_currency AS Currency, due_date AS DueDate, paid_at AS PaidAt FROM invoices WHERE tenant_id=@TenantId AND deleted_at IS NULL AND (@Status IS NULL OR status=@Status) ORDER BY created_at DESC OFFSET @Offset LIMIT @Limit;";
+        const string sql = "SELECT \"Id\" AS Id, \"SubscriptionId\" AS SubscriptionId, \"TenantId\" AS TenantId, \"Status\" AS Status, (total::jsonb ->> 'Amount')::numeric AS TotalAmount, total::jsonb ->> 'Currency' AS Currency, due_date AS DueDate, paid_at AS PaidAt FROM invoices WHERE \"TenantId\"=@TenantId AND deleted_at IS NULL AND (@Status IS NULL OR \"Status\"=@Status) ORDER BY created_at DESC OFFSET @Offset LIMIT @Limit;";
         var rows = await connection.QueryAsync<InvoiceReadModel>(new CommandDefinition(sql, new { request.TenantId, Status = request.Status, Offset = (request.Page - 1) * request.PageSize, Limit = request.PageSize }, cancellationToken: cancellationToken));
         return rows.ToList();
     }
