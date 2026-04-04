@@ -1,6 +1,7 @@
-import { Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { WebhookDeliveryQueue } from '../../jobs/webhook-delivery.queue';
 import { DeliveryLogService } from '../delivery-log/delivery-log.service';
+import { CreateWebhookSubscriptionDto } from './dto/create-webhook-subscription.dto';
 import { WebhookService } from './webhook.service';
 
 @Controller('webhooks')
@@ -46,6 +47,11 @@ export class WebhookController {
   @Get('subscriptions')
   public async listSubscriptions(): Promise<unknown> {
     return this.webhookService.listSubscriptions();
+  }
+
+  @Post('subscriptions')
+  public async createSubscription(@Body() body: CreateWebhookSubscriptionDto): Promise<unknown> {
+    return this.webhookService.createSubscription(body);
   }
 
   @Delete('subscriptions/:id')

@@ -5,6 +5,7 @@ import { NestFactory } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Worker } from 'bullmq';
 import { BillingEventsConsumer } from './consumers/billing-events.consumer';
+import { RabbitMqEventsListener } from './consumers/rabbitmq-events.listener';
 import { WebhookDeliveryProcessor } from './jobs/webhook-delivery.processor';
 import { DeliveryLogModule } from './modules/delivery-log/delivery-log.module';
 import { WebhookModule } from './modules/webhook/webhook.module';
@@ -24,7 +25,7 @@ import { WebhookSubscriptionEntity } from './entities/webhook-subscription.entit
     DeliveryLogModule,
   ],
   controllers: [HealthController],
-  providers: [WebhookSignerService, WebhookDeliveryProcessor, BillingEventsConsumer],
+  providers: [WebhookSignerService, WebhookDeliveryProcessor, BillingEventsConsumer, RabbitMqEventsListener],
 })
 class AppModule {}
 

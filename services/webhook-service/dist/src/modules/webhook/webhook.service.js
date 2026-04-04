@@ -28,6 +28,16 @@ let WebhookService = class WebhookService {
         const rows = await this.subscriptionRepository.find({ where: { tenantId, isActive: true } });
         return rows.filter((row) => row.events.includes(eventType));
     }
+    async createSubscription(input) {
+        const entity = this.subscriptionRepository.create({
+            tenantId: input.tenantId,
+            targetUrl: input.targetUrl,
+            events: [...new Set(input.events.map((eventName) => eventName.trim()).filter(Boolean))],
+            signingSecret: input.signingSecret,
+            isActive: input.isActive ?? true,
+        });
+        return this.subscriptionRepository.save(entity);
+    }
     async deactivateSubscription(id) {
         await this.subscriptionRepository.update(id, { isActive: false });
     }

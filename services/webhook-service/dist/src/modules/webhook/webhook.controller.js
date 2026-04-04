@@ -45,6 +45,9 @@ let WebhookController = class WebhookController {
     async listSubscriptions() {
         return this.webhookService.listSubscriptions();
     }
+    async createSubscription(body) {
+        return this.webhookService.createSubscription(body);
+    }
     async remove(id) {
         await this.webhookService.deactivateSubscription(id);
     }
@@ -78,6 +81,13 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], WebhookController.prototype, "listSubscriptions", null);
+__decorate([
+    (0, common_1.Post)('subscriptions'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], WebhookController.prototype, "createSubscription", null);
 __decorate([
     (0, common_1.Delete)('subscriptions/:id'),
     __param(0, (0, common_1.Param)('id')),

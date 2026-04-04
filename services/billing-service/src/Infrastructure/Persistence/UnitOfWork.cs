@@ -23,7 +23,7 @@ public sealed class UnitOfWork(BillingDbContext dbContext) : IUnitOfWork
                     AggregateType = aggregate.GetType().Name,
                     AggregateId = aggregate.GetType().GetProperty("Id")?.GetValue(aggregate) as Guid? ?? Guid.Empty,
                     EventType = domainEvent.GetType().Name,
-                    Payload = JsonSerializer.Serialize(domainEvent),
+                    Payload = JsonSerializer.Serialize(domainEvent, domainEvent.GetType()),
                     CreatedAt = DateTimeOffset.UtcNow
                 });
             }
