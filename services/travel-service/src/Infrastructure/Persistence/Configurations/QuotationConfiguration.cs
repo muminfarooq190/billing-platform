@@ -23,7 +23,7 @@ public sealed class QuotationConfiguration : IEntityTypeConfiguration<Quotation>
         builder.Property(x => x.Notes).HasColumnName("notes");
         builder.Property(x => x.Status).HasConversion<string>().HasColumnName("status");
         builder.Property(x => x.ValidUntil).HasColumnName("valid_until");
-        builder.Property(x => x.TotalAmount).HasColumnName("total_amount").HasColumnType("decimal(18,2)");
+        builder.Ignore(x => x.TotalAmount);
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
