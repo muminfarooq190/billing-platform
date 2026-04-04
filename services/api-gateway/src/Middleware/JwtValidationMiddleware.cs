@@ -16,6 +16,7 @@ public sealed class JwtValidationMiddleware(RequestDelegate next, IConfiguration
             context.Request.Path.StartsWithSegments("/api/auth/register") ||
             context.Request.Path.StartsWithSegments("/api/auth/login") ||
             context.Request.Path.StartsWithSegments("/api/auth/refresh") ||
+            context.Request.Path.StartsWithSegments("/api/auth/logout") ||
             context.Request.Path.StartsWithSegments("/.well-known/jwks.json"))
         {
             await next(context);

@@ -14,7 +14,7 @@ public sealed class GetInvoiceByIdQueryHandler(IReadDbConnectionFactory connecti
         if (cached is not null) return cached;
 
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
-        const string sql = "SELECT id, subscription_id AS SubscriptionId, tenant_id AS TenantId, status, total_amount AS TotalAmount, total_currency AS Currency, due_date AS DueDate, paid_at AS PaidAt FROM invoices WHERE id=@InvoiceId AND deleted_at IS NULL;";
+        const string sql = "SELECT \"Id\" AS Id, \"SubscriptionId\" AS SubscriptionId, \"TenantId\" AS TenantId, \"Status\" AS Status, (total::jsonb ->> 'Amount')::numeric AS TotalAmount, total::jsonb ->> 'Currency' AS Currency, due_date AS DueDate, paid_at AS PaidAt FROM invoices WHERE \"Id\"=@InvoiceId AND deleted_at IS NULL;";
         var result = await connection.QuerySingleOrDefaultAsync<InvoiceReadModel>(new CommandDefinition(sql, new { request.InvoiceId }, cancellationToken: cancellationToken));
         if (result is not null)
         {

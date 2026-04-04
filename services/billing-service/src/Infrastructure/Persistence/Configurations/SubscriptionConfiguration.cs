@@ -10,9 +10,11 @@ public sealed class SubscriptionConfiguration : IEntityTypeConfiguration<Subscri
     {
         builder.ToTable("subscriptions");
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasColumnName("Id");
+        builder.Property(x => x.TenantId).HasColumnName("TenantId");
         builder.Property(x => x.PlanType).HasConversion<string>().HasColumnName("plan_type");
         builder.Property(x => x.BillingCycle).HasConversion<string>().HasColumnName("billing_cycle");
-        builder.Property(x => x.Status).HasConversion<string>();
+        builder.Property(x => x.Status).HasConversion<string>().HasColumnName("Status");
         builder.Property(x => x.StartDate).HasColumnName("start_date");
         builder.Property(x => x.NextBillingDate).HasColumnName("next_billing_date");
         builder.Property(x => x.CancelledAt).HasColumnName("cancelled_at");

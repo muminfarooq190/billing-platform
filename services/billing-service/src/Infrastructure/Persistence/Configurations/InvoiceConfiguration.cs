@@ -17,10 +17,13 @@ public sealed class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
 
         builder.ToTable("invoices");
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasColumnName("Id");
+        builder.Property(x => x.SubscriptionId).HasColumnName("SubscriptionId");
+        builder.Property(x => x.TenantId).HasColumnName("TenantId");
         builder.Property(x => x.Subtotal).HasConversion(moneyConverter).HasColumnName("subtotal");
         builder.Property(x => x.TaxAmount).HasConversion(moneyConverter).HasColumnName("tax_amount");
         builder.Property(x => x.Total).HasConversion(moneyConverter).HasColumnName("total");
-        builder.Property(x => x.Status).HasConversion<string>();
+        builder.Property(x => x.Status).HasConversion<string>().HasColumnName("Status");
         builder.Property(x => x.DueDate).HasColumnName("due_date");
         builder.Property(x => x.PaidAt).HasColumnName("paid_at");
         builder.Property(x => x.IssuedAt).HasColumnName("issued_at");
