@@ -26,6 +26,9 @@ jobs:
             test_project: tests/ApiGateway.Tests/ApiGateway.Tests.csproj
           - service: webhook-service
             working_directory: services/webhook-service
+          - service: travel-service
+            working_directory: services/travel-service
+            project: src/TravelService.csproj
     services:
       postgres:
         image: postgres:16-alpine
