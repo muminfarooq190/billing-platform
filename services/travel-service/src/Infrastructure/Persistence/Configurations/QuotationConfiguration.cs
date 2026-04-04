@@ -1,6 +1,6 @@
-using TravelService.Domain.Aggregates;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using TravelService.Domain.Aggregates;
 
 namespace TravelService.Infrastructure.Persistence.Configurations;
 
@@ -27,7 +27,20 @@ public sealed class QuotationConfiguration : IEntityTypeConfiguration<Quotation>
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
-        builder.Ignore(x => x.LineItems);
         builder.HasIndex(x => x.TenantId);
+
+        builder.Navigation(x => x.LineItems).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.OwnsMany(x => x.LineItems, lineItems =>
+        {
+            lineItems.ToTable("quotation_line_items");
+            lineItems.WithOwner().HasForeignKey("quotation_id");
+            lineItems.Property<Guid>("id").HasColumnName("id");
+            lineItems.HasKey("id");
+            lineItems.Property(x => x.Description).HasColumnName("description").HasMaxLength(512);
+            lineItems.Property(x => x.UnitPrice).HasColumnName("unit_price").HasColumnType("decimal(18,2)");
+            lineItems.Property(x => x.Quantity).HasColumnName("quantity");
+            lineItems.Property(x => x.Currency).HasColumnName("currency").HasMaxLength(3);
+            lineItems.Ignore(x => x.Total);
+        });
     }
 }

@@ -11,12 +11,15 @@ public sealed class FollowUp : AggregateRoot
 
     private FollowUp(Guid tenantId, Guid customerContactId, string customerName, string subject, string notes, FollowUpPriority priority, DateTimeOffset dueDate, Guid? assignedToUserId)
     {
+        ValidateIdentity(tenantId, customerContactId);
+        ValidateDetails(customerName, subject, dueDate);
+
         Id = Guid.NewGuid();
         TenantId = tenantId;
         CustomerContactId = customerContactId;
-        CustomerName = customerName;
-        Subject = subject;
-        Notes = notes;
+        CustomerName = customerName.Trim();
+        Subject = subject.Trim();
+        Notes = notes.Trim();
         Priority = priority;
         Status = FollowUpStatus.Pending;
         DueDate = dueDate;
@@ -48,6 +51,10 @@ public sealed class FollowUp : AggregateRoot
     {
         if (Status == FollowUpStatus.Completed)
             throw new DomainException("Cannot reopen a completed follow-up.");
+        if (Status == FollowUpStatus.Cancelled)
+            throw new DomainException("Cannot restart a cancelled follow-up.");
+        if (Status == FollowUpStatus.InProgress)
+            return;
         Status = FollowUpStatus.InProgress;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
@@ -56,6 +63,8 @@ public sealed class FollowUp : AggregateRoot
     {
         if (Status == FollowUpStatus.Cancelled)
             throw new DomainException("Cannot complete a cancelled follow-up.");
+        if (Status == FollowUpStatus.Completed)
+            return;
         Status = FollowUpStatus.Completed;
         CompletedAt = DateTimeOffset.UtcNow;
         UpdatedAt = DateTimeOffset.UtcNow;
@@ -66,17 +75,41 @@ public sealed class FollowUp : AggregateRoot
     {
         if (Status == FollowUpStatus.Completed)
             throw new DomainException("Cannot cancel a completed follow-up.");
+        if (Status == FollowUpStatus.Cancelled)
+            return;
         Status = FollowUpStatus.Cancelled;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
     public void Update(string subject, string notes, FollowUpPriority priority, DateTimeOffset dueDate, Guid? assignedToUserId)
     {
-        Subject = subject;
-        Notes = notes;
+        if (Status is FollowUpStatus.Completed or FollowUpStatus.Cancelled)
+            throw new DomainException("Can only edit pending or in-progress follow-ups.");
+
+        ValidateDetails(CustomerName, subject, dueDate);
+        Subject = subject.Trim();
+        Notes = notes.Trim();
         Priority = priority;
         DueDate = dueDate;
         AssignedToUserId = assignedToUserId;
         UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    private static void ValidateIdentity(Guid tenantId, Guid customerContactId)
+    {
+        if (tenantId == Guid.Empty)
+            throw new DomainException("TenantId is required.");
+        if (customerContactId == Guid.Empty)
+            throw new DomainException("CustomerContactId is required.");
+    }
+
+    private static void ValidateDetails(string customerName, string subject, DateTimeOffset dueDate)
+    {
+        if (string.IsNullOrWhiteSpace(customerName))
+            throw new DomainException("Customer name is required.");
+        if (string.IsNullOrWhiteSpace(subject))
+            throw new DomainException("Follow-up subject is required.");
+        if (dueDate < DateTimeOffset.UtcNow.AddMinutes(-1))
+            throw new DomainException("Follow-up due date cannot be in the past.");
     }
 }

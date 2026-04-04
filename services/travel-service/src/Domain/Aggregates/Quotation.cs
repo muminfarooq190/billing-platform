@@ -13,19 +13,22 @@ public sealed class Quotation : AggregateRoot
 
     private Quotation(Guid tenantId, Guid customerContactId, string customerName, string title, string destination, DateTimeOffset travelDate, DateTimeOffset returnDate, int travellers, string currency, string notes)
     {
+        ValidateIdentity(tenantId, customerContactId);
+        ValidateDetails(customerName, title, destination, travelDate, returnDate, travellers, currency);
+
         Id = Guid.NewGuid();
         TenantId = tenantId;
         CustomerContactId = customerContactId;
-        CustomerName = customerName;
-        Title = title;
-        Destination = destination;
+        CustomerName = customerName.Trim();
+        Title = title.Trim();
+        Destination = destination.Trim();
         TravelDate = travelDate;
         ReturnDate = returnDate;
         Travellers = travellers;
-        Currency = currency;
-        Notes = notes;
+        Currency = NormalizeCurrency(currency);
+        Notes = notes.Trim();
         Status = QuotationStatus.Draft;
-        ValidUntil = DateTimeOffset.UtcNow.AddDays(30);
+        ValidUntil = DetermineInitialValidUntil(travelDate);
         CreatedAt = DateTimeOffset.UtcNow;
         UpdatedAt = DateTimeOffset.UtcNow;
         AddDomainEvent(new QuotationCreatedEvent(Id, TenantId, CustomerContactId));
@@ -57,7 +60,10 @@ public sealed class Quotation : AggregateRoot
     {
         if (Status != QuotationStatus.Draft)
             throw new DomainException("Can only modify line items on draft quotations.");
-        _lineItems.Add(new QuotationLineItem(description, unitPrice, quantity, currency));
+
+        var normalizedCurrency = NormalizeCurrency(currency);
+        EnsureSameCurrency(normalizedCurrency, "line item");
+        _lineItems.Add(new QuotationLineItem(description, unitPrice, quantity, normalizedCurrency));
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
@@ -67,6 +73,8 @@ public sealed class Quotation : AggregateRoot
             throw new DomainException("Only draft quotations can be sent.");
         if (_lineItems.Count == 0)
             throw new DomainException("Cannot send a quotation with no line items.");
+        if (ValidUntil < DateTimeOffset.UtcNow)
+            throw new DomainException("Cannot send an expired quotation.");
         Status = QuotationStatus.Sent;
         UpdatedAt = DateTimeOffset.UtcNow;
         AddDomainEvent(new QuotationSentEvent(Id, TenantId));
@@ -76,6 +84,12 @@ public sealed class Quotation : AggregateRoot
     {
         if (Status != QuotationStatus.Sent)
             throw new DomainException("Only sent quotations can be accepted.");
+        if (ValidUntil < DateTimeOffset.UtcNow)
+        {
+            Status = QuotationStatus.Expired;
+            UpdatedAt = DateTimeOffset.UtcNow;
+            throw new DomainException("Cannot accept an expired quotation.");
+        }
         Status = QuotationStatus.Accepted;
         UpdatedAt = DateTimeOffset.UtcNow;
         AddDomainEvent(new QuotationAcceptedEvent(Id, TenantId));
@@ -101,14 +115,81 @@ public sealed class Quotation : AggregateRoot
     {
         if (Status != QuotationStatus.Draft)
             throw new DomainException("Can only update draft quotations.");
-        Title = title;
-        Destination = destination;
+
+        ValidateDetails(CustomerName, title, destination, travelDate, returnDate, travellers, currency);
+        EnsureValidUntil(validUntil, travelDate);
+        var normalizedCurrency = NormalizeCurrency(currency);
+        EnsureNoCurrencyMismatch(normalizedCurrency);
+
+        Title = title.Trim();
+        Destination = destination.Trim();
         TravelDate = travelDate;
         ReturnDate = returnDate;
         Travellers = travellers;
-        Currency = currency;
-        Notes = notes;
+        Currency = normalizedCurrency;
+        Notes = notes.Trim();
         ValidUntil = validUntil;
         UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    private static void ValidateIdentity(Guid tenantId, Guid customerContactId)
+    {
+        if (tenantId == Guid.Empty)
+            throw new DomainException("TenantId is required.");
+        if (customerContactId == Guid.Empty)
+            throw new DomainException("CustomerContactId is required.");
+    }
+
+    private static void ValidateDetails(string customerName, string title, string destination, DateTimeOffset travelDate, DateTimeOffset returnDate, int travellers, string currency)
+    {
+        if (string.IsNullOrWhiteSpace(customerName))
+            throw new DomainException("Customer name is required.");
+        if (string.IsNullOrWhiteSpace(title))
+            throw new DomainException("Quotation title is required.");
+        if (string.IsNullOrWhiteSpace(destination))
+            throw new DomainException("Destination is required.");
+        if (travellers <= 0)
+            throw new DomainException("Travellers must be greater than zero.");
+        if (returnDate < travelDate)
+            throw new DomainException("Return date must be on or after the travel date.");
+        _ = NormalizeCurrency(currency);
+    }
+
+    private static DateTimeOffset DetermineInitialValidUntil(DateTimeOffset travelDate)
+    {
+        var proposed = DateTimeOffset.UtcNow.AddDays(14);
+        return proposed > travelDate ? travelDate : proposed;
+    }
+
+    private static void EnsureValidUntil(DateTimeOffset validUntil, DateTimeOffset travelDate)
+    {
+        if (validUntil < DateTimeOffset.UtcNow)
+            throw new DomainException("Quotation validity cannot already be in the past.");
+        if (validUntil > travelDate)
+            throw new DomainException("Quotation validity cannot extend past the travel date.");
+    }
+
+    private void EnsureSameCurrency(string currency, string context)
+    {
+        if (_lineItems.Count > 0 && !string.Equals(currency, Currency, StringComparison.OrdinalIgnoreCase))
+            throw new DomainException($"Quotation {context} currency must match quotation currency.");
+    }
+
+    private void EnsureNoCurrencyMismatch(string currency)
+    {
+        if (_lineItems.Count > 0 && !string.Equals(currency, Currency, StringComparison.OrdinalIgnoreCase))
+            throw new DomainException("Cannot change quotation currency after line items have been added.");
+    }
+
+    private static string NormalizeCurrency(string currency)
+    {
+        if (string.IsNullOrWhiteSpace(currency))
+            throw new DomainException("Currency is required.");
+
+        var normalized = currency.Trim().ToUpperInvariant();
+        if (normalized.Length != 3)
+            throw new DomainException("Currency must be a 3-letter ISO code.");
+
+        return normalized;
     }
 }
