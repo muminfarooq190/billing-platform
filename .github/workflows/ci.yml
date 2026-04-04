@@ -30,6 +30,10 @@ jobs:
             working_directory: services/travel-service
             project: src/TravelService.csproj
             test_project: tests/TravelService.Tests/TravelService.Tests.csproj
+          - service: communication-service
+            working_directory: services/communication-service
+            project: src/CommunicationService.csproj
+            test_project: tests/CommunicationService.Tests/CommunicationService.Tests.csproj
     services:
       postgres:
         image: postgres:16-alpine
