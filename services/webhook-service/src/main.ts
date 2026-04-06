@@ -2,8 +2,9 @@ import 'reflect-metadata';
 import { Module } from '@nestjs/common';
 import { HealthController } from './common/health.controller';
 import { NestFactory } from '@nestjs/core';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule, getDataSourceToken } from '@nestjs/typeorm';
 import { Worker } from 'bullmq';
+import { DataSource } from 'typeorm';
 import { BillingEventsConsumer } from './consumers/billing-events.consumer';
 import { RabbitMqEventsListener } from './consumers/rabbitmq-events.listener';
 import { WebhookDeliveryProcessor } from './jobs/webhook-delivery.processor';
@@ -12,6 +13,7 @@ import { WebhookModule } from './modules/webhook/webhook.module';
 import { WebhookSignerService } from './signing/webhook-signer.service';
 import { WebhookDeliveryLogEntity } from './entities/webhook-delivery-log.entity';
 import { WebhookSubscriptionEntity } from './entities/webhook-subscription.entity';
+import { InitialSchema0000000000001 } from './migrations/0000000000001-initial-schema';
 
 @Module({
   imports: [
@@ -19,7 +21,8 @@ import { WebhookSubscriptionEntity } from './entities/webhook-subscription.entit
       type: 'postgres',
       url: process.env.DATABASE_URL,
       entities: [WebhookDeliveryLogEntity, WebhookSubscriptionEntity],
-      synchronize: true,
+      migrations: [InitialSchema0000000000001],
+      synchronize: false,
     }),
     WebhookModule,
     DeliveryLogModule,
@@ -31,6 +34,9 @@ class AppModule {}
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+  const dataSource = app.get<DataSource>(getDataSourceToken());
+  await dataSource.runMigrations();
+
   const processor = app.get(WebhookDeliveryProcessor);
 
   const redisUrl = process.env.REDIS_URL ?? 'redis://redis:6379';
