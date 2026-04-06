@@ -1,9 +1,9 @@
+using System.Text.Json;
 using BillingService.Domain.Aggregates;
 using BillingService.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using System.Text.Json;
 
 namespace BillingService.Infrastructure.Persistence.Configurations;
 
@@ -13,7 +13,7 @@ public sealed class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
     {
         var moneyConverter = new ValueConverter<Money, string>(
             money => JsonSerializer.Serialize(money, (JsonSerializerOptions?)null),
-            json => JsonSerializer.Deserialize<Money>(json, (JsonSerializerOptions?)null));
+            json => JsonSerializer.Deserialize<Money>(json, (JsonSerializerOptions?)null)!);
 
         builder.ToTable("invoices");
         builder.HasKey(x => x.Id);
@@ -30,6 +30,19 @@ public sealed class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
-        builder.Ignore(x => x.LineItems);
+
+        builder.Navigation(x => x.LineItems).HasField("_lineItems");
+
+        builder.OwnsMany(x => x.LineItems, lineItemBuilder =>
+        {
+            lineItemBuilder.ToTable("invoice_line_items");
+            lineItemBuilder.WithOwner().HasForeignKey("InvoiceId");
+            lineItemBuilder.Property<Guid>("Id");
+            lineItemBuilder.HasKey("Id");
+            lineItemBuilder.Property<Guid>("InvoiceId").HasColumnName("invoice_id");
+            lineItemBuilder.Property(x => x.Description).HasColumnName("description").HasMaxLength(500);
+            lineItemBuilder.Property(x => x.Quantity).HasColumnName("quantity");
+            lineItemBuilder.Property(x => x.UnitPrice).HasConversion(moneyConverter).HasColumnName("unit_price");
+        });
     }
 }

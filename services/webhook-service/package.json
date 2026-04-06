@@ -6,6 +6,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "start:dev": "ts-node src/main.ts",
+    "typeorm:migrate": "ts-node src/main.ts",
     "test": "jest --runInBand",
     "test:unit": "jest --testPathPattern=spec.ts",
     "lint": "echo 'eslint config to be added in hardening phase'"

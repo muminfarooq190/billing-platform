@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity({ name: 'webhook_subscriptions' })
 export class WebhookSubscriptionEntity {
@@ -22,4 +22,7 @@ export class WebhookSubscriptionEntity {
 
   @CreateDateColumn({ name: 'created_at' })
   public createdAt!: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  public updatedAt!: Date;
 }
