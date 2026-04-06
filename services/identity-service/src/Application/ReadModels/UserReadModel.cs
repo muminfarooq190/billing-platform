@@ -6,4 +6,5 @@ public sealed record UserReadModel(
     string Email,
     string Role,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    DateTimeOffset? LastLoginAt);

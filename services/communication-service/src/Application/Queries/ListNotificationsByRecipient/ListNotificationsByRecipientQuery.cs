@@ -2,7 +2,7 @@ using MediatR;
 
 namespace CommunicationService.Application.Queries.ListNotificationsByRecipient;
 
-public sealed record ListNotificationsByRecipientQuery(Guid RecipientId) : IRequest<IReadOnlyList<NotificationReadModel>>;
+public sealed record ListNotificationsByRecipientQuery(Guid RecipientId, int Page = 1, int PageSize = 20) : IRequest<IReadOnlyList<NotificationReadModel>>;
 
 public sealed record NotificationReadModel(
     Guid Id,
@@ -18,4 +18,5 @@ public sealed record NotificationReadModel(
     string? ProviderMessageId,
     DateTimeOffset? SentAt,
     DateTimeOffset? DeliveredAt,
+    DateTimeOffset? ReadAt,
     DateTimeOffset CreatedAt);

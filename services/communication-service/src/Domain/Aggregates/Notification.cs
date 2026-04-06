@@ -48,6 +48,7 @@ public sealed class Notification : AggregateRoot
     public string? ProviderMessageId { get; private set; }
     public DateTimeOffset? SentAt { get; private set; }
     public DateTimeOffset? DeliveredAt { get; private set; }
+    public DateTimeOffset? ReadAt { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
@@ -83,6 +84,15 @@ public sealed class Notification : AggregateRoot
 
         Status = NotificationStatus.Delivered;
         DeliveredAt = DateTimeOffset.UtcNow;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void MarkAsRead()
+    {
+        if (ReadAt is not null)
+            return;
+
+        ReadAt = DateTimeOffset.UtcNow;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 

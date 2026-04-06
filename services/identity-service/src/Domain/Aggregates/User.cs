@@ -29,6 +29,7 @@ public sealed class User : AggregateRoot
     public UserRole Role { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
+    public DateTimeOffset? LastLoginAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
 
     public static User Create(TenantId tenantId, Email email, string passwordHash, UserRole role)
@@ -56,6 +57,12 @@ public sealed class User : AggregateRoot
     public void UpdateRole(UserRole newRole)
     {
         Role = newRole;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void MarkLogin()
+    {
+        LastLoginAt = DateTimeOffset.UtcNow;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
