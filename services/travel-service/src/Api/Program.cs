@@ -2,6 +2,7 @@ using TravelService.Api.Filters;
 using TravelService.Application.Abstractions;
 using TravelService.Domain.Repositories;
 using TravelService.Infrastructure.Caching;
+using TravelService.Infrastructure.Files;
 using TravelService.Infrastructure.Persistence;
 using TravelService.Infrastructure.Persistence.Outbox;
 using TravelService.Infrastructure.Persistence.Repositories;
@@ -23,10 +24,12 @@ public sealed class Program
         builder.Services.AddScoped<IFollowUpRepository, FollowUpRepository>();
         builder.Services.AddScoped<IQuotationRepository, QuotationRepository>();
         builder.Services.AddScoped<IQuotationRevisionRepository, QuotationRevisionRepository>();
+        builder.Services.AddScoped<IQuotationAttachmentRepository, QuotationAttachmentRepository>();
         builder.Services.AddScoped<IQuotationStatusHistoryRepository, QuotationStatusHistoryRepository>();
         builder.Services.AddScoped<IItineraryRepository, ItineraryRepository>();
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
         builder.Services.AddScoped<IReadDbConnectionFactory, ReadDbConnectionFactory>();
+        builder.Services.AddScoped<IFileStorage, LocalFileStorage>();
         builder.Services.AddScoped<ICacheService, RedisCacheService>();
 
         builder.Services.AddStackExchangeRedisCache(options => options.Configuration = builder.Configuration["REDIS_URL"] ?? "redis:6379");

@@ -3,12 +3,15 @@ using TravelService.Application.Commands.AcceptQuotation;
 using TravelService.Application.Commands.ConvertQuotationToItinerary;
 using TravelService.Application.Commands.CreateQuotation;
 using TravelService.Application.Commands.CreateQuotationRevision;
+using TravelService.Application.Commands.DeleteQuotationAttachment;
 using TravelService.Application.Commands.ExpireQuotation;
 using TravelService.Application.Commands.RejectQuotation;
 using TravelService.Application.Commands.UpdateQuotation;
+using TravelService.Application.Commands.UploadQuotationAttachment;
 using TravelService.Application.Queries.GetQuotationById;
 using TravelService.Application.Queries.GetQuotationHistory;
 using TravelService.Application.Queries.GetQuotationRevisionById;
+using TravelService.Application.Queries.ListQuotationAttachments;
 using TravelService.Application.Queries.ListQuotationRevisions;
 using TravelService.Application.Queries.ListQuotationsByTenant;
 using MediatR;
@@ -99,6 +102,46 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     {
         var model = await mediator.Send(new GetQuotationRevisionByIdQuery(tenantContext.TenantId, id, revisionId), cancellationToken);
         return model is null ? NotFound() : Ok(model);
+    }
+
+    [HttpPost("{id:guid}/attachments")]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    public async Task<IActionResult> UploadAttachment(Guid id, [FromForm] UploadQuotationAttachmentRequest request, CancellationToken cancellationToken)
+    {
+        if (request.File is null || request.File.Length == 0)
+            return BadRequest(new { error = "Attachment file is required." });
+
+        await using var memoryStream = new MemoryStream();
+        await request.File.CopyToAsync(memoryStream, cancellationToken);
+
+        var result = await mediator.Send(new UploadQuotationAttachmentCommand(
+            tenantContext.TenantId,
+            id,
+            request.QuotationRevisionId,
+            request.File.FileName,
+            request.File.ContentType,
+            request.File.Length,
+            request.AttachmentType,
+            request.Caption,
+            request.IsCustomerVisible,
+            request.SortOrder,
+            memoryStream.ToArray()), cancellationToken);
+
+        return Created($"/travel/quotations/{id}/attachments/{result.AttachmentId}", result);
+    }
+
+    [HttpGet("{id:guid}/attachments")]
+    public async Task<IActionResult> ListAttachments(Guid id, [FromQuery] bool customerVisibleOnly = false, CancellationToken cancellationToken = default)
+    {
+        var model = await mediator.Send(new ListQuotationAttachmentsQuery(tenantContext.TenantId, id, customerVisibleOnly), cancellationToken);
+        return Ok(model);
+    }
+
+    [HttpDelete("{id:guid}/attachments/{attachmentId:guid}")]
+    public async Task<IActionResult> DeleteAttachment(Guid id, Guid attachmentId, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new DeleteQuotationAttachmentCommand(tenantContext.TenantId, id, attachmentId), cancellationToken);
+        return NoContent();
     }
 
     [HttpGet]

@@ -27,6 +27,8 @@ public sealed class GetQuotationByIdQueryHandler(IReadDbConnectionFactory connec
                      current_revision_number AS CurrentRevisionNumber,
                      accepted_revision_id AS AcceptedRevisionId,
                      COALESCE((SELECT SUM(unit_price * quantity) FROM quotation_line_items WHERE quotation_id = quotations.id), 0) AS TotalAmount,
+                     COALESCE((SELECT COUNT(*) FROM quotation_attachments WHERE quotation_id = quotations.id AND deleted_at IS NULL), 0) AS AttachmentCount,
+                     EXISTS(SELECT 1 FROM quotation_attachments WHERE quotation_id = quotations.id AND deleted_at IS NULL AND is_customer_visible = TRUE) AS HasCustomerVisibleAttachments,
                      last_sent_at AS LastSentAt,
                      last_viewed_at AS LastViewedAt,
                      expired_at AS ExpiredAt,

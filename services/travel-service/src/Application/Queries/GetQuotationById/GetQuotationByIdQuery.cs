@@ -21,6 +21,8 @@ public sealed record QuotationReadModel(
     int CurrentRevisionNumber,
     Guid? AcceptedRevisionId,
     decimal TotalAmount,
+    int AttachmentCount,
+    bool HasCustomerVisibleAttachments,
     DateTimeOffset? LastSentAt,
     DateTimeOffset? LastViewedAt,
     DateTimeOffset? ExpiredAt,

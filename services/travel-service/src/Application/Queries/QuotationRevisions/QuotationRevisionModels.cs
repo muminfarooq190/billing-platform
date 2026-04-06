@@ -27,6 +27,18 @@ public sealed record QuotationRevisionSummaryReadModel(
     decimal TotalAmount,
     DateTimeOffset CreatedAt);
 
+public sealed record QuotationRevisionAttachmentReadModel(
+    Guid Id,
+    string OriginalFileName,
+    string ContentType,
+    long SizeBytes,
+    string AttachmentType,
+    string? Caption,
+    bool IsCustomerVisible,
+    int SortOrder,
+    string ReadUrl,
+    DateTimeOffset CreatedAt);
+
 public sealed record QuotationRevisionReadModel(
     Guid Id,
     Guid QuotationId,
@@ -50,4 +62,5 @@ public sealed record QuotationRevisionReadModel(
     decimal TotalAmount,
     Guid? CreatedByUserId,
     DateTimeOffset CreatedAt,
-    IReadOnlyList<QuotationRevisionLineItemReadModel> LineItems);
+    IReadOnlyList<QuotationRevisionLineItemReadModel> LineItems,
+    IReadOnlyList<QuotationRevisionAttachmentReadModel> Attachments);
