@@ -5,4 +5,5 @@ public sealed record UserReadModel(
     Guid TenantId,
     string Email,
     string Role,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt);

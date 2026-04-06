@@ -18,6 +18,7 @@ public sealed class User : AggregateRoot
         PasswordHash = passwordHash;
         Role = role;
         CreatedAt = DateTimeOffset.UtcNow;
+        UpdatedAt = DateTimeOffset.UtcNow;
         AddDomainEvent(new UserCreatedEvent(Id, TenantId));
     }
 
@@ -27,6 +28,7 @@ public sealed class User : AggregateRoot
     public string PasswordHash { get; private set; } = string.Empty;
     public UserRole Role { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
+    public DateTimeOffset UpdatedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
 
     public static User Create(TenantId tenantId, Email email, string passwordHash, UserRole role)
@@ -47,8 +49,19 @@ public sealed class User : AggregateRoot
         }
 
         PasswordHash = newPasswordHash;
+        UpdatedAt = DateTimeOffset.UtcNow;
         AddDomainEvent(new UserPasswordChangedEvent(Id, TenantId));
     }
 
-    public void SoftDelete() => DeletedAt = DateTimeOffset.UtcNow;
+    public void UpdateRole(UserRole newRole)
+    {
+        Role = newRole;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void SoftDelete()
+    {
+        DeletedAt = DateTimeOffset.UtcNow;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
 }

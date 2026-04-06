@@ -11,7 +11,7 @@ public sealed class GetUsersByTenantQueryHandler(IReadDbConnectionFactory connec
     {
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         const string sql = """
-            SELECT id, tenant_id AS TenantId, email, role::text AS role, created_at AS CreatedAt
+            SELECT id, tenant_id AS TenantId, email, role::text AS role, created_at AS CreatedAt, updated_at AS UpdatedAt
             FROM users
             WHERE tenant_id = @TenantId AND deleted_at IS NULL
             ORDER BY created_at DESC;
