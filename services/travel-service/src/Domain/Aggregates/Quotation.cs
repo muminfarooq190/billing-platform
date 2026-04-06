@@ -152,25 +152,31 @@ public sealed class Quotation : AggregateRoot
             throw new DomainException("Cannot send a quotation with no line items.");
         if (ValidUntil < DateTimeOffset.UtcNow)
             throw new DomainException("Cannot send an expired quotation.");
+
         Status = QuotationStatus.Sent;
         LastSentAt = DateTimeOffset.UtcNow;
         UpdatedAt = DateTimeOffset.UtcNow;
         AddDomainEvent(new QuotationSentEvent(Id, TenantId));
     }
 
-    public void Accept(Guid? revisionId = null)
+    public void Accept(Guid revisionId)
     {
+        if (revisionId == Guid.Empty)
+            throw new DomainException("Accepted revision id is required.");
+        if (CurrentRevisionNumber <= 0)
+            throw new DomainException("Cannot accept a quotation with no revisions.");
         if (Status != QuotationStatus.Sent)
             throw new DomainException("Only sent quotations can be accepted.");
         if (ValidUntil < DateTimeOffset.UtcNow)
         {
-            Status = QuotationStatus.Expired;
-            ExpiredAt = DateTimeOffset.UtcNow;
-            UpdatedAt = DateTimeOffset.UtcNow;
+            Expire();
             throw new DomainException("Cannot accept an expired quotation.");
         }
+
         Status = QuotationStatus.Accepted;
         AcceptedRevisionId = revisionId;
+        RejectedAt = null;
+        ExpiredAt = null;
         UpdatedAt = DateTimeOffset.UtcNow;
         AddDomainEvent(new QuotationAcceptedEvent(Id, TenantId));
     }
@@ -179,6 +185,7 @@ public sealed class Quotation : AggregateRoot
     {
         if (Status != QuotationStatus.Sent)
             throw new DomainException("Only sent quotations can be rejected.");
+
         Status = QuotationStatus.Rejected;
         RejectedAt = DateTimeOffset.UtcNow;
         UpdatedAt = DateTimeOffset.UtcNow;
@@ -199,8 +206,16 @@ public sealed class Quotation : AggregateRoot
 
     public void Expire(DateTimeOffset? expiredAt = null)
     {
+        if (Status is QuotationStatus.Accepted or QuotationStatus.ConvertedToItinerary)
+            throw new DomainException("Accepted quotations cannot be expired.");
+        if (Status == QuotationStatus.Rejected)
+            throw new DomainException("Rejected quotations cannot be expired.");
+        if (Status == QuotationStatus.Expired)
+            throw new DomainException("Quotation is already expired.");
+
         Status = QuotationStatus.Expired;
         ExpiredAt = expiredAt ?? DateTimeOffset.UtcNow;
+        RejectedAt = null;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 

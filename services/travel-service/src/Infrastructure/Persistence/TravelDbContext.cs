@@ -10,6 +10,7 @@ public sealed class TravelDbContext(DbContextOptions<TravelDbContext> options) :
     public DbSet<Quotation> Quotations => Set<Quotation>();
     public DbSet<QuotationRevision> QuotationRevisions => Set<QuotationRevision>();
     public DbSet<QuotationRevisionLineItem> QuotationRevisionLineItems => Set<QuotationRevisionLineItem>();
+    public DbSet<QuotationStatusHistory> QuotationStatusHistory => Set<QuotationStatusHistory>();
     public DbSet<Itinerary> Itineraries => Set<Itinerary>();
     public DbSet<OutboxMessage> DomainEvents => Set<OutboxMessage>();
 

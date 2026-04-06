@@ -1,12 +1,16 @@
 using TravelService.Api.Contracts;
-using TravelService.Application.Commands.CreateQuotation;
-using TravelService.Application.Commands.UpdateQuotation;
+using TravelService.Application.Commands.AcceptQuotation;
 using TravelService.Application.Commands.ConvertQuotationToItinerary;
+using TravelService.Application.Commands.CreateQuotation;
 using TravelService.Application.Commands.CreateQuotationRevision;
+using TravelService.Application.Commands.ExpireQuotation;
+using TravelService.Application.Commands.RejectQuotation;
+using TravelService.Application.Commands.UpdateQuotation;
 using TravelService.Application.Queries.GetQuotationById;
-using TravelService.Application.Queries.ListQuotationsByTenant;
+using TravelService.Application.Queries.GetQuotationHistory;
 using TravelService.Application.Queries.GetQuotationRevisionById;
 using TravelService.Application.Queries.ListQuotationRevisions;
+using TravelService.Application.Queries.ListQuotationsByTenant;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -48,11 +52,39 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
         return Created($"/travel/quotations/{id}/revisions/{result.RevisionId}", result);
     }
 
+    [HttpPost("{id:guid}/accept")]
+    public async Task<IActionResult> Accept(Guid id, [FromBody] AcceptQuotationRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new AcceptQuotationCommand(tenantContext.TenantId, id, request.RevisionId, request.Reason), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/reject")]
+    public async Task<IActionResult> Reject(Guid id, [FromBody] RejectQuotationRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new RejectQuotationCommand(tenantContext.TenantId, id, request.Reason), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/expire")]
+    public async Task<IActionResult> Expire(Guid id, [FromBody] ExpireQuotationRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new ExpireQuotationCommand(tenantContext.TenantId, id, request.Reason), cancellationToken);
+        return NoContent();
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var model = await mediator.Send(new GetQuotationByIdQuery(id), cancellationToken);
         return model is null ? NotFound() : Ok(model);
+    }
+
+    [HttpGet("{id:guid}/history")]
+    public async Task<IActionResult> GetHistory(Guid id, CancellationToken cancellationToken)
+    {
+        var model = await mediator.Send(new GetQuotationHistoryQuery(tenantContext.TenantId, id), cancellationToken);
+        return Ok(model);
     }
 
     [HttpGet("{id:guid}/revisions")]

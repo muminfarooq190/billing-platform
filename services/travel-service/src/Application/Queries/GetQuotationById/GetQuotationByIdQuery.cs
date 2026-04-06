@@ -23,5 +23,7 @@ public sealed record QuotationReadModel(
     decimal TotalAmount,
     DateTimeOffset? LastSentAt,
     DateTimeOffset? LastViewedAt,
+    DateTimeOffset? ExpiredAt,
+    DateTimeOffset? RejectedAt,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt);
