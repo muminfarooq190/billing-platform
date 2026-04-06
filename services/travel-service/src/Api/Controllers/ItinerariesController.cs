@@ -31,9 +31,17 @@ public sealed class ItinerariesController(IMediator mediator) : ControllerBase
     }
 
     [HttpGet("tenant/{tenantId:guid}")]
-    public async Task<IActionResult> ListByTenant(Guid tenantId, CancellationToken cancellationToken)
+    public async Task<IActionResult> ListByTenant(
+        Guid tenantId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? status = null,
+        [FromQuery] string? customerName = null,
+        [FromQuery] DateTimeOffset? startDateFrom = null,
+        [FromQuery] DateTimeOffset? startDateTo = null,
+        CancellationToken cancellationToken = default)
     {
-        var models = await mediator.Send(new ListItinerariesByTenantQuery(tenantId), cancellationToken);
+        var models = await mediator.Send(new ListItinerariesByTenantQuery(tenantId, page, pageSize, status, customerName, startDateFrom, startDateTo), cancellationToken);
         return Ok(models);
     }
 

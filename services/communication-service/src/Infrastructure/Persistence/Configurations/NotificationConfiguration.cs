@@ -26,6 +26,7 @@ public sealed class NotificationConfiguration : IEntityTypeConfiguration<Notific
         builder.Property(x => x.ProviderMessageId).HasColumnName("provider_message_id").HasMaxLength(256);
         builder.Property(x => x.SentAt).HasColumnName("sent_at");
         builder.Property(x => x.DeliveredAt).HasColumnName("delivered_at");
+        builder.Property(x => x.ReadAt).HasColumnName("read_at");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.HasIndex(x => x.RecipientId);

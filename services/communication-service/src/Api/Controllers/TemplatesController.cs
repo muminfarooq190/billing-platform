@@ -27,9 +27,9 @@ public sealed class TemplatesController(IMediator mediator) : ControllerBase
     }
 
     [HttpGet("tenant/{tenantId:guid}")]
-    public async Task<IActionResult> ListByTenant(Guid tenantId, CancellationToken cancellationToken)
+    public async Task<IActionResult> ListByTenant(Guid tenantId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
-        var models = await mediator.Send(new ListTemplatesByTenantQuery(tenantId), cancellationToken);
+        var models = await mediator.Send(new ListTemplatesByTenantQuery(tenantId, page, pageSize), cancellationToken);
         return Ok(models);
     }
 

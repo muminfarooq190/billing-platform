@@ -32,9 +32,17 @@ public sealed class QuotationsController(IMediator mediator) : ControllerBase
     }
 
     [HttpGet("tenant/{tenantId:guid}")]
-    public async Task<IActionResult> ListByTenant(Guid tenantId, CancellationToken cancellationToken)
+    public async Task<IActionResult> ListByTenant(
+        Guid tenantId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? status = null,
+        [FromQuery] string? customerName = null,
+        [FromQuery] DateTimeOffset? travelDateFrom = null,
+        [FromQuery] DateTimeOffset? travelDateTo = null,
+        CancellationToken cancellationToken = default)
     {
-        var models = await mediator.Send(new ListQuotationsByTenantQuery(tenantId), cancellationToken);
+        var models = await mediator.Send(new ListQuotationsByTenantQuery(tenantId, page, pageSize, status, customerName, travelDateFrom, travelDateTo), cancellationToken);
         return Ok(models);
     }
 

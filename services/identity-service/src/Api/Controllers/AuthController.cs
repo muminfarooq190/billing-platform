@@ -1,6 +1,7 @@
 using Dapper;
 using IdentityService.Api.Contracts;
 using IdentityService.Application.Commands.RegisterTenant;
+using IdentityService.Domain.Repositories;
 using IdentityService.Application.Queries.GetTenantByEmail;
 using IdentityService.Infrastructure.Auth;
 using MediatR;
@@ -11,7 +12,7 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("auth")]
-public sealed class AuthController(IMediator mediator, JwtTokenService jwtTokenService, RefreshTokenService refreshTokenService, IConfiguration configuration) : ControllerBase
+public sealed class AuthController(IMediator mediator, JwtTokenService jwtTokenService, RefreshTokenService refreshTokenService, IConfiguration configuration, IUserRepository userRepository) : ControllerBase
 {
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
@@ -48,6 +49,13 @@ public sealed class AuthController(IMediator mediator, JwtTokenService jwtTokenS
         if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
             return Unauthorized();
+        }
+
+        var domainUser = await userRepository.GetByIdAsync(user.Id, cancellationToken);
+        if (domainUser is not null)
+        {
+            domainUser.MarkLogin();
+            await userRepository.UpdateAsync(domainUser, cancellationToken);
         }
 
         var accessToken = jwtTokenService.GenerateAccessToken(user.Id, user.TenantId, request.Email, user.Role);
