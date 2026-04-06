@@ -6,12 +6,12 @@ namespace BillingService.Api.Controllers;
 
 [ApiController]
 [Route("billing/dashboard")]
-public sealed class DashboardController(IMediator mediator) : ControllerBase
+public sealed class DashboardController(IMediator mediator, ITenantContext tenantContext) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> Get([FromQuery] Guid tenantId, CancellationToken cancellationToken)
+    public async Task<IActionResult> Get(CancellationToken cancellationToken)
     {
-        var data = await mediator.Send(new GetBillingDashboardQuery(tenantId), cancellationToken);
+        var data = await mediator.Send(new GetBillingDashboardQuery(tenantContext.TenantId), cancellationToken);
         return Ok(data);
     }
 }
