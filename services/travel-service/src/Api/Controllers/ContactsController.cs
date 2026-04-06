@@ -10,13 +10,13 @@ namespace TravelService.Api.Controllers;
 
 [ApiController]
 [Route("travel/contacts")]
-public sealed class ContactsController(IMediator mediator) : ControllerBase
+public sealed class ContactsController(IMediator mediator, ITenantContext tenantContext) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateContactRequest request, CancellationToken cancellationToken)
     {
         var id = await mediator.Send(new CreateContactCommand(
-            request.TenantId,
+            tenantContext.TenantId,
             request.FirstName,
             request.LastName,
             request.Email,
@@ -35,17 +35,17 @@ public sealed class ContactsController(IMediator mediator) : ControllerBase
         return model is null ? NotFound() : Ok(model);
     }
 
-    [HttpGet("tenant/{tenantId:guid}")]
-    public async Task<IActionResult> ListByTenant(Guid tenantId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
+    [HttpGet]
+    public async Task<IActionResult> ListByTenant([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
-        var models = await mediator.Send(new ListContactsByTenantQuery(tenantId, page, pageSize), cancellationToken);
+        var models = await mediator.Send(new ListContactsByTenantQuery(tenantContext.TenantId, page, pageSize), cancellationToken);
         return Ok(models);
     }
 
-    [HttpGet("tenant/{tenantId:guid}/search")]
-    public async Task<IActionResult> Search(Guid tenantId, [FromQuery] string? q, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
+    [HttpGet("search")]
+    public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
-        var models = await mediator.Send(new SearchContactsQuery(tenantId, q, page, pageSize), cancellationToken);
+        var models = await mediator.Send(new SearchContactsQuery(tenantContext.TenantId, q, page, pageSize), cancellationToken);
         return Ok(models);
     }
 

@@ -10,7 +10,7 @@ namespace BillingService.Api.Controllers;
 
 [ApiController]
 [Route("billing/invoices")]
-public sealed class InvoicesController(IMediator mediator) : ControllerBase
+public sealed class InvoicesController(IMediator mediator, ITenantContext tenantContext) : ControllerBase
 {
     [HttpPost("generate")]
     public async Task<IActionResult> Generate([FromBody] GenerateInvoiceRequest request, CancellationToken cancellationToken)
@@ -27,9 +27,9 @@ public sealed class InvoicesController(IMediator mediator) : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> List([FromQuery] Guid tenantId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string? status = null, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string? status = null, CancellationToken cancellationToken = default)
     {
-        var items = await mediator.Send(new ListInvoicesByTenantQuery(tenantId, page, pageSize, status), cancellationToken);
+        var items = await mediator.Send(new ListInvoicesByTenantQuery(tenantContext.TenantId, page, pageSize, status), cancellationToken);
         return Ok(items);
     }
 

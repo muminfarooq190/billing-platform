@@ -11,14 +11,14 @@ namespace TravelService.Api.Controllers;
 
 [ApiController]
 [Route("travel/quotations")]
-public sealed class QuotationsController(IMediator mediator) : ControllerBase
+public sealed class QuotationsController(IMediator mediator, ITenantContext tenantContext) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateQuotationRequest request, CancellationToken cancellationToken)
     {
         var lineItems = request.LineItems.Select(x => new LineItemDto(x.Description, x.UnitPrice, x.Quantity, x.Currency)).ToList();
         var id = await mediator.Send(new CreateQuotationCommand(
-            request.TenantId, request.CustomerContactId, request.CustomerName,
+            tenantContext.TenantId, request.CustomerContactId, request.CustomerName,
             request.Title, request.Destination, request.TravelDate, request.ReturnDate,
             request.Travellers, request.Currency, request.Notes, lineItems), cancellationToken);
         return Created($"/travel/quotations/{id}", new { id });
@@ -31,9 +31,8 @@ public sealed class QuotationsController(IMediator mediator) : ControllerBase
         return model is null ? NotFound() : Ok(model);
     }
 
-    [HttpGet("tenant/{tenantId:guid}")]
+    [HttpGet]
     public async Task<IActionResult> ListByTenant(
-        Guid tenantId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         [FromQuery] string? status = null,
@@ -42,7 +41,7 @@ public sealed class QuotationsController(IMediator mediator) : ControllerBase
         [FromQuery] DateTimeOffset? travelDateTo = null,
         CancellationToken cancellationToken = default)
     {
-        var models = await mediator.Send(new ListQuotationsByTenantQuery(tenantId, page, pageSize, status, customerName, travelDateFrom, travelDateTo), cancellationToken);
+        var models = await mediator.Send(new ListQuotationsByTenantQuery(tenantContext.TenantId, page, pageSize, status, customerName, travelDateFrom, travelDateTo), cancellationToken);
         return Ok(models);
     }
 

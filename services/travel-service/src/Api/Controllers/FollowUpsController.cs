@@ -10,13 +10,13 @@ namespace TravelService.Api.Controllers;
 
 [ApiController]
 [Route("travel/follow-ups")]
-public sealed class FollowUpsController(IMediator mediator) : ControllerBase
+public sealed class FollowUpsController(IMediator mediator, ITenantContext tenantContext) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateFollowUpRequest request, CancellationToken cancellationToken)
     {
         var id = await mediator.Send(new CreateFollowUpCommand(
-            request.TenantId, request.CustomerContactId, request.CustomerName,
+            tenantContext.TenantId, request.CustomerContactId, request.CustomerName,
             request.Subject, request.Notes, request.Priority, request.DueDate, request.AssignedToUserId), cancellationToken);
         return Created($"/travel/follow-ups/{id}", new { id });
     }
@@ -28,9 +28,8 @@ public sealed class FollowUpsController(IMediator mediator) : ControllerBase
         return model is null ? NotFound() : Ok(model);
     }
 
-    [HttpGet("tenant/{tenantId:guid}")]
+    [HttpGet]
     public async Task<IActionResult> ListByTenant(
-        Guid tenantId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         [FromQuery] string? status = null,
@@ -39,7 +38,7 @@ public sealed class FollowUpsController(IMediator mediator) : ControllerBase
         [FromQuery] DateTimeOffset? dueDateTo = null,
         CancellationToken cancellationToken = default)
     {
-        var models = await mediator.Send(new ListFollowUpsByTenantQuery(tenantId, page, pageSize, status, customerName, dueDateFrom, dueDateTo), cancellationToken);
+        var models = await mediator.Send(new ListFollowUpsByTenantQuery(tenantContext.TenantId, page, pageSize, status, customerName, dueDateFrom, dueDateTo), cancellationToken);
         return Ok(models);
     }
 

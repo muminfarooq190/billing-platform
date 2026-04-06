@@ -9,19 +9,19 @@ namespace BillingService.Api.Controllers;
 
 [ApiController]
 [Route("billing/subscriptions")]
-public sealed class SubscriptionsController(IMediator mediator) : ControllerBase
+public sealed class SubscriptionsController(IMediator mediator, ITenantContext tenantContext) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateSubscriptionRequest request, CancellationToken cancellationToken)
     {
-        var id = await mediator.Send(new CreateSubscriptionCommand(request.TenantId, request.PlanType, request.BillingCycle), cancellationToken);
+        var id = await mediator.Send(new CreateSubscriptionCommand(tenantContext.TenantId, request.PlanType, request.BillingCycle), cancellationToken);
         return Created($"/billing/subscriptions/{id}", new { id });
     }
 
-    [HttpGet("{tenantId:guid}")]
-    public async Task<IActionResult> GetByTenant(Guid tenantId, CancellationToken cancellationToken)
+    [HttpGet]
+    public async Task<IActionResult> GetByTenant(CancellationToken cancellationToken)
     {
-        var model = await mediator.Send(new GetSubscriptionByTenantQuery(tenantId), cancellationToken);
+        var model = await mediator.Send(new GetSubscriptionByTenantQuery(tenantContext.TenantId), cancellationToken);
         return model is null ? NotFound() : Ok(model);
     }
 

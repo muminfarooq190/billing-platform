@@ -19,6 +19,8 @@ public sealed class Program
         var databaseUrl = builder.Configuration["DATABASE_URL"] ?? "Host=postgres;Port=5432;Database=billing_billing;Username=billing_user;Password=changeme";
 
         builder.Services.AddDbContext<BillingDbContext>(options => options.UseNpgsql(databaseUrl));
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddScoped<ITenantContext, HeaderTenantContext>();
         builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
         builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
