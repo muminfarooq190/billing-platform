@@ -16,7 +16,28 @@ public sealed class ListQuotationsByTenantQueryHandler(IReadDbConnectionFactory 
         await using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken) as IAsyncDisposable;
         var dbConnection = (System.Data.IDbConnection)connection!;
 
-        var sql = new StringBuilder("SELECT id, tenant_id AS TenantId, customer_contact_id AS CustomerContactId, customer_name AS CustomerName, title, destination, travel_date AS TravelDate, return_date AS ReturnDate, travellers, currency, notes, status, valid_until AS ValidUntil, COALESCE((SELECT SUM(unit_price * quantity) FROM quotation_line_items WHERE quotation_id = quotations.id), 0) AS TotalAmount, created_at AS CreatedAt, updated_at AS UpdatedAt FROM quotations WHERE tenant_id = @TenantId AND deleted_at IS NULL");
+        var sql = new StringBuilder(@"SELECT id,
+                                            tenant_id AS TenantId,
+                                            customer_contact_id AS CustomerContactId,
+                                            customer_name AS CustomerName,
+                                            title,
+                                            destination,
+                                            travel_date AS TravelDate,
+                                            return_date AS ReturnDate,
+                                            travellers,
+                                            currency,
+                                            notes,
+                                            status,
+                                            valid_until AS ValidUntil,
+                                            current_revision_number AS CurrentRevisionNumber,
+                                            accepted_revision_id AS AcceptedRevisionId,
+                                            COALESCE((SELECT SUM(unit_price * quantity) FROM quotation_line_items WHERE quotation_id = quotations.id), 0) AS TotalAmount,
+                                            last_sent_at AS LastSentAt,
+                                            last_viewed_at AS LastViewedAt,
+                                            created_at AS CreatedAt,
+                                            updated_at AS UpdatedAt
+                                     FROM quotations
+                                     WHERE tenant_id = @TenantId AND deleted_at IS NULL");
 
         if (!string.IsNullOrWhiteSpace(request.Status))
             sql.Append(" AND status = @Status");

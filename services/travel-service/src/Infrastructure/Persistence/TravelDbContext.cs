@@ -8,6 +8,8 @@ public sealed class TravelDbContext(DbContextOptions<TravelDbContext> options) :
     public DbSet<Contact> Contacts => Set<Contact>();
     public DbSet<FollowUp> FollowUps => Set<FollowUp>();
     public DbSet<Quotation> Quotations => Set<Quotation>();
+    public DbSet<QuotationRevision> QuotationRevisions => Set<QuotationRevision>();
+    public DbSet<QuotationRevisionLineItem> QuotationRevisionLineItems => Set<QuotationRevisionLineItem>();
     public DbSet<Itinerary> Itineraries => Set<Itinerary>();
     public DbSet<OutboxMessage> DomainEvents => Set<OutboxMessage>();
 

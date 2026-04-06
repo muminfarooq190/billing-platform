@@ -22,6 +22,7 @@ public sealed class Program
         builder.Services.AddScoped<IContactRepository, ContactRepository>();
         builder.Services.AddScoped<IFollowUpRepository, FollowUpRepository>();
         builder.Services.AddScoped<IQuotationRepository, QuotationRepository>();
+        builder.Services.AddScoped<IQuotationRevisionRepository, QuotationRevisionRepository>();
         builder.Services.AddScoped<IItineraryRepository, ItineraryRepository>();
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
         builder.Services.AddScoped<IReadDbConnectionFactory, ReadDbConnectionFactory>();

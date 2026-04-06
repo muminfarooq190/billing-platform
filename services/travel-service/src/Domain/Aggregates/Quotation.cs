@@ -26,9 +26,10 @@ public sealed class Quotation : AggregateRoot
         ReturnDate = returnDate;
         Travellers = travellers;
         Currency = NormalizeCurrency(currency);
-        Notes = notes.Trim();
+        Notes = NormalizeNotes(notes);
         Status = QuotationStatus.Draft;
         ValidUntil = DetermineInitialValidUntil(travelDate);
+        CurrentRevisionNumber = 0;
         CreatedAt = DateTimeOffset.UtcNow;
         UpdatedAt = DateTimeOffset.UtcNow;
         AddDomainEvent(new QuotationCreatedEvent(Id, TenantId, CustomerContactId));
@@ -47,6 +48,14 @@ public sealed class Quotation : AggregateRoot
     public string Notes { get; private set; } = string.Empty;
     public QuotationStatus Status { get; private set; }
     public DateTimeOffset ValidUntil { get; private set; }
+    public int CurrentRevisionNumber { get; private set; }
+    public Guid? AcceptedRevisionId { get; private set; }
+    public DateTimeOffset? LastSentAt { get; private set; }
+    public DateTimeOffset? LastViewedAt { get; private set; }
+    public DateTimeOffset? ExpiredAt { get; private set; }
+    public DateTimeOffset? RejectedAt { get; private set; }
+    public string? ShareToken { get; private set; }
+    public DateTimeOffset? ShareTokenExpiresAt { get; private set; }
     public IReadOnlyList<QuotationLineItem> LineItems => _lineItems.AsReadOnly();
     public decimal TotalAmount => _lineItems.Sum(x => x.Total);
     public DateTimeOffset CreatedAt { get; private set; }
@@ -58,8 +67,7 @@ public sealed class Quotation : AggregateRoot
 
     public void AddLineItem(string description, decimal unitPrice, int quantity, string currency)
     {
-        if (Status != QuotationStatus.Draft)
-            throw new DomainException("Can only modify line items on draft quotations.");
+        EnsureDraftMutationAllowed();
 
         var normalizedCurrency = NormalizeCurrency(currency);
         EnsureSameCurrency(normalizedCurrency, "line item");
@@ -67,54 +75,9 @@ public sealed class Quotation : AggregateRoot
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
-    public void Send()
+    public void ReplaceDraftDetails(string title, string destination, DateTimeOffset travelDate, DateTimeOffset returnDate, int travellers, string currency, string notes, DateTimeOffset validUntil)
     {
-        if (Status != QuotationStatus.Draft)
-            throw new DomainException("Only draft quotations can be sent.");
-        if (_lineItems.Count == 0)
-            throw new DomainException("Cannot send a quotation with no line items.");
-        if (ValidUntil < DateTimeOffset.UtcNow)
-            throw new DomainException("Cannot send an expired quotation.");
-        Status = QuotationStatus.Sent;
-        UpdatedAt = DateTimeOffset.UtcNow;
-        AddDomainEvent(new QuotationSentEvent(Id, TenantId));
-    }
-
-    public void Accept()
-    {
-        if (Status != QuotationStatus.Sent)
-            throw new DomainException("Only sent quotations can be accepted.");
-        if (ValidUntil < DateTimeOffset.UtcNow)
-        {
-            Status = QuotationStatus.Expired;
-            UpdatedAt = DateTimeOffset.UtcNow;
-            throw new DomainException("Cannot accept an expired quotation.");
-        }
-        Status = QuotationStatus.Accepted;
-        UpdatedAt = DateTimeOffset.UtcNow;
-        AddDomainEvent(new QuotationAcceptedEvent(Id, TenantId));
-    }
-
-    public void Reject()
-    {
-        if (Status != QuotationStatus.Sent)
-            throw new DomainException("Only sent quotations can be rejected.");
-        Status = QuotationStatus.Rejected;
-        UpdatedAt = DateTimeOffset.UtcNow;
-    }
-
-    public void MarkConverted()
-    {
-        if (Status != QuotationStatus.Accepted)
-            throw new DomainException("Only accepted quotations can be converted to itineraries.");
-        Status = QuotationStatus.ConvertedToItinerary;
-        UpdatedAt = DateTimeOffset.UtcNow;
-    }
-
-    public void Update(string title, string destination, DateTimeOffset travelDate, DateTimeOffset returnDate, int travellers, string currency, string notes, DateTimeOffset validUntil)
-    {
-        if (Status != QuotationStatus.Draft)
-            throw new DomainException("Can only update draft quotations.");
+        EnsureDraftMutationAllowed();
 
         ValidateDetails(CustomerName, title, destination, travelDate, returnDate, travellers, currency);
         EnsureValidUntil(validUntil, travelDate);
@@ -127,9 +90,135 @@ public sealed class Quotation : AggregateRoot
         ReturnDate = returnDate;
         Travellers = travellers;
         Currency = normalizedCurrency;
-        Notes = notes.Trim();
+        Notes = NormalizeNotes(notes);
         ValidUntil = validUntil;
         UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void ReplaceLineItems(IEnumerable<(string Description, decimal UnitPrice, int Quantity, string Currency)> lineItems)
+    {
+        EnsureDraftMutationAllowed();
+
+        var normalizedItems = lineItems
+            .Select(x => new QuotationLineItem(x.Description, x.UnitPrice, x.Quantity, NormalizeCurrency(x.Currency)))
+            .ToList();
+
+        if (normalizedItems.Count == 0)
+            throw new DomainException("Quotation revision must include at least one line item.");
+
+        if (normalizedItems.Any(x => !string.Equals(x.Currency, Currency, StringComparison.OrdinalIgnoreCase)))
+            throw new DomainException("Quotation line item currency must match quotation currency.");
+
+        _lineItems.Clear();
+        _lineItems.AddRange(normalizedItems);
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public QuotationRevision CreateRevision(string visibleNotes, string internalNotes, Guid? createdByUserId = null)
+    {
+        if (_lineItems.Count == 0)
+            throw new DomainException("Cannot create a quotation revision with no line items.");
+
+        var revision = QuotationRevision.Create(
+            Id,
+            TenantId,
+            CurrentRevisionNumber + 1,
+            Status.ToString(),
+            CustomerContactId,
+            CustomerName,
+            Title,
+            Destination,
+            TravelDate,
+            ReturnDate,
+            Travellers,
+            Currency,
+            Notes,
+            visibleNotes,
+            internalNotes,
+            ValidUntil,
+            createdByUserId,
+            _lineItems.Select((item, index) => QuotationRevisionLineItem.Create(item.Description, item.Quantity, item.UnitPrice, item.Currency, index + 1)).ToList());
+
+        CurrentRevisionNumber = revision.RevisionNumber;
+        UpdatedAt = DateTimeOffset.UtcNow;
+        return revision;
+    }
+
+    public void Send()
+    {
+        if (Status != QuotationStatus.Draft)
+            throw new DomainException("Only draft quotations can be sent.");
+        if (_lineItems.Count == 0)
+            throw new DomainException("Cannot send a quotation with no line items.");
+        if (ValidUntil < DateTimeOffset.UtcNow)
+            throw new DomainException("Cannot send an expired quotation.");
+        Status = QuotationStatus.Sent;
+        LastSentAt = DateTimeOffset.UtcNow;
+        UpdatedAt = DateTimeOffset.UtcNow;
+        AddDomainEvent(new QuotationSentEvent(Id, TenantId));
+    }
+
+    public void Accept(Guid? revisionId = null)
+    {
+        if (Status != QuotationStatus.Sent)
+            throw new DomainException("Only sent quotations can be accepted.");
+        if (ValidUntil < DateTimeOffset.UtcNow)
+        {
+            Status = QuotationStatus.Expired;
+            ExpiredAt = DateTimeOffset.UtcNow;
+            UpdatedAt = DateTimeOffset.UtcNow;
+            throw new DomainException("Cannot accept an expired quotation.");
+        }
+        Status = QuotationStatus.Accepted;
+        AcceptedRevisionId = revisionId;
+        UpdatedAt = DateTimeOffset.UtcNow;
+        AddDomainEvent(new QuotationAcceptedEvent(Id, TenantId));
+    }
+
+    public void Reject()
+    {
+        if (Status != QuotationStatus.Sent)
+            throw new DomainException("Only sent quotations can be rejected.");
+        Status = QuotationStatus.Rejected;
+        RejectedAt = DateTimeOffset.UtcNow;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void MarkViewed(DateTimeOffset? viewedAt = null)
+    {
+        LastViewedAt = viewedAt ?? DateTimeOffset.UtcNow;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void SetShareToken(string? shareToken, DateTimeOffset? shareTokenExpiresAt)
+    {
+        ShareToken = string.IsNullOrWhiteSpace(shareToken) ? null : shareToken.Trim();
+        ShareTokenExpiresAt = shareTokenExpiresAt;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void Expire(DateTimeOffset? expiredAt = null)
+    {
+        Status = QuotationStatus.Expired;
+        ExpiredAt = expiredAt ?? DateTimeOffset.UtcNow;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void MarkConverted()
+    {
+        if (Status != QuotationStatus.Accepted)
+            throw new DomainException("Only accepted quotations can be converted to itineraries.");
+        Status = QuotationStatus.ConvertedToItinerary;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void Update(string title, string destination, DateTimeOffset travelDate, DateTimeOffset returnDate, int travellers, string currency, string notes, DateTimeOffset validUntil)
+        => ReplaceDraftDetails(title, destination, travelDate, returnDate, travellers, currency, notes, validUntil);
+
+    private void EnsureDraftMutationAllowed()
+    {
+        if (Status != QuotationStatus.Draft)
+            throw new DomainException("Can only modify draft quotations.");
     }
 
     private static void ValidateIdentity(Guid tenantId, Guid customerContactId)
@@ -192,4 +281,6 @@ public sealed class Quotation : AggregateRoot
 
         return normalized;
     }
+
+    private static string NormalizeNotes(string notes) => notes.Trim();
 }

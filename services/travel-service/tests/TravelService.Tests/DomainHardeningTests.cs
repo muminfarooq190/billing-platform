@@ -29,6 +29,23 @@ public sealed class DomainHardeningTests
     }
 
     [Fact]
+    public void Quotation_CreateRevision_ShouldIncrementVersion_AndPreserveSnapshotTotals()
+    {
+        var quotation = CreateDraftQuotation();
+        quotation.AddLineItem("Flight", 250m, 2, "USD");
+        quotation.AddLineItem("Hotel", 500m, 1, "USD");
+
+        var revision = quotation.CreateRevision("Customer notes", "Internal notes");
+
+        quotation.CurrentRevisionNumber.Should().Be(1);
+        revision.RevisionNumber.Should().Be(1);
+        revision.TotalAmount.Should().Be(1000m);
+        revision.LineItems.Should().HaveCount(2);
+        revision.VisibleNotes.Should().Be("Customer notes");
+        revision.InternalNotes.Should().Be("Internal notes");
+    }
+
+    [Fact]
     public void Itinerary_Confirm_ShouldRequireItems()
     {
         var itinerary = Itinerary.Create(Guid.NewGuid(), Guid.NewGuid(), "Ava", "Trip", "Dubai", DateTimeOffset.UtcNow.AddDays(5), DateTimeOffset.UtcNow.AddDays(8), 2, "USD", null);

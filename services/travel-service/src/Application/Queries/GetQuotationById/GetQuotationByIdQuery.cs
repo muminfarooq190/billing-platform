@@ -18,6 +18,10 @@ public sealed record QuotationReadModel(
     string Notes,
     string Status,
     DateTimeOffset ValidUntil,
+    int CurrentRevisionNumber,
+    Guid? AcceptedRevisionId,
     decimal TotalAmount,
+    DateTimeOffset? LastSentAt,
+    DateTimeOffset? LastViewedAt,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt);
