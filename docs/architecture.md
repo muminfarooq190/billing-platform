@@ -46,3 +46,4 @@
 - **Consequences:**
   - Reliable retry orchestration and operational replay.
   - Redis dependency for webhook pipeline availability.
+

@@ -109,7 +109,7 @@ jobs:
           node-version: '20'
 
       - name: dotnet format --verify-no-changes
-        run: dotnet format billing-platform.sln --verify-no-changes || true
+        run: dotnet format voyara.sln --verify-no-changes || true
 
       - name: eslint + prettier --check
         working-directory: services/webhook-service
@@ -117,3 +117,4 @@ jobs:
           npm ci
           npx eslint "src/**/*.ts" || true
           npx prettier --check "src/**/*.ts" || true
+
