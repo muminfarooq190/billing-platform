@@ -1,9 +1,9 @@
-# billing-platform
+# Voyara
 
-![CI](https://github.com/{user}/billing-platform/actions/workflows/ci.yml/badge.svg)
-![Coverage](https://img.shields.io/codecov/c/github/{user}/billing-platform)
+![CI](https://github.com/{user}/voyara/actions/workflows/ci.yml/badge.svg)
+![Coverage](https://img.shields.io/codecov/c/github/{user}/voyara)
 
-Distributed SaaS billing platform with independent microservices, event-driven communication, transactional outbox, webhook delivery pipeline, and end-to-end observability.
+Voyara is a travel CRM platform built on independent microservices, event-driven communication, webhook delivery, and end-to-end observability.
 
 ## Architecture Diagram
 
@@ -61,8 +61,8 @@ See [`docs/architecture.md`](docs/architecture.md) for ADR entries:
 ## Quick Start
 
 ```bash
-git clone https://github.com/{user}/billing-platform.git
-cd billing-platform
+git clone https://github.com/{user}/voyara.git
+cd voyara
 cp .env.example .env
 docker compose up -d
 
@@ -106,3 +106,5 @@ curl -X POST http://localhost:5000/api/auth/register \
 - Metrics: `http://localhost:9090` (Prometheus)
 - Traces: `http://localhost:16686` (Jaeger)
 - Gateway metrics endpoint: `http://localhost:5000/metrics`
+
+
