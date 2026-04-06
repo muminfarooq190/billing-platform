@@ -11,20 +11,20 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("identity/users")]
-public sealed class UsersController(IMediator mediator) : ControllerBase
+public sealed class UsersController(IMediator mediator, ITenantContext tenantContext) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateUserRequest request, CancellationToken cancellationToken)
     {
-        var id = await mediator.Send(new CreateUserCommand(request.TenantId, request.Email, request.Password, request.Role), cancellationToken);
+        var id = await mediator.Send(new CreateUserCommand(tenantContext.TenantId, request.Email, request.Password, request.Role), cancellationToken);
         var user = await mediator.Send(new GetUserByIdQuery(id), cancellationToken);
         return CreatedAtAction(nameof(GetById), new { userId = id }, user);
     }
 
     [HttpGet]
-    public async Task<IActionResult> List([FromQuery] Guid tenantId, CancellationToken cancellationToken)
+    public async Task<IActionResult> List(CancellationToken cancellationToken)
     {
-        var users = await mediator.Send(new GetUsersByTenantQuery(tenantId), cancellationToken);
+        var users = await mediator.Send(new GetUsersByTenantQuery(tenantContext.TenantId), cancellationToken);
         return Ok(users);
     }
 
