@@ -11,6 +11,7 @@ public sealed class CreateBookingFromQuotationCommandHandler(
     IQuotationRevisionRepository quotationRevisionRepository,
     IBookingRepository bookingRepository,
     IBookingStatusHistoryRepository bookingStatusHistoryRepository,
+    IActivityWriter activityWriter,
     IUnitOfWork unitOfWork) : IRequestHandler<CreateBookingFromQuotationCommand, CreateBookingFromQuotationResult>
 {
     public async Task<CreateBookingFromQuotationResult> Handle(CreateBookingFromQuotationCommand request, CancellationToken cancellationToken)
@@ -54,6 +55,8 @@ public sealed class CreateBookingFromQuotationCommandHandler(
 
         await bookingRepository.AddAsync(booking, cancellationToken);
         await bookingStatusHistoryRepository.AddAsync(BookingStatusHistory.Create(booking.Id, booking.TenantId, null, booking.Status.ToString(), "Created from accepted quotation."), cancellationToken);
+        await activityWriter.WriteAsync(ActivityEntry.Create(booking.TenantId, "Booking", booking.Id, "BookingCreated", $"Booking {booking.BookingNumber} created from accepted quotation", new { booking.QuotationId, booking.AcceptedRevisionId, booking.Status }), cancellationToken);
+        await activityWriter.WriteAsync(ActivityEntry.Create(quotation.TenantId, "Quotation", quotation.Id, "BookingCreated", $"Booking {booking.BookingNumber} created from accepted quotation", new { booking.Id, booking.BookingNumber, booking.Status }), cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new CreateBookingFromQuotationResult(booking.Id, booking.BookingNumber);

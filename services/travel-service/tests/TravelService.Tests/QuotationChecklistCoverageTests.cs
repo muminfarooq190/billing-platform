@@ -21,7 +21,7 @@ public sealed class QuotationChecklistCoverageTests
 
         var quotationRepository = new InMemoryQuotationRepository(quotation);
         var revisionRepository = new InMemoryQuotationRevisionRepository();
-        var createRevisionHandler = new CreateQuotationRevisionCommandHandler(quotationRepository, revisionRepository, new NoOpUnitOfWork());
+        var createRevisionHandler = new CreateQuotationRevisionCommandHandler(quotationRepository, revisionRepository, new NoOpActivityWriter(), new NoOpUnitOfWork());
 
         var createResult = await createRevisionHandler.Handle(new CreateQuotationRevisionCommand(
             quotation.TenantId,
@@ -261,6 +261,11 @@ public sealed class QuotationChecklistCoverageTests
 
         public Task<IReadOnlyList<QuotationStatusHistory>> ListByQuotationIdAsync(Guid quotationId, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<QuotationStatusHistory>>(Items.Where(x => x.QuotationId == quotationId).ToList());
+    }
+
+    private sealed class NoOpActivityWriter : IActivityWriter
+    {
+        public Task WriteAsync(ActivityEntry entry, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class NoOpUnitOfWork : IUnitOfWork

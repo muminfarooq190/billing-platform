@@ -499,10 +499,21 @@ Add indexes on:
 # 12. PR breakdown
 
 ## PR 8.1 - timeline foundation
+Status: completed on branch `feat/phase-8-timeline-foundation`
+
 Includes:
 - activity entry model
 - timeline query endpoints
 - first write hooks for quotation + booking creation/status flows
+
+Implemented:
+- `ActivityEntry` model + repository + writer abstraction
+- `GET /travel/timeline/{entityType}/{entityId}`
+- `GET /travel/quotations/{id}/timeline`
+- `GET /travel/bookings/{id}/timeline`
+- first write hooks for quotation revision creation and booking creation from quotation
+- activity timeline migration
+- activity timeline test coverage
 
 ### Must pass
 - timeline entries appear for key flows

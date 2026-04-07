@@ -20,6 +20,8 @@ public sealed class Program
         builder.Services.AddDbContext<TravelDbContext>(options => options.UseNpgsql(databaseUrl));
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<ITenantContext, HeaderTenantContext>();
+        builder.Services.AddScoped<IActivityEntryRepository, ActivityEntryRepository>();
+        builder.Services.AddScoped<IActivityWriter, ActivityWriter>();
         builder.Services.AddScoped<IContactRepository, ContactRepository>();
         builder.Services.AddScoped<IFollowUpRepository, FollowUpRepository>();
         builder.Services.AddScoped<IQuotationRepository, QuotationRepository>();
