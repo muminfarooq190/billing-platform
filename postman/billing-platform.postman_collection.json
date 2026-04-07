@@ -365,6 +365,155 @@
             "method": "POST",
             "url": "{{travelBaseUrl}}/travel/quotations/public/{{shareToken}}/viewed"
           }
+        },
+        {
+          "name": "Create Booking From Quotation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignedToUserId\": null,\n  \"internalNotes\": \"Priority booking\"\n}"
+            },
+            "url": "{{gatewayBaseUrl}}/api/travel/bookings/from-quotation/{{quotationId}}"
+          }
+        },
+        {
+          "name": "List Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{gatewayBaseUrl}}/api/travel/bookings?page=1&pageSize=20&status=Pending&destination=Rome"
+          }
+        },
+        {
+          "name": "Get Booking By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{gatewayBaseUrl}}/api/travel/bookings/{{bookingId}}"
+          }
+        },
+        {
+          "name": "Add Traveler",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"dateOfBirth\": \"1992-05-01\",\n  \"email\": \"jane@example.com\",\n  \"phone\": \"+15555550123\",\n  \"passportNumber\": \"A1234567\",\n  \"passportExpiry\": \"2031-05-01\",\n  \"nationality\": \"Indian\",\n  \"leadTraveler\": true\n}"
+            },
+            "url": "{{gatewayBaseUrl}}/api/travel/bookings/{{bookingId}}/travelers"
+          }
+        },
+        {
+          "name": "List Travelers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{gatewayBaseUrl}}/api/travel/bookings/{{bookingId}}/travelers"
+          }
+        },
+        {
+          "name": "Add Booking Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"Hotel\",\n  \"title\": \"Rome hotel stay\",\n  \"description\": \"4 nights in central Rome\",\n  \"supplierName\": \"Example Hotels\",\n  \"supplierReference\": \"EH-7782\",\n  \"location\": \"Rome\",\n  \"startAt\": \"2026-06-10T14:00:00Z\",\n  \"endAt\": \"2026-06-14T11:00:00Z\",\n  \"sellAmount\": 1200,\n  \"costAmount\": 900,\n  \"currency\": \"USD\",\n  \"notes\": \"Late check-in confirmed\",\n  \"sortOrder\": 1\n}"
+            },
+            "url": "{{gatewayBaseUrl}}/api/travel/bookings/{{bookingId}}/items"
+          }
+        },
+        {
+          "name": "List Booking Items",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{gatewayBaseUrl}}/api/travel/bookings/{{bookingId}}/items"
+          }
+        },
+        {
+          "name": "Update Booking Item Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Confirmed\"\n}"
+            },
+            "url": "{{gatewayBaseUrl}}/api/travel/bookings/{{bookingId}}/items/{{itemId}}/status"
+          }
+        },
+        {
+          "name": "List Booking Documents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{gatewayBaseUrl}}/api/travel/bookings/{{bookingId}}/documents"
+          }
         }
       ]
     },

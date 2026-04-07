@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TravelService.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using TravelService.Infrastructure.Persistence;
 namespace TravelService.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(TravelDbContext))]
-    partial class TravelDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260407084749_AddBookingsCore")]
+    partial class AddBookingsCore
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -137,183 +140,6 @@ namespace TravelService.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId");
 
                     b.ToTable("bookings", (string)null);
-                });
-
-            modelBuilder.Entity("TravelService.Domain.Aggregates.BookingDocument", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("BookingId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("booking_id");
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("content_type");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<string>("DocumentType")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("document_type");
-
-                    b.Property<bool>("IsCustomerVisible")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_customer_visible");
-
-                    b.Property<string>("OriginalFileName")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("original_file_name");
-
-                    b.Property<long>("SizeBytes")
-                        .HasColumnType("bigint")
-                        .HasColumnName("size_bytes");
-
-                    b.Property<string>("StorageKey")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("storage_key");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<Guid?>("TravelerId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("traveler_id");
-
-                    b.Property<Guid?>("UploadedByUserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("uploaded_by_user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "BookingId");
-
-                    b.ToTable("booking_documents", (string)null);
-                });
-
-            modelBuilder.Entity("TravelService.Domain.Aggregates.BookingItem", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid?>("AssignedToUserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("assigned_to_user_id");
-
-                    b.Property<Guid>("BookingId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("booking_id");
-
-                    b.Property<string>("ConfirmationNumber")
-                        .HasColumnType("text")
-                        .HasColumnName("confirmation_number");
-
-                    b.Property<decimal?>("CostAmount")
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("cost_amount");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Currency")
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)")
-                        .HasColumnName("currency");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<DateTimeOffset?>("EndAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("end_at");
-
-                    b.Property<string>("Location")
-                        .HasColumnType("text")
-                        .HasColumnName("location");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("text")
-                        .HasColumnName("notes");
-
-                    b.Property<decimal?>("SellAmount")
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("sell_amount");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("integer")
-                        .HasColumnName("sort_order");
-
-                    b.Property<DateTimeOffset?>("StartAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("start_at");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("status");
-
-                    b.Property<string>("SupplierName")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("supplier_name");
-
-                    b.Property<string>("SupplierReference")
-                        .HasColumnType("text")
-                        .HasColumnName("supplier_reference");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("title");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("type");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("VoucherNumber")
-                        .HasColumnType("text")
-                        .HasColumnName("voucher_number");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "BookingId");
-
-                    b.ToTable("booking_items", (string)null);
                 });
 
             modelBuilder.Entity("TravelService.Domain.Aggregates.BookingStatusHistory", b =>
@@ -1038,100 +864,6 @@ namespace TravelService.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId", "QuotationId", "CreatedAt");
 
                     b.ToTable("quotation_status_history", (string)null);
-                });
-
-            modelBuilder.Entity("TravelService.Domain.Aggregates.Traveler", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("BookingId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("booking_id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateOnly?>("DateOfBirth")
-                        .HasColumnType("date")
-                        .HasColumnName("date_of_birth");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<string>("Email")
-                        .HasColumnType("text")
-                        .HasColumnName("email");
-
-                    b.Property<string>("EmergencyContactName")
-                        .HasColumnType("text")
-                        .HasColumnName("emergency_contact_name");
-
-                    b.Property<string>("EmergencyContactPhone")
-                        .HasColumnType("text")
-                        .HasColumnName("emergency_contact_phone");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("first_name");
-
-                    b.Property<string>("Gender")
-                        .HasColumnType("text")
-                        .HasColumnName("gender");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("last_name");
-
-                    b.Property<bool>("LeadTraveler")
-                        .HasColumnType("boolean")
-                        .HasColumnName("lead_traveler");
-
-                    b.Property<string>("MealPreference")
-                        .HasColumnType("text")
-                        .HasColumnName("meal_preference");
-
-                    b.Property<string>("Nationality")
-                        .HasColumnType("text")
-                        .HasColumnName("nationality");
-
-                    b.Property<DateOnly?>("PassportExpiry")
-                        .HasColumnType("date")
-                        .HasColumnName("passport_expiry");
-
-                    b.Property<string>("PassportNumber")
-                        .HasColumnType("text")
-                        .HasColumnName("passport_number");
-
-                    b.Property<string>("Phone")
-                        .HasColumnType("text")
-                        .HasColumnName("phone");
-
-                    b.Property<string>("SpecialAssistanceNotes")
-                        .HasColumnType("text")
-                        .HasColumnName("special_assistance_notes");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "BookingId");
-
-                    b.ToTable("travelers", (string)null);
                 });
 
             modelBuilder.Entity("TravelService.Infrastructure.Persistence.OutboxMessage", b =>

@@ -599,11 +599,22 @@ Create bookings only from accepted quotes going forward.
 # 12. PR breakdown
 
 ## PR 7.1 - bookings core
+Status: completed on branch `feat/phase-7-bookings-core`
+
 Includes:
 - booking aggregate
 - create booking from accepted quote
 - list/get booking
 - migration
+
+Implemented:
+- `Booking` aggregate + `BookingStatusHistory`
+- create-booking-from-quotation command flow
+- `POST /travel/bookings/from-quotation/{quotationId}`
+- `GET /travel/bookings`
+- `GET /travel/bookings/{id}`
+- bookings core migration
+- booking core test coverage
 
 ### Must pass
 - accepted quote -> booking works
@@ -611,78 +622,125 @@ Includes:
 - tenant isolation works
 
 ## PR 7.2 - travelers
+Status: completed on branch `feat/phase-7-bookings-core`
+
 Includes:
 - traveler entity
 - add/list/update/delete traveler APIs
 - migration
+
+Implemented:
+- `Traveler` entity + repository layer
+- `POST /travel/bookings/{id}/travelers`
+- `GET /travel/bookings/{id}/travelers`
+- `PUT /travel/bookings/{id}/travelers/{travelerId}`
+- `DELETE /travel/bookings/{id}/travelers/{travelerId}`
+- travelers migration
+- traveler command test coverage
 
 ### Must pass
 - multi-traveler bookings supported
 - traveler ownership scoped by booking tenant
 
 ## PR 7.3 - booking items / supplier ops
+Status: completed on branch `feat/phase-7-bookings-core`
+
 Includes:
 - item entity
 - item CRUD/status APIs
 - migration
+
+Implemented:
+- `BookingItem` entity + repository layer
+- `POST /travel/bookings/{id}/items`
+- `GET /travel/bookings/{id}/items`
+- `PUT /travel/bookings/{id}/items/{itemId}`
+- `PATCH /travel/bookings/{id}/items/{itemId}/status`
+- `DELETE /travel/bookings/{id}/items/{itemId}`
+- booking items migration
+- booking item test coverage
 
 ### Must pass
 - ops items can be tracked independently
 - statuses work cleanly
 
 ## PR 7.4 - booking documents
+Status: completed on branch `feat/phase-7-bookings-core`
+
 Includes:
 - document metadata entity
 - upload/list/delete APIs
 - storage integration
 - migration
 
+Implemented:
+- `BookingDocument` entity + repository layer
+- `POST /travel/bookings/{id}/documents`
+- `GET /travel/bookings/{id}/documents`
+- `DELETE /travel/bookings/{id}/documents/{documentId}`
+- booking documents migration
+- booking document test coverage
+- storage integration via existing `IFileStorage`
+
 ### Must pass
 - docs upload/list works
 - internal vs customer-visible separation honored
 
 ## PR 7.5 - read models + tests + docs
+Status: completed on branch `feat/phase-7-bookings-core`
+
 Includes:
 - Dapper read models
 - filters/pagination
 - test coverage
 - postman/readme updates
 
+Implemented:
+- booking list filters + pagination support
+- booking/traveler/item/document read endpoints wired for UI consumption
+- expanded test coverage for booking flows and read model/filter inputs
+- Postman updates for booking, traveler, item, and document flows
+- README + booking API examples docs updates
+
 ---
 
 # 13. Test checklist
 
+Status: expanded and covered in `services/travel-service/tests/TravelService.Tests/`
+
 ## Domain tests
-- booking created only from accepted quote
-- invalid status transitions rejected
-- cancel behavior correct
+- [x] booking created only from accepted quote
+- [x] invalid status transitions rejected
+- [x] cancel behavior correct
 
 ## Integration tests
-- accepted quote -> booking creation
-- add/update/delete traveler
-- add/update/delete booking item
-- upload/list/delete document metadata
-- list bookings with filters
+- [x] accepted quote -> booking creation
+- [x] add/update/delete traveler
+- [x] add/update/delete booking item
+- [x] upload/list/delete document metadata
+- [x] list bookings with filters
 
 ## Security tests
-- cannot access another tenant's booking
-- cannot attach traveler to another tenant's booking
-- cannot fetch internal-only docs through customer-facing surfaces
+- [x] cannot access another tenant's booking
+- [x] cannot attach traveler to another tenant's booking
+- [x] cannot fetch internal-only docs through customer-facing surfaces
 
 ---
 
 # 14. Definition of done for Phase 7
 
+Status: complete on branch `feat/phase-7-bookings-core`
+
 Phase 7 is done only when:
 
-- accepted quotes can become bookings
-- bookings have operational statuses
-- bookings can store multiple travelers
-- bookings can store operational items
-- bookings can store documents/vouchers metadata
-- tenant enforcement applies to all new endpoints
-- builds/migrations/tests pass
-- docs/postman are updated
+- [x] accepted quotes can become bookings
+- [x] bookings have operational statuses
+- [x] bookings can store multiple travelers
+- [x] bookings can store operational items
+- [x] bookings can store documents/vouchers metadata
+- [x] tenant enforcement applies to all new endpoints
+- [x] builds/migrations/tests pass
+- [x] docs/postman are updated
 
 ---
 
