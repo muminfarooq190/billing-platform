@@ -127,6 +127,30 @@ It now includes:
 - `identity-service`: tenants, users, JWT/refresh flows, JWKS, outbox
 - `billing-service`: subscriptions, invoices, payments, dashboard, outbox
 - `travel-service`: contacts, quotations, itineraries, follow-ups, outbox
+
+## Phase 6 quotation workflow status
+
+Phase 6 quotation maturity is now implemented across the travel service, including:
+- immutable quotation revisions + revision history
+- quotation status history
+- attachment/media upload + customer-visible filtering
+- send/share/public-view flow with tokenized customer access
+- viewed tracking for public quotation links
+
+Useful quotation endpoints:
+- `POST /api/travel/quotations/{id}/revisions`
+- `GET /api/travel/quotations/{id}/revisions`
+- `GET /api/travel/quotations/{id}/revisions/{revisionId}`
+- `GET /api/travel/quotations/{id}/history`
+- `POST /api/travel/quotations/{id}/attachments`
+- `GET /api/travel/quotations/{id}/attachments`
+- `DELETE /api/travel/quotations/{id}/attachments/{attachmentId}`
+- `POST /api/travel/quotations/{id}/send`
+- `GET /travel/quotations/public/{token}`
+- `POST /travel/quotations/public/{token}/viewed`
+- `POST /api/travel/quotations/{id}/accept`
+- `POST /api/travel/quotations/{id}/reject`
+- `POST /api/travel/quotations/{id}/expire`
 - `communication-service`: templates, notifications, recipient preferences
 - `webhook-service`: event consumption, signed delivery, retries, replay
 

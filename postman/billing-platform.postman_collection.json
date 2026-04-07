@@ -8,20 +8,66 @@
   "auth": {
     "type": "bearer",
     "bearer": [
-      { "key": "token", "value": "{{accessToken}}", "type": "string" }
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
     ]
   },
   "item": [
     {
       "name": "Health",
       "item": [
-        { "name": "Gateway Health", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/health" } },
-        { "name": "Gateway Ready", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/health/ready" } },
-        { "name": "Identity Health", "request": { "method": "GET", "url": "{{identityBaseUrl}}/health" } },
-        { "name": "Billing Health", "request": { "method": "GET", "url": "{{billingBaseUrl}}/health" } },
-        { "name": "Travel Health", "request": { "method": "GET", "url": "{{travelBaseUrl}}/health" } },
-        { "name": "Communication Health", "request": { "method": "GET", "url": "{{communicationBaseUrl}}/health" } },
-        { "name": "Webhook Health", "request": { "method": "GET", "url": "{{webhookBaseUrl}}/health" } }
+        {
+          "name": "Gateway Health",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayBaseUrl}}/health"
+          }
+        },
+        {
+          "name": "Gateway Ready",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayBaseUrl}}/health/ready"
+          }
+        },
+        {
+          "name": "Identity Health",
+          "request": {
+            "method": "GET",
+            "url": "{{identityBaseUrl}}/health"
+          }
+        },
+        {
+          "name": "Billing Health",
+          "request": {
+            "method": "GET",
+            "url": "{{billingBaseUrl}}/health"
+          }
+        },
+        {
+          "name": "Travel Health",
+          "request": {
+            "method": "GET",
+            "url": "{{travelBaseUrl}}/health"
+          }
+        },
+        {
+          "name": "Communication Health",
+          "request": {
+            "method": "GET",
+            "url": "{{communicationBaseUrl}}/health"
+          }
+        },
+        {
+          "name": "Webhook Health",
+          "request": {
+            "method": "GET",
+            "url": "{{webhookBaseUrl}}/health"
+          }
+        }
       ]
     },
     {
@@ -31,34 +77,78 @@
         {
           "name": "Register Tenant Admin",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"tenantName\": \"Acme Travel\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantName\": \"Acme Travel\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
             "url": "{{gatewayBaseUrl}}/api/auth/register"
           }
         },
         {
           "name": "Login",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
             "url": "{{gatewayBaseUrl}}/api/auth/login"
           }
         },
-        { "name": "JWKS", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{identityBaseUrl}}/.well-known/jwks.json" } },
-        { "name": "List Users", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/api/identity/users?tenantId={{tenantId}}" } },
+        {
+          "name": "JWKS",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{identityBaseUrl}}/.well-known/jwks.json"
+          }
+        },
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayBaseUrl}}/api/identity/users?tenantId={{tenantId}}"
+          }
+        },
         {
           "name": "Create User",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"email\": \"agent@voyara.local\",\n  \"password\": \"{{password}}\",\n  \"role\": \"Admin\"\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"email\": \"agent@voyara.local\",\n  \"password\": \"{{password}}\",\n  \"role\": \"Admin\"\n}"
+            },
             "url": "{{gatewayBaseUrl}}/api/identity/users"
           }
         }
@@ -73,46 +163,209 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"email\": \"traveler@example.com\",\n  \"phone\": \"+15555550123\",\n  \"company\": \"Voyara Demo\",\n  \"notes\": \"High-value traveler\",\n  \"tags\": [\"vip\", \"europe\"]\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"email\": \"traveler@example.com\",\n  \"phone\": \"+15555550123\",\n  \"company\": \"Voyara Demo\",\n  \"notes\": \"High-value traveler\",\n  \"tags\": [\"vip\", \"europe\"]\n}"
+            },
             "url": "{{gatewayBaseUrl}}/api/travel/contacts"
           }
         },
-        { "name": "List Contacts", "request": { "method": "GET", "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }], "url": "{{gatewayBaseUrl}}/api/travel/contacts/tenant/{{tenantId}}?page=1&pageSize=20" } },
+        {
+          "name": "List Contacts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{gatewayBaseUrl}}/api/travel/contacts/tenant/{{tenantId}}?page=1&pageSize=20"
+          }
+        },
         {
           "name": "Create Quotation",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerContactId\": \"{{customerContactId}}\",\n  \"customerName\": \"Jane Doe\",\n  \"title\": \"Summer Europe Trip\",\n  \"destination\": \"Italy\",\n  \"travelDate\": \"2026-06-10T09:00:00Z\",\n  \"returnDate\": \"2026-06-20T18:00:00Z\",\n  \"travellers\": 2,\n  \"currency\": \"USD\",\n  \"notes\": \"VIP customer\",\n  \"lineItems\": [\n    {\n      \"description\": \"Flight + Hotel\",\n      \"unitPrice\": 2500,\n      \"quantity\": 1,\n      \"currency\": \"USD\"\n    }\n  ]\n}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerContactId\": \"{{customerContactId}}\",\n  \"customerName\": \"Jane Doe\",\n  \"title\": \"Summer Europe Trip\",\n  \"destination\": \"Italy\",\n  \"travelDate\": \"2026-06-10T09:00:00Z\",\n  \"returnDate\": \"2026-06-20T18:00:00Z\",\n  \"travellers\": 2,\n  \"currency\": \"USD\",\n  \"notes\": \"VIP customer\",\n  \"lineItems\": [\n    {\n      \"description\": \"Flight + Hotel\",\n      \"unitPrice\": 2500,\n      \"quantity\": 1,\n      \"currency\": \"USD\"\n    }\n  ]\n}"
+            },
             "url": "{{gatewayBaseUrl}}/api/travel/quotations"
           }
         },
-        { "name": "List Quotations By Tenant", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/api/travel/quotations/tenant/{{tenantId}}?page=1&pageSize=20&status=Draft&customerName=Jane" } },
-        { "name": "Get Quotation By Id", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/api/travel/quotations/{{resourceId}}" } },
-        { "name": "Convert Quotation To Itinerary", "request": { "method": "POST", "url": "{{gatewayBaseUrl}}/api/travel/quotations/{{resourceId}}/convert" } },
+        {
+          "name": "List Quotations By Tenant",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayBaseUrl}}/api/travel/quotations/tenant/{{tenantId}}?page=1&pageSize=20&status=Draft&customerName=Jane"
+          }
+        },
+        {
+          "name": "Get Quotation By Id",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayBaseUrl}}/api/travel/quotations/{{resourceId}}"
+          }
+        },
+        {
+          "name": "Convert Quotation To Itinerary",
+          "request": {
+            "method": "POST",
+            "url": "{{gatewayBaseUrl}}/api/travel/quotations/{{resourceId}}/convert"
+          }
+        },
         {
           "name": "Create Itinerary",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerContactId\": \"{{customerContactId}}\",\n  \"customerName\": \"Jane Doe\",\n  \"title\": \"Italy Honeymoon\",\n  \"destination\": \"Italy\",\n  \"startDate\": \"2026-06-10T09:00:00Z\",\n  \"endDate\": \"2026-06-20T18:00:00Z\",\n  \"travellers\": 2,\n  \"currency\": \"USD\",\n  \"quotationId\": null,\n  \"items\": [\n    {\n      \"dayNumber\": 1,\n      \"itemType\": \"flight\",\n      \"title\": \"Arrival\",\n      \"description\": \"Arrive in Rome\",\n      \"location\": \"Rome\",\n      \"startTime\": \"2026-06-10T09:00:00Z\",\n      \"endTime\": \"2026-06-10T11:00:00Z\",\n      \"cost\": 500,\n      \"currency\": \"USD\"\n    }\n  ]\n}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerContactId\": \"{{customerContactId}}\",\n  \"customerName\": \"Jane Doe\",\n  \"title\": \"Italy Honeymoon\",\n  \"destination\": \"Italy\",\n  \"startDate\": \"2026-06-10T09:00:00Z\",\n  \"endDate\": \"2026-06-20T18:00:00Z\",\n  \"travellers\": 2,\n  \"currency\": \"USD\",\n  \"quotationId\": null,\n  \"items\": [\n    {\n      \"dayNumber\": 1,\n      \"itemType\": \"flight\",\n      \"title\": \"Arrival\",\n      \"description\": \"Arrive in Rome\",\n      \"location\": \"Rome\",\n      \"startTime\": \"2026-06-10T09:00:00Z\",\n      \"endTime\": \"2026-06-10T11:00:00Z\",\n      \"cost\": 500,\n      \"currency\": \"USD\"\n    }\n  ]\n}"
+            },
             "url": "{{gatewayBaseUrl}}/api/travel/itineraries"
           }
         },
-        { "name": "List Itineraries By Tenant", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/api/travel/itineraries/tenant/{{tenantId}}?page=1&pageSize=20&status=Draft&customerName=Jane" } },
+        {
+          "name": "List Itineraries By Tenant",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayBaseUrl}}/api/travel/itineraries/tenant/{{tenantId}}?page=1&pageSize=20&status=Draft&customerName=Jane"
+          }
+        },
         {
           "name": "Create Follow Up",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerContactId\": \"{{customerContactId}}\",\n  \"customerName\": \"Jane Doe\",\n  \"subject\": \"Call back about quote\",\n  \"notes\": \"Preferred afternoon\",\n  \"priority\": \"High\",\n  \"dueDate\": \"2026-04-15T09:00:00Z\",\n  \"assignedToUserId\": null\n}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerContactId\": \"{{customerContactId}}\",\n  \"customerName\": \"Jane Doe\",\n  \"subject\": \"Call back about quote\",\n  \"notes\": \"Preferred afternoon\",\n  \"priority\": \"High\",\n  \"dueDate\": \"2026-04-15T09:00:00Z\",\n  \"assignedToUserId\": null\n}"
+            },
             "url": "{{gatewayBaseUrl}}/api/travel/follow-ups"
           }
         },
-        { "name": "List Follow Ups By Tenant", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/api/travel/follow-ups/tenant/{{tenantId}}?page=1&pageSize=20&status=Pending&customerName=Jane" } }
+        {
+          "name": "List Follow Ups By Tenant",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayBaseUrl}}/api/travel/follow-ups/tenant/{{tenantId}}?page=1&pageSize=20&status=Pending&customerName=Jane"
+          }
+        },
+        {
+          "name": "Create Quotation Revision",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Summer Europe Trip - Premium\",\n  \"destination\": \"Italy\",\n  \"travelDate\": \"2026-06-10T09:00:00Z\",\n  \"returnDate\": \"2026-06-20T18:00:00Z\",\n  \"travellers\": 2,\n  \"currency\": \"USD\",\n  \"visibleNotes\": \"Breakfast included\",\n  \"internalNotes\": \"Target 22% margin\",\n  \"validUntil\": \"2026-05-01T00:00:00Z\",\n  \"lineItems\": [\n    {\n      \"description\": \"Flight + Hotel\",\n      \"quantity\": 1,\n      \"unitPrice\": 2500,\n      \"currency\": \"USD\"\n    }\n  ]\n}"
+            },
+            "url": "{{gatewayBaseUrl}}/api/travel/quotations/{{quotationId}}/revisions"
+          }
+        },
+        {
+          "name": "List Quotation Revisions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{gatewayBaseUrl}}/api/travel/quotations/{{quotationId}}/revisions"
+          }
+        },
+        {
+          "name": "Get Quotation Revision Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{gatewayBaseUrl}}/api/travel/quotations/{{quotationId}}/revisions/{{revisionId}}"
+          }
+        },
+        {
+          "name": "Send Quotation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"revisionId\": \"{{revisionId}}\",\n  \"channel\": \"Email\",\n  \"recipientEmail\": \"traveler@example.com\",\n  \"message\": \"Please review your updated proposal.\",\n  \"expiresAt\": \"2026-05-01T00:00:00Z\"\n}"
+            },
+            "url": "{{gatewayBaseUrl}}/api/travel/quotations/{{quotationId}}/send"
+          }
+        },
+        {
+          "name": "Get Public Quotation",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{travelBaseUrl}}/travel/quotations/public/{{shareToken}}"
+          }
+        },
+        {
+          "name": "Mark Public Quotation Viewed",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{travelBaseUrl}}/travel/quotations/public/{{shareToken}}/viewed"
+          }
+        }
       ]
     },
     {
@@ -123,58 +376,153 @@
           "name": "Send Notification",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"recipientId\": \"{{recipientId}}\",\n  \"recipientType\": \"Customer\",\n  \"channel\": \"Email\",\n  \"templateName\": \"trip_update\",\n  \"subject\": \"Your itinerary update\",\n  \"body\": \"Your itinerary has been updated.\",\n  \"priority\": \"Normal\",\n  \"referenceId\": \"TRIP-1001\",\n  \"placeholders\": {\n    \"customerName\": \"Jane\"\n  }\n}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"recipientId\": \"{{recipientId}}\",\n  \"recipientType\": \"Customer\",\n  \"channel\": \"Email\",\n  \"templateName\": \"trip_update\",\n  \"subject\": \"Your itinerary update\",\n  \"body\": \"Your itinerary has been updated.\",\n  \"priority\": \"Normal\",\n  \"referenceId\": \"TRIP-1001\",\n  \"placeholders\": {\n    \"customerName\": \"Jane\"\n  }\n}"
+            },
             "url": "{{gatewayBaseUrl}}/api/communication/notifications"
           }
         },
-        { "name": "List Notifications By Recipient", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/api/communication/notifications/recipient/{{recipientId}}?page=1&pageSize=20" } },
-        { "name": "Unread Notification Count", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/api/communication/notifications/recipient/{{recipientId}}/unread-count" } },
-        { "name": "Mark Notification Read", "request": { "method": "PATCH", "url": "{{gatewayBaseUrl}}/api/communication/notifications/{{resourceId}}/read" } },
+        {
+          "name": "List Notifications By Recipient",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayBaseUrl}}/api/communication/notifications/recipient/{{recipientId}}?page=1&pageSize=20"
+          }
+        },
+        {
+          "name": "Unread Notification Count",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayBaseUrl}}/api/communication/notifications/recipient/{{recipientId}}/unread-count"
+          }
+        },
+        {
+          "name": "Mark Notification Read",
+          "request": {
+            "method": "PATCH",
+            "url": "{{gatewayBaseUrl}}/api/communication/notifications/{{resourceId}}/read"
+          }
+        },
         {
           "name": "Upsert Recipient Preferences",
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"recipientId\": \"{{recipientId}}\",\n  \"recipientType\": \"Customer\",\n  \"email\": \"traveler@example.com\",\n  \"phone\": \"+15555550123\",\n  \"deviceToken\": null,\n  \"timezone\": \"Asia/Calcutta\",\n  \"channelPreferences\": [\n    {\n      \"channel\": \"Email\",\n      \"enabled\": true,\n      \"quietHoursEnabled\": false,\n      \"quietStart\": null,\n      \"quietEnd\": null\n    }\n  ]\n}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"recipientId\": \"{{recipientId}}\",\n  \"recipientType\": \"Customer\",\n  \"email\": \"traveler@example.com\",\n  \"phone\": \"+15555550123\",\n  \"deviceToken\": null,\n  \"timezone\": \"Asia/Calcutta\",\n  \"channelPreferences\": [\n    {\n      \"channel\": \"Email\",\n      \"enabled\": true,\n      \"quietHoursEnabled\": false,\n      \"quietStart\": null,\n      \"quietEnd\": null\n    }\n  ]\n}"
+            },
             "url": "{{gatewayBaseUrl}}/api/communication/recipient-preferences"
           }
         },
-        { "name": "Get Recipient Preferences", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/api/communication/recipient-preferences/{{tenantId}}/{{recipientId}}" } },
+        {
+          "name": "Get Recipient Preferences",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayBaseUrl}}/api/communication/recipient-preferences/{{tenantId}}/{{recipientId}}"
+          }
+        },
         {
           "name": "Create Template",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"name\": \"trip_update\",\n  \"subject\": \"Trip update\",\n  \"bodyTemplate\": \"Hello {{customerName}}, your trip has been updated.\",\n  \"channel\": \"Email\",\n  \"description\": \"Travel update template\"\n}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"name\": \"trip_update\",\n  \"subject\": \"Trip update\",\n  \"bodyTemplate\": \"Hello {{customerName}}, your trip has been updated.\",\n  \"channel\": \"Email\",\n  \"description\": \"Travel update template\"\n}"
+            },
             "url": "{{gatewayBaseUrl}}/api/communication/templates"
           }
         },
-        { "name": "List Templates By Tenant", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/api/communication/templates/tenant/{{tenantId}}?page=1&pageSize=20" } }
+        {
+          "name": "List Templates By Tenant",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayBaseUrl}}/api/communication/templates/tenant/{{tenantId}}?page=1&pageSize=20"
+          }
+        }
       ]
     },
     {
       "name": "Webhook Service",
       "description": "Webhook service routes are exposed through the gateway under /api/webhooks.",
       "item": [
-        { "name": "List Deliveries", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/api/webhooks/deliveries?page=1&page_size=20" } },
-        { "name": "Get Delivery", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/api/webhooks/deliveries/{{resourceId}}" } },
-        { "name": "Replay Delivery", "request": { "method": "POST", "url": "{{gatewayBaseUrl}}/api/webhooks/deliveries/{{resourceId}}/replay" } },
-        { "name": "List Subscriptions", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/api/webhooks/subscriptions" } },
+        {
+          "name": "List Deliveries",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayBaseUrl}}/api/webhooks/deliveries?page=1&page_size=20"
+          }
+        },
+        {
+          "name": "Get Delivery",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayBaseUrl}}/api/webhooks/deliveries/{{resourceId}}"
+          }
+        },
+        {
+          "name": "Replay Delivery",
+          "request": {
+            "method": "POST",
+            "url": "{{gatewayBaseUrl}}/api/webhooks/deliveries/{{resourceId}}/replay"
+          }
+        },
+        {
+          "name": "List Subscriptions",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayBaseUrl}}/api/webhooks/subscriptions"
+          }
+        },
         {
           "name": "Create Subscription",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"targetUrl\": \"https://example.com/webhooks/voyara\",\n  \"events\": [\"travel.quotation.created\", \"travel.itinerary.confirmed\"],\n  \"signingSecret\": \"replace-me\",\n  \"isActive\": true\n}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"targetUrl\": \"https://example.com/webhooks/voyara\",\n  \"events\": [\"travel.quotation.created\", \"travel.itinerary.confirmed\"],\n  \"signingSecret\": \"replace-me\",\n  \"isActive\": true\n}"
+            },
             "url": "{{gatewayBaseUrl}}/api/webhooks/subscriptions"
           }
         },
-        { "name": "Delete Subscription", "request": { "method": "DELETE", "url": "{{gatewayBaseUrl}}/api/webhooks/subscriptions/{{resourceId}}" } }
+        {
+          "name": "Delete Subscription",
+          "request": {
+            "method": "DELETE",
+            "url": "{{gatewayBaseUrl}}/api/webhooks/subscriptions/{{resourceId}}"
+          }
+        }
       ]
     }
   ],
   "variable": [
-    { "key": "resourceId", "value": "{{resourceId}}" }
+    {
+      "key": "resourceId",
+      "value": "{{resourceId}}"
+    }
   ]
 }

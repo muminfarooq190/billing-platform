@@ -603,11 +603,19 @@ Implemented:
 - sent quote points to specific revision
 
 ## PR 6.5 - docs/tests/polish
+Status: completed on branch `feat/phase-6-quotation-revisions`
+
 Includes:
 - postman updates
 - readme updates
 - integration tests
 - sample payload docs
+
+Implemented:
+- Postman collection entries for revision creation, send, public fetch, and viewed tracking
+- README summary of the full Phase 6 quotation workflow and key endpoints
+- sample payload/examples doc at `docs/phase-6-quotation-api-examples.md`
+- automated tests covering quotation send/share + viewed tracking flow
 
 ---
 
