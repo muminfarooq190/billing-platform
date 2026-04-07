@@ -23,6 +23,14 @@ public sealed class QuotationConfiguration : IEntityTypeConfiguration<Quotation>
         builder.Property(x => x.Notes).HasColumnName("notes");
         builder.Property(x => x.Status).HasConversion<string>().HasColumnName("status");
         builder.Property(x => x.ValidUntil).HasColumnName("valid_until");
+        builder.Property(x => x.CurrentRevisionNumber).HasColumnName("current_revision_number");
+        builder.Property(x => x.AcceptedRevisionId).HasColumnName("accepted_revision_id");
+        builder.Property(x => x.LastSentAt).HasColumnName("last_sent_at");
+        builder.Property(x => x.LastViewedAt).HasColumnName("last_viewed_at");
+        builder.Property(x => x.ExpiredAt).HasColumnName("expired_at");
+        builder.Property(x => x.RejectedAt).HasColumnName("rejected_at");
+        builder.Property(x => x.ShareToken).HasColumnName("share_token").HasMaxLength(256);
+        builder.Property(x => x.ShareTokenExpiresAt).HasColumnName("share_token_expires_at");
         builder.Ignore(x => x.TotalAmount);
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");

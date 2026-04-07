@@ -29,6 +29,79 @@ public sealed class DomainHardeningTests
     }
 
     [Fact]
+    public void Quotation_CreateRevision_ShouldIncrementVersion_AndPreserveSnapshotTotals()
+    {
+        var quotation = CreateDraftQuotation();
+        quotation.AddLineItem("Flight", 250m, 2, "USD");
+        quotation.AddLineItem("Hotel", 500m, 1, "USD");
+
+        var revision = quotation.CreateRevision("Customer notes", "Internal notes");
+
+        quotation.CurrentRevisionNumber.Should().Be(1);
+        revision.RevisionNumber.Should().Be(1);
+        revision.TotalAmount.Should().Be(1000m);
+        revision.LineItems.Should().HaveCount(2);
+        revision.VisibleNotes.Should().Be("Customer notes");
+        revision.InternalNotes.Should().Be("Internal notes");
+    }
+
+    [Fact]
+    public void Quotation_Accept_ShouldStoreAcceptedRevisionId()
+    {
+        var quotation = CreateDraftQuotation();
+        quotation.AddLineItem("Flight", 250m, 2, "USD");
+        var revision = quotation.CreateRevision("Customer notes", "Internal notes");
+        quotation.Send();
+
+        quotation.Accept(revision.Id);
+
+        quotation.Status.Should().Be(QuotationStatus.Accepted);
+        quotation.AcceptedRevisionId.Should().Be(revision.Id);
+    }
+
+    [Fact]
+    public void Quotation_Accept_ShouldRequireRevisionId()
+    {
+        var quotation = CreateDraftQuotation();
+        quotation.AddLineItem("Flight", 250m, 2, "USD");
+        quotation.CreateRevision("Customer notes", "Internal notes");
+        quotation.Send();
+
+        var act = () => quotation.Accept(Guid.Empty);
+
+        act.Should().Throw<DomainException>().WithMessage("*revision id is required*");
+    }
+
+    [Fact]
+    public void Quotation_Expire_ShouldRejectAlreadyRejectedQuotes()
+    {
+        var quotation = CreateDraftQuotation();
+        quotation.AddLineItem("Flight", 250m, 2, "USD");
+        quotation.CreateRevision("Customer notes", "Internal notes");
+        quotation.Send();
+        quotation.Reject();
+
+        var act = () => quotation.Expire();
+
+        act.Should().Throw<DomainException>().WithMessage("*Rejected quotations cannot be expired*");
+    }
+
+    [Fact]
+    public void QuotationStatusHistory_Create_ShouldCaptureTransition()
+    {
+        var quotationId = Guid.NewGuid();
+        var tenantId = Guid.NewGuid();
+
+        var entry = QuotationStatusHistory.Create(quotationId, tenantId, "Sent", "Accepted", "Approved on call");
+
+        entry.QuotationId.Should().Be(quotationId);
+        entry.TenantId.Should().Be(tenantId);
+        entry.FromStatus.Should().Be("Sent");
+        entry.ToStatus.Should().Be("Accepted");
+        entry.Reason.Should().Be("Approved on call");
+    }
+
+    [Fact]
     public void Itinerary_Confirm_ShouldRequireItems()
     {
         var itinerary = Itinerary.Create(Guid.NewGuid(), Guid.NewGuid(), "Ava", "Trip", "Dubai", DateTimeOffset.UtcNow.AddDays(5), DateTimeOffset.UtcNow.AddDays(8), 2, "USD", null);

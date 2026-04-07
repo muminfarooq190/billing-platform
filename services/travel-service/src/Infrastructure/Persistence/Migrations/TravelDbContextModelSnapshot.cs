@@ -257,6 +257,10 @@ namespace TravelService.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("AcceptedRevisionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("accepted_revision_id");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -266,6 +270,10 @@ namespace TravelService.Infrastructure.Persistence.Migrations
                         .HasMaxLength(3)
                         .HasColumnType("character varying(3)")
                         .HasColumnName("currency");
+
+                    b.Property<int>("CurrentRevisionNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("current_revision_number");
 
                     b.Property<Guid>("CustomerContactId")
                         .HasColumnType("uuid")
@@ -287,14 +295,39 @@ namespace TravelService.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(512)")
                         .HasColumnName("destination");
 
+                    b.Property<DateTimeOffset?>("ExpiredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expired_at");
+
+                    b.Property<DateTimeOffset?>("LastSentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_sent_at");
+
+                    b.Property<DateTimeOffset?>("LastViewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_viewed_at");
+
                     b.Property<string>("Notes")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("notes");
 
+                    b.Property<DateTimeOffset?>("RejectedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("rejected_at");
+
                     b.Property<DateTimeOffset>("ReturnDate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("return_date");
+
+                    b.Property<string>("ShareToken")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("share_token");
+
+                    b.Property<DateTimeOffset?>("ShareTokenExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("share_token_expires_at");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -332,6 +365,342 @@ namespace TravelService.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId");
 
                     b.ToTable("quotations", (string)null);
+                });
+
+            modelBuilder.Entity("TravelService.Domain.Aggregates.QuotationAttachment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AttachmentType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("attachment_type");
+
+                    b.Property<string>("Caption")
+                        .HasColumnType("text")
+                        .HasColumnName("caption");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<bool>("IsCustomerVisible")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_customer_visible");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("original_file_name");
+
+                    b.Property<Guid>("QuotationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("quotation_id");
+
+                    b.Property<Guid?>("QuotationRevisionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("quotation_revision_id");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("storage_key");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<Guid?>("UploadedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uploaded_by_user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuotationId");
+
+                    b.HasIndex("QuotationRevisionId");
+
+                    b.HasIndex("TenantId", "QuotationId", "SortOrder");
+
+                    b.ToTable("quotation_attachments", (string)null);
+                });
+
+            modelBuilder.Entity("TravelService.Domain.Aggregates.QuotationRevision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<Guid>("CustomerContactId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_contact_id");
+
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("customer_name");
+
+                    b.Property<string>("Destination")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("destination");
+
+                    b.Property<string>("InternalNotes")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("internal_notes");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("QuotationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("quotation_id");
+
+                    b.Property<DateTimeOffset>("ReturnDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("return_date");
+
+                    b.Property<int>("RevisionNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("revision_number");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("status");
+
+                    b.Property<decimal>("SubtotalAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("subtotal_amount");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("tax_amount");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("title");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("total_amount");
+
+                    b.Property<DateTimeOffset>("TravelDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("travel_date");
+
+                    b.Property<int>("Travellers")
+                        .HasColumnType("integer")
+                        .HasColumnName("travellers");
+
+                    b.Property<DateTimeOffset>("ValidUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("valid_until");
+
+                    b.Property<string>("VisibleNotes")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("visible_notes");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuotationId", "RevisionNumber")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "QuotationId", "RevisionNumber");
+
+                    b.ToTable("quotation_revisions", (string)null);
+                });
+
+            modelBuilder.Entity("TravelService.Domain.Aggregates.QuotationRevisionLineItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("description");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
+
+                    b.Property<Guid>("QuotationRevisionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("quotation_revision_id");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<decimal>("UnitPriceAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("unit_price_amount");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuotationRevisionId");
+
+                    b.ToTable("quotation_revision_line_items", (string)null);
+                });
+
+            modelBuilder.Entity("TravelService.Domain.Aggregates.QuotationShareLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<DateTimeOffset?>("LastViewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_viewed_at");
+
+                    b.Property<Guid>("QuotationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("quotation_id");
+
+                    b.Property<Guid>("QuotationRevisionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("quotation_revision_id");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("token");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "QuotationId");
+
+                    b.ToTable("quotation_share_links", (string)null);
+                });
+
+            modelBuilder.Entity("TravelService.Domain.Aggregates.QuotationStatusHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("ChangedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("changed_by_user_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("FromStatus")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("from_status");
+
+                    b.Property<Guid>("QuotationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("quotation_id");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("ToStatus")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("to_status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuotationId");
+
+                    b.HasIndex("TenantId", "QuotationId", "CreatedAt");
+
+                    b.ToTable("quotation_status_history", (string)null);
                 });
 
             modelBuilder.Entity("TravelService.Infrastructure.Persistence.OutboxMessage", b =>
@@ -489,6 +858,52 @@ namespace TravelService.Infrastructure.Persistence.Migrations
                                 .HasForeignKey("quotation_id");
                         });
 
+                    b.Navigation("LineItems");
+                });
+
+            modelBuilder.Entity("TravelService.Domain.Aggregates.QuotationAttachment", b =>
+                {
+                    b.HasOne("TravelService.Domain.Aggregates.Quotation", null)
+                        .WithMany()
+                        .HasForeignKey("QuotationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TravelService.Domain.Aggregates.QuotationRevision", null)
+                        .WithMany()
+                        .HasForeignKey("QuotationRevisionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("TravelService.Domain.Aggregates.QuotationRevision", b =>
+                {
+                    b.HasOne("TravelService.Domain.Aggregates.Quotation", null)
+                        .WithMany()
+                        .HasForeignKey("QuotationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TravelService.Domain.Aggregates.QuotationRevisionLineItem", b =>
+                {
+                    b.HasOne("TravelService.Domain.Aggregates.QuotationRevision", null)
+                        .WithMany("LineItems")
+                        .HasForeignKey("QuotationRevisionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TravelService.Domain.Aggregates.QuotationStatusHistory", b =>
+                {
+                    b.HasOne("TravelService.Domain.Aggregates.Quotation", null)
+                        .WithMany()
+                        .HasForeignKey("QuotationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TravelService.Domain.Aggregates.QuotationRevision", b =>
+                {
                     b.Navigation("LineItems");
                 });
 #pragma warning restore 612, 618
