@@ -622,10 +622,21 @@ Implemented:
 - tenant isolation works
 
 ## PR 7.2 - travelers
+Status: completed on branch `feat/phase-7-bookings-core`
+
 Includes:
 - traveler entity
 - add/list/update/delete traveler APIs
 - migration
+
+Implemented:
+- `Traveler` entity + repository layer
+- `POST /travel/bookings/{id}/travelers`
+- `GET /travel/bookings/{id}/travelers`
+- `PUT /travel/bookings/{id}/travelers/{travelerId}`
+- `DELETE /travel/bookings/{id}/travelers/{travelerId}`
+- travelers migration
+- traveler command test coverage
 
 ### Must pass
 - multi-traveler bookings supported
