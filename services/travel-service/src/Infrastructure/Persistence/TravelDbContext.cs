@@ -17,6 +17,7 @@ public sealed class TravelDbContext(DbContextOptions<TravelDbContext> options) :
     public DbSet<BookingStatusHistory> BookingStatusHistory => Set<BookingStatusHistory>();
     public DbSet<Traveler> Travelers => Set<Traveler>();
     public DbSet<BookingItem> BookingItems => Set<BookingItem>();
+    public DbSet<BookingDocument> BookingDocuments => Set<BookingDocument>();
     public DbSet<Itinerary> Itineraries => Set<Itinerary>();
     public DbSet<OutboxMessage> DomainEvents => Set<OutboxMessage>();
 

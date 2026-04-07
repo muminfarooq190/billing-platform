@@ -665,11 +665,22 @@ Implemented:
 - statuses work cleanly
 
 ## PR 7.4 - booking documents
+Status: completed on branch `feat/phase-7-bookings-core`
+
 Includes:
 - document metadata entity
 - upload/list/delete APIs
 - storage integration
 - migration
+
+Implemented:
+- `BookingDocument` entity + repository layer
+- `POST /travel/bookings/{id}/documents`
+- `GET /travel/bookings/{id}/documents`
+- `DELETE /travel/bookings/{id}/documents/{documentId}`
+- booking documents migration
+- booking document test coverage
+- storage integration via existing `IFileStorage`
 
 ### Must pass
 - docs upload/list works

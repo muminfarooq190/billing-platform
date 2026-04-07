@@ -4,12 +4,15 @@ using TravelService.Api.Contracts;
 using TravelService.Application.Commands.AddBookingItem;
 using TravelService.Application.Commands.AddTraveler;
 using TravelService.Application.Commands.CreateBookingFromQuotation;
+using TravelService.Application.Commands.DeleteBookingDocument;
 using TravelService.Application.Commands.DeleteBookingItem;
 using TravelService.Application.Commands.DeleteTraveler;
 using TravelService.Application.Commands.UpdateBookingItem;
 using TravelService.Application.Commands.UpdateBookingItemStatus;
 using TravelService.Application.Commands.UpdateTraveler;
+using TravelService.Application.Commands.UploadBookingDocument;
 using TravelService.Application.Queries.GetBookingById;
+using TravelService.Application.Queries.ListBookingDocuments;
 using TravelService.Application.Queries.ListBookingItems;
 using TravelService.Application.Queries.ListBookings;
 using TravelService.Application.Queries.ListTravelersByBooking;
@@ -173,6 +176,45 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     public async Task<IActionResult> DeleteItem(Guid id, Guid itemId, CancellationToken cancellationToken)
     {
         await mediator.Send(new DeleteBookingItemCommand(tenantContext.TenantId, id, itemId), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/documents")]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    public async Task<IActionResult> UploadDocument(Guid id, [FromForm] UploadBookingDocumentRequest request, CancellationToken cancellationToken)
+    {
+        if (request.File is null || request.File.Length == 0)
+            return BadRequest(new { error = "Document file is required." });
+
+        await using var memoryStream = new MemoryStream();
+        await request.File.CopyToAsync(memoryStream, cancellationToken);
+
+        var result = await mediator.Send(new UploadBookingDocumentCommand(
+            tenantContext.TenantId,
+            id,
+            request.TravelerId,
+            request.File.FileName,
+            request.File.ContentType,
+            request.File.Length,
+            request.DocumentType,
+            request.IsCustomerVisible,
+            request.Description,
+            memoryStream.ToArray()), cancellationToken);
+
+        return Created($"/travel/bookings/{id}/documents/{result.DocumentId}", result);
+    }
+
+    [HttpGet("{id:guid}/documents")]
+    public async Task<IActionResult> ListDocuments(Guid id, CancellationToken cancellationToken)
+    {
+        var documents = await mediator.Send(new ListBookingDocumentsQuery(tenantContext.TenantId, id), cancellationToken);
+        return Ok(documents);
+    }
+
+    [HttpDelete("{id:guid}/documents/{documentId:guid}")]
+    public async Task<IActionResult> DeleteDocument(Guid id, Guid documentId, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new DeleteBookingDocumentCommand(tenantContext.TenantId, id, documentId), cancellationToken);
         return NoContent();
     }
 }
