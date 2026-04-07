@@ -599,11 +599,22 @@ Create bookings only from accepted quotes going forward.
 # 12. PR breakdown
 
 ## PR 7.1 - bookings core
+Status: completed on branch `feat/phase-7-bookings-core`
+
 Includes:
 - booking aggregate
 - create booking from accepted quote
 - list/get booking
 - migration
+
+Implemented:
+- `Booking` aggregate + `BookingStatusHistory`
+- create-booking-from-quotation command flow
+- `POST /travel/bookings/from-quotation/{quotationId}`
+- `GET /travel/bookings`
+- `GET /travel/bookings/{id}`
+- bookings core migration
+- booking core test coverage
 
 ### Must pass
 - accepted quote -> booking works
