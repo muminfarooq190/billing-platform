@@ -5,9 +5,12 @@ using TravelService.Application.Commands.CreateQuotation;
 using TravelService.Application.Commands.CreateQuotationRevision;
 using TravelService.Application.Commands.DeleteQuotationAttachment;
 using TravelService.Application.Commands.ExpireQuotation;
+using TravelService.Application.Commands.MarkPublicQuotationViewed;
 using TravelService.Application.Commands.RejectQuotation;
+using TravelService.Application.Commands.SendQuotation;
 using TravelService.Application.Commands.UpdateQuotation;
 using TravelService.Application.Commands.UploadQuotationAttachment;
+using TravelService.Application.Queries.GetPublicQuotationByToken;
 using TravelService.Application.Queries.GetQuotationById;
 using TravelService.Application.Queries.GetQuotationHistory;
 using TravelService.Application.Queries.GetQuotationRevisionById;
@@ -53,6 +56,21 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
             lineItems), cancellationToken);
 
         return Created($"/travel/quotations/{id}/revisions/{result.RevisionId}", result);
+    }
+
+    [HttpPost("{id:guid}/send")]
+    public async Task<IActionResult> Send(Guid id, [FromBody] SendQuotationRequest request, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new SendQuotationCommand(
+            tenantContext.TenantId,
+            id,
+            request.RevisionId,
+            request.Channel,
+            request.RecipientEmail,
+            request.Message,
+            request.ExpiresAt), cancellationToken);
+
+        return Ok(result);
     }
 
     [HttpPost("{id:guid}/accept")]
@@ -156,6 +174,20 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     {
         var models = await mediator.Send(new ListQuotationsByTenantQuery(tenantContext.TenantId, page, pageSize, status, customerName, travelDateFrom, travelDateTo), cancellationToken);
         return Ok(models);
+    }
+
+    [HttpGet("public/{token}")]
+    public async Task<IActionResult> GetPublicByToken(string token, CancellationToken cancellationToken)
+    {
+        var model = await mediator.Send(new GetPublicQuotationByTokenQuery(token), cancellationToken);
+        return model is null ? NotFound() : Ok(model);
+    }
+
+    [HttpPost("public/{token}/viewed")]
+    public async Task<IActionResult> MarkPublicViewed(string token, CancellationToken cancellationToken)
+    {
+        var updated = await mediator.Send(new MarkPublicQuotationViewedCommand(token), cancellationToken);
+        return updated ? NoContent() : NotFound();
     }
 
     [HttpPut("{id:guid}")]
