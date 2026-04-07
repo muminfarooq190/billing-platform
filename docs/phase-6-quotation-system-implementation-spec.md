@@ -657,22 +657,30 @@ Covered by:
 
 # 13. Postman / docs updates required after implementation
 
-Update collection with:
-- create revision
-- list revisions
-- get revision detail
-- upload attachment
-- list attachments
-- send quote
-- public quote fetch
-- accept/reject/expire
-- quote history
+Status: completed on branch `feat/phase-6-quotation-revisions`
 
-README/docs should gain:
-- quote revision explanation
-- attachment support
-- send/share workflow
-- public quote safety notes
+Updated collection with:
+- [x] create revision
+- [x] list revisions
+- [x] get revision detail
+- [x] upload attachment
+- [x] list attachments
+- [x] send quote
+- [x] public quote fetch
+- [x] accept/reject/expire
+- [x] quote history
+
+README/docs gained:
+- [x] quote revision explanation
+- [x] attachment support
+- [x] send/share workflow
+- [x] public quote safety notes
+
+Implemented locations:
+- `postman/billing-platform.postman_collection.json`
+- `README.md`
+- `docs/phase-6-quotation-api-examples.md`
+- `docs/phase-6-quotation-system-implementation-spec.md`
 
 ---
 
