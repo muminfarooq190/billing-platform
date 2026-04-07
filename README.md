@@ -128,6 +128,32 @@ It now includes:
 - `billing-service`: subscriptions, invoices, payments, dashboard, outbox
 - `travel-service`: contacts, quotations, itineraries, follow-ups, outbox
 
+## Phase 7 booking workflow status
+
+Phase 7 booking and fulfillment foundation is now implemented across the travel service, including:
+- accepted quotation -> booking handoff
+- booking operational statuses + booking list/detail reads
+- traveler CRUD for multi-passenger trips
+- operational booking item CRUD + status updates
+- booking document upload/list/delete support
+
+Useful booking endpoints:
+- `POST /api/travel/bookings/from-quotation/{quotationId}`
+- `GET /api/travel/bookings?page=1&pageSize=20&status=Pending&destination=Rome`
+- `GET /api/travel/bookings/{id}`
+- `POST /api/travel/bookings/{id}/travelers`
+- `GET /api/travel/bookings/{id}/travelers`
+- `PUT /api/travel/bookings/{id}/travelers/{travelerId}`
+- `DELETE /api/travel/bookings/{id}/travelers/{travelerId}`
+- `POST /api/travel/bookings/{id}/items`
+- `GET /api/travel/bookings/{id}/items`
+- `PUT /api/travel/bookings/{id}/items/{itemId}`
+- `PATCH /api/travel/bookings/{id}/items/{itemId}/status`
+- `DELETE /api/travel/bookings/{id}/items/{itemId}`
+- `POST /api/travel/bookings/{id}/documents`
+- `GET /api/travel/bookings/{id}/documents`
+- `DELETE /api/travel/bookings/{id}/documents/{documentId}`
+
 ## Phase 6 quotation workflow status
 
 Phase 6 quotation maturity is now implemented across the travel service, including:

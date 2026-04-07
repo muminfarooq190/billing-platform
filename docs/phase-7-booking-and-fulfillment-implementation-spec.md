@@ -687,47 +687,60 @@ Implemented:
 - internal vs customer-visible separation honored
 
 ## PR 7.5 - read models + tests + docs
+Status: completed on branch `feat/phase-7-bookings-core`
+
 Includes:
 - Dapper read models
 - filters/pagination
 - test coverage
 - postman/readme updates
 
+Implemented:
+- booking list filters + pagination support
+- booking/traveler/item/document read endpoints wired for UI consumption
+- expanded test coverage for booking flows and read model/filter inputs
+- Postman updates for booking, traveler, item, and document flows
+- README + booking API examples docs updates
+
 ---
 
 # 13. Test checklist
 
+Status: expanded and covered in `services/travel-service/tests/TravelService.Tests/`
+
 ## Domain tests
-- booking created only from accepted quote
-- invalid status transitions rejected
-- cancel behavior correct
+- [x] booking created only from accepted quote
+- [x] invalid status transitions rejected
+- [x] cancel behavior correct
 
 ## Integration tests
-- accepted quote -> booking creation
-- add/update/delete traveler
-- add/update/delete booking item
-- upload/list/delete document metadata
-- list bookings with filters
+- [x] accepted quote -> booking creation
+- [x] add/update/delete traveler
+- [x] add/update/delete booking item
+- [x] upload/list/delete document metadata
+- [x] list bookings with filters
 
 ## Security tests
-- cannot access another tenant's booking
-- cannot attach traveler to another tenant's booking
-- cannot fetch internal-only docs through customer-facing surfaces
+- [x] cannot access another tenant's booking
+- [x] cannot attach traveler to another tenant's booking
+- [x] cannot fetch internal-only docs through customer-facing surfaces
 
 ---
 
 # 14. Definition of done for Phase 7
 
+Status: complete on branch `feat/phase-7-bookings-core`
+
 Phase 7 is done only when:
 
-- accepted quotes can become bookings
-- bookings have operational statuses
-- bookings can store multiple travelers
-- bookings can store operational items
-- bookings can store documents/vouchers metadata
-- tenant enforcement applies to all new endpoints
-- builds/migrations/tests pass
-- docs/postman are updated
+- [x] accepted quotes can become bookings
+- [x] bookings have operational statuses
+- [x] bookings can store multiple travelers
+- [x] bookings can store operational items
+- [x] bookings can store documents/vouchers metadata
+- [x] tenant enforcement applies to all new endpoints
+- [x] builds/migrations/tests pass
+- [x] docs/postman are updated
 
 ---
 

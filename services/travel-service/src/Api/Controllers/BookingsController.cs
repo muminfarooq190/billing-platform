@@ -31,9 +31,18 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpGet]
-    public async Task<IActionResult> List(CancellationToken cancellationToken)
+    public async Task<IActionResult> List(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? status = null,
+        [FromQuery] string? destination = null,
+        [FromQuery] DateTimeOffset? startDateFrom = null,
+        [FromQuery] DateTimeOffset? startDateTo = null,
+        [FromQuery] Guid? assignedToUserId = null,
+        [FromQuery] Guid? primaryContactId = null,
+        CancellationToken cancellationToken = default)
     {
-        var bookings = await mediator.Send(new ListBookingsQuery(tenantContext.TenantId), cancellationToken);
+        var bookings = await mediator.Send(new ListBookingsQuery(tenantContext.TenantId, page, pageSize, status, destination, startDateFrom, startDateTo, assignedToUserId, primaryContactId), cancellationToken);
         return Ok(bookings);
     }
 

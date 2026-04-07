@@ -11,6 +11,10 @@ public sealed class ListBookingsQueryHandler(IReadDbConnectionFactory connection
     {
         await using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken) as IAsyncDisposable;
         var dbConnection = (System.Data.IDbConnection)connection!;
+        var page = request.Page <= 0 ? 1 : request.Page;
+        var pageSize = request.PageSize <= 0 ? 20 : Math.Min(request.PageSize, 100);
+        var offset = (page - 1) * pageSize;
+
         var items = await dbConnection.QueryAsync<BookingReadModel>(
             @"SELECT id,
                       tenant_id AS TenantId,
@@ -35,9 +39,17 @@ public sealed class ListBookingsQueryHandler(IReadDbConnectionFactory connection
                       updated_at AS UpdatedAt,
                       cancelled_at AS CancelledAt
                FROM bookings
-               WHERE tenant_id = @TenantId AND deleted_at IS NULL
-               ORDER BY created_at DESC",
-            new { request.TenantId });
+               WHERE tenant_id = @TenantId
+                 AND deleted_at IS NULL
+                 AND (@Status IS NULL OR status = @Status)
+                 AND (@Destination IS NULL OR destination ILIKE '%' || @Destination || '%')
+                 AND (@StartDateFrom IS NULL OR start_date >= @StartDateFrom)
+                 AND (@StartDateTo IS NULL OR start_date <= @StartDateTo)
+                 AND (@AssignedToUserId IS NULL OR assigned_to_user_id = @AssignedToUserId)
+                 AND (@PrimaryContactId IS NULL OR primary_contact_id = @PrimaryContactId)
+               ORDER BY created_at DESC
+               LIMIT @PageSize OFFSET @Offset",
+            new { request.TenantId, request.Status, request.Destination, request.StartDateFrom, request.StartDateTo, request.AssignedToUserId, request.PrimaryContactId, PageSize = pageSize, Offset = offset });
         return items.ToList();
     }
 }
