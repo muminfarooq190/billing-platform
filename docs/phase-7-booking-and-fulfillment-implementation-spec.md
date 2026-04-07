@@ -643,10 +643,22 @@ Implemented:
 - traveler ownership scoped by booking tenant
 
 ## PR 7.3 - booking items / supplier ops
+Status: completed on branch `feat/phase-7-bookings-core`
+
 Includes:
 - item entity
 - item CRUD/status APIs
 - migration
+
+Implemented:
+- `BookingItem` entity + repository layer
+- `POST /travel/bookings/{id}/items`
+- `GET /travel/bookings/{id}/items`
+- `PUT /travel/bookings/{id}/items/{itemId}`
+- `PATCH /travel/bookings/{id}/items/{itemId}/status`
+- `DELETE /travel/bookings/{id}/items/{itemId}`
+- booking items migration
+- booking item test coverage
 
 ### Must pass
 - ops items can be tracked independently

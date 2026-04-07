@@ -1,11 +1,16 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using TravelService.Api.Contracts;
+using TravelService.Application.Commands.AddBookingItem;
 using TravelService.Application.Commands.AddTraveler;
 using TravelService.Application.Commands.CreateBookingFromQuotation;
+using TravelService.Application.Commands.DeleteBookingItem;
 using TravelService.Application.Commands.DeleteTraveler;
+using TravelService.Application.Commands.UpdateBookingItem;
+using TravelService.Application.Commands.UpdateBookingItemStatus;
 using TravelService.Application.Commands.UpdateTraveler;
 using TravelService.Application.Queries.GetBookingById;
+using TravelService.Application.Queries.ListBookingItems;
 using TravelService.Application.Queries.ListBookings;
 using TravelService.Application.Queries.ListTravelersByBooking;
 
@@ -95,6 +100,79 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     public async Task<IActionResult> DeleteTraveler(Guid id, Guid travelerId, CancellationToken cancellationToken)
     {
         await mediator.Send(new DeleteTravelerCommand(tenantContext.TenantId, id, travelerId), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/items")]
+    public async Task<IActionResult> AddItem(Guid id, [FromBody] AddBookingItemRequest request, CancellationToken cancellationToken)
+    {
+        var itemId = await mediator.Send(new AddBookingItemCommand(
+            tenantContext.TenantId,
+            id,
+            request.Type,
+            request.Title,
+            request.Description,
+            request.SupplierName,
+            request.SupplierReference,
+            request.Location,
+            request.StartAt,
+            request.EndAt,
+            request.SellAmount,
+            request.CostAmount,
+            request.Currency,
+            request.VoucherNumber,
+            request.ConfirmationNumber,
+            request.AssignedToUserId,
+            request.Notes,
+            request.SortOrder), cancellationToken);
+
+        return Created($"/travel/bookings/{id}/items/{itemId}", new { itemId });
+    }
+
+    [HttpGet("{id:guid}/items")]
+    public async Task<IActionResult> ListItems(Guid id, CancellationToken cancellationToken)
+    {
+        var items = await mediator.Send(new ListBookingItemsQuery(tenantContext.TenantId, id), cancellationToken);
+        return Ok(items);
+    }
+
+    [HttpPut("{id:guid}/items/{itemId:guid}")]
+    public async Task<IActionResult> UpdateItem(Guid id, Guid itemId, [FromBody] UpdateBookingItemRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new UpdateBookingItemCommand(
+            tenantContext.TenantId,
+            id,
+            itemId,
+            request.Type,
+            request.Title,
+            request.Description,
+            request.SupplierName,
+            request.SupplierReference,
+            request.Location,
+            request.StartAt,
+            request.EndAt,
+            request.SellAmount,
+            request.CostAmount,
+            request.Currency,
+            request.VoucherNumber,
+            request.ConfirmationNumber,
+            request.AssignedToUserId,
+            request.Notes,
+            request.SortOrder), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPatch("{id:guid}/items/{itemId:guid}/status")]
+    public async Task<IActionResult> UpdateItemStatus(Guid id, Guid itemId, [FromBody] UpdateBookingItemStatusRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new UpdateBookingItemStatusCommand(tenantContext.TenantId, id, itemId, request.Status), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}/items/{itemId:guid}")]
+    public async Task<IActionResult> DeleteItem(Guid id, Guid itemId, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new DeleteBookingItemCommand(tenantContext.TenantId, id, itemId), cancellationToken);
         return NoContent();
     }
 }

@@ -30,6 +30,7 @@ public sealed class Program
         builder.Services.AddScoped<IBookingRepository, BookingRepository>();
         builder.Services.AddScoped<IBookingStatusHistoryRepository, BookingStatusHistoryRepository>();
         builder.Services.AddScoped<ITravelerRepository, TravelerRepository>();
+        builder.Services.AddScoped<IBookingItemRepository, BookingItemRepository>();
         builder.Services.AddScoped<IItineraryRepository, ItineraryRepository>();
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
         builder.Services.AddScoped<IReadDbConnectionFactory, ReadDbConnectionFactory>();
