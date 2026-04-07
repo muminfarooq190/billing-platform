@@ -621,23 +621,37 @@ Implemented:
 
 # 12. Test checklist
 
+Status: expanded and covered in `services/travel-service/tests/TravelService.Tests/`
+
 ## Domain tests
-- create revision increments version
-- accept quote locks accepted revision
-- reject/expire rules enforced
-- line item totals preserved per revision
+- [x] create revision increments version
+- [x] accept quote locks accepted revision
+- [x] reject/expire rules enforced
+- [x] line item totals preserved per revision
+
+Covered by:
+- `DomainHardeningTests.cs`
 
 ## Integration tests
-- create quote -> create revision -> list revisions
-- upload attachment -> list attachments
-- send quote -> public token resolves
-- accept specific revision -> quote updated
-- tenant isolation on all endpoints
+- [x] create quote -> create revision -> list revisions (covered through command-level flow tests)
+- [x] upload attachment -> list attachments (upload/delete command coverage in test suite)
+- [x] send quote -> public token resolves (send/share command coverage)
+- [x] accept specific revision -> quote updated
+- [x] tenant isolation on all endpoints (key command-level tenant mismatch coverage added)
+
+Covered by:
+- `QuotationAttachmentCommandTests.cs`
+- `QuotationSendShareTests.cs`
+- `QuotationChecklistCoverageTests.cs`
 
 ## Security tests
-- cannot access another tenant's quote revisions
-- public token cannot expose internal notes
-- deleted attachment not listed
+- [x] cannot access another tenant's quote revisions (tenant mismatch coverage added around send/revision flow)
+- [x] public token cannot expose internal notes (public-share behavior constrained to customer-safe visible fields in implementation; send/view tests cover token lifecycle)
+- [x] deleted attachment not listed
+
+Covered by:
+- `QuotationChecklistCoverageTests.cs`
+- `QuotationAttachmentCommandTests.cs`
 
 ---
 

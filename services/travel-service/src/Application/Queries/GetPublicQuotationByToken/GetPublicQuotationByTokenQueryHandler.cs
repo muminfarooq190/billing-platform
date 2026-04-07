@@ -33,10 +33,12 @@ INNER JOIN quotations q ON q.id = sl.quotation_id
 INNER JOIN quotation_revisions r ON r.id = sl.quotation_revision_id
 WHERE sl.token = @Token
   AND sl.revoked_at IS NULL
-  AND (sl.expires_at IS NULL OR sl.expires_at >= NOW())
+  AND (sl.expires_at IS NULL OR sl.expires_at >= @Now)
   AND q.deleted_at IS NULL;";
 
-        var quotation = await db.QuerySingleOrDefaultAsync<PublicQuotationFlatRow>(quotationSql, new { request.Token });
+        var now = DateTimeOffset.UtcNow;
+
+        var quotation = await db.QuerySingleOrDefaultAsync<PublicQuotationFlatRow>(quotationSql, new { request.Token, Now = now });
         if (quotation is null)
             return null;
 
@@ -67,14 +69,14 @@ WHERE quotation_id = @QuotationId
   AND (quotation_revision_id IS NULL OR quotation_revision_id = @RevisionId)
 ORDER BY sort_order, created_at;";
 
-        var lineItems = (await db.QueryAsync<PublicQuotationLineItemReadModel>(lineItemsSql, new { quotation.RevisionId })).ToList();
-        var attachmentRows = await db.QueryAsync<PublicQuotationAttachmentFlatRow>(attachmentsSql, new { quotation.QuotationId, quotation.RevisionId });
+        var lineItems = (await db.QueryAsync<PublicQuotationLineItemReadModel>(lineItemsSql, new { RevisionId = Guid.Parse(quotation.RevisionId) })).ToList();
+        var attachmentRows = await db.QueryAsync<PublicQuotationAttachmentFlatRow>(attachmentsSql, new { QuotationId = Guid.Parse(quotation.QuotationId), RevisionId = Guid.Parse(quotation.RevisionId) });
         var attachments = new List<PublicQuotationAttachmentReadModel>();
         foreach (var attachment in attachmentRows)
         {
             var readUrl = await fileStorage.GetSignedReadUrlAsync(attachment.StorageKey, TimeSpan.FromHours(1), cancellationToken);
             attachments.Add(new PublicQuotationAttachmentReadModel(
-                attachment.Id,
+                Guid.Parse(attachment.Id),
                 attachment.OriginalFileName,
                 attachment.ContentType,
                 attachment.SizeBytes,
@@ -85,8 +87,8 @@ ORDER BY sort_order, created_at;";
         }
 
         return new PublicQuotationReadModel(
-            quotation.QuotationId,
-            quotation.RevisionId,
+            Guid.Parse(quotation.QuotationId),
+            Guid.Parse(quotation.RevisionId),
             quotation.CustomerName,
             quotation.Title,
             quotation.Destination,
@@ -103,29 +105,33 @@ ORDER BY sort_order, created_at;";
             attachments);
     }
 
-    private sealed record PublicQuotationFlatRow(
-        Guid QuotationId,
-        Guid RevisionId,
-        string CustomerName,
-        string Title,
-        string Destination,
-        DateTimeOffset TravelDate,
-        DateTimeOffset ReturnDate,
-        int Travellers,
-        string Currency,
-        string VisibleNotes,
-        DateTimeOffset ValidUntil,
-        decimal TotalAmount,
-        DateTimeOffset? SentAt,
-        DateTimeOffset? LastViewedAt);
+    private sealed class PublicQuotationFlatRow
+    {
+        public string QuotationId { get; init; } = string.Empty;
+        public string RevisionId { get; init; } = string.Empty;
+        public string CustomerName { get; init; } = string.Empty;
+        public string Title { get; init; } = string.Empty;
+        public string Destination { get; init; } = string.Empty;
+        public DateTimeOffset TravelDate { get; init; }
+        public DateTimeOffset ReturnDate { get; init; }
+        public int Travellers { get; init; }
+        public string Currency { get; init; } = string.Empty;
+        public string VisibleNotes { get; init; } = string.Empty;
+        public DateTimeOffset ValidUntil { get; init; }
+        public decimal TotalAmount { get; init; }
+        public DateTimeOffset? SentAt { get; init; }
+        public DateTimeOffset? LastViewedAt { get; init; }
+    }
 
-    private sealed record PublicQuotationAttachmentFlatRow(
-        Guid Id,
-        string OriginalFileName,
-        string ContentType,
-        long SizeBytes,
-        string AttachmentType,
-        string? Caption,
-        int SortOrder,
-        string StorageKey);
+    private sealed class PublicQuotationAttachmentFlatRow
+    {
+        public string Id { get; init; } = string.Empty;
+        public string OriginalFileName { get; init; } = string.Empty;
+        public string ContentType { get; init; } = string.Empty;
+        public long SizeBytes { get; init; }
+        public string AttachmentType { get; init; } = string.Empty;
+        public string? Caption { get; init; }
+        public int SortOrder { get; init; }
+        public string StorageKey { get; init; } = string.Empty;
+    }
 }

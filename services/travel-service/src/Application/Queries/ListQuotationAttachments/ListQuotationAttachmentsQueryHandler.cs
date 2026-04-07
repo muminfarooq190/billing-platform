@@ -46,10 +46,10 @@ ORDER BY sort_order, created_at;";
         {
             var readUrl = await fileStorage.GetReadUrlAsync(row.StorageKey, cancellationToken);
             results.Add(new QuotationAttachmentReadModel(
-                row.Id,
-                row.QuotationId,
-                row.QuotationRevisionId,
-                row.TenantId,
+                Guid.Parse(row.Id),
+                Guid.Parse(row.QuotationId),
+                string.IsNullOrWhiteSpace(row.QuotationRevisionId) ? null : Guid.Parse(row.QuotationRevisionId),
+                Guid.Parse(row.TenantId),
                 row.OriginalFileName,
                 row.ContentType,
                 row.SizeBytes,
@@ -58,24 +58,26 @@ ORDER BY sort_order, created_at;";
                 row.IsCustomerVisible,
                 row.SortOrder,
                 readUrl,
-                row.CreatedAt));
+                DateTimeOffset.Parse(row.CreatedAt)));
         }
 
         return results.AsReadOnly();
     }
 
-    private sealed record FlatQuotationAttachmentReadModel(
-        Guid Id,
-        Guid QuotationId,
-        Guid? QuotationRevisionId,
-        Guid TenantId,
-        string OriginalFileName,
-        string ContentType,
-        long SizeBytes,
-        string AttachmentType,
-        string? Caption,
-        bool IsCustomerVisible,
-        int SortOrder,
-        string StorageKey,
-        DateTimeOffset CreatedAt);
+    private sealed class FlatQuotationAttachmentReadModel
+    {
+        public string Id { get; init; } = string.Empty;
+        public string QuotationId { get; init; } = string.Empty;
+        public string? QuotationRevisionId { get; init; }
+        public string TenantId { get; init; } = string.Empty;
+        public string OriginalFileName { get; init; } = string.Empty;
+        public string ContentType { get; init; } = string.Empty;
+        public long SizeBytes { get; init; }
+        public string AttachmentType { get; init; } = string.Empty;
+        public string? Caption { get; init; }
+        public bool IsCustomerVisible { get; init; }
+        public int SortOrder { get; init; }
+        public string StorageKey { get; init; } = string.Empty;
+        public string CreatedAt { get; init; } = string.Empty;
+    }
 }
