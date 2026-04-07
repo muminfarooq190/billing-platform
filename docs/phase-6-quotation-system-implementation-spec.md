@@ -582,11 +582,21 @@ Includes:
 - customer visibility flag enforced
 
 ## PR 6.4 - send/share/public view
+Status: completed on branch `feat/phase-6-quotation-revisions`
+
 Includes:
 - share links
 - send command
 - public token endpoint
 - viewed tracking optional
+
+Implemented:
+- `POST /travel/quotations/{id}/send`
+- `GET /travel/quotations/public/{token}`
+- `POST /travel/quotations/public/{token}/viewed`
+- `quotation_share_links` persistence + migration
+- customer-safe public quote read model that excludes internal notes and non-customer-visible attachments
+- automated tests covering send/share + viewed tracking flow
 
 ### Must pass
 - public view excludes internal data
