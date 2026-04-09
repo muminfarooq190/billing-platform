@@ -48,4 +48,18 @@ public sealed class FollowUpsController(IMediator mediator, ITenantContext tenan
         await mediator.Send(new UpdateFollowUpCommand(id, request.Subject, request.Notes, request.Priority, request.DueDate, request.AssignedToUserId, request.Status), cancellationToken);
         return NoContent();
     }
+
+    [HttpPost("{id:guid}/complete")]
+    public async Task<IActionResult> Complete(Guid id, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new CompleteFollowUpCommand(id), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/reassign")]
+    public async Task<IActionResult> Reassign(Guid id, [FromBody] ReassignFollowUpRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new ReassignFollowUpCommand(id, request.AssignedToUserId), cancellationToken);
+        return NoContent();
+    }
 }
