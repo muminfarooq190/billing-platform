@@ -6,6 +6,7 @@ namespace BillingService.Infrastructure.Persistence;
 public sealed class BillingDbContext(DbContextOptions<BillingDbContext> options) : DbContext(options)
 {
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
+    public DbSet<FeatureEntitlement> FeatureEntitlements => Set<FeatureEntitlement>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
     public DbSet<OutboxMessage> DomainEvents => Set<OutboxMessage>();
 
