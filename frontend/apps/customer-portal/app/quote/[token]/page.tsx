@@ -52,6 +52,17 @@ type TenantBranding = {
   tagline?: string | null;
 };
 
+type TenantTemplateTheme = {
+  id: string;
+  templateScope: string;
+  headerHtml?: string | null;
+  footerHtml?: string | null;
+  customCss?: string | null;
+  logoAssetId?: string | null;
+  backgroundAssetId?: string | null;
+  settingsJson?: string | null;
+};
+
 const travelBaseUrl = process.env.TRAVEL_BASE_URL ?? 'http://localhost:8082';
 const identityBaseUrl = process.env.IDENTITY_BASE_URL ?? 'http://localhost:8080';
 const tenantId = process.env.DEFAULT_TENANT_ID;
@@ -71,8 +82,21 @@ async function getBranding(): Promise<TenantBranding | null> {
   return response.json();
 }
 
+async function getTemplateTheme(scope: string): Promise<TenantTemplateTheme | null> {
+  const response = await fetch(`${identityBaseUrl}/tenant-branding/templates/${scope}`, {
+    headers: tenantId ? { 'X-Tenant-Id': tenantId } : {},
+    cache: 'no-store',
+  });
+  if (!response.ok) return null;
+  return response.json();
+}
+
 export default async function PublicQuotePage({ params }: QuotePageProps) {
-  const [quote, branding] = await Promise.all([getPublicQuote(params.token), getBranding()]);
+  const [quote, branding, theme] = await Promise.all([
+    getPublicQuote(params.token),
+    getBranding(),
+    getTemplateTheme('QuotationPublicView'),
+  ]);
 
   if (!quote) {
     return (
@@ -99,6 +123,7 @@ export default async function PublicQuotePage({ params }: QuotePageProps) {
           {branding?.displayName ?? 'Voyara'}
         </div>
         <div style={{ color: '#64748b', marginTop: 4 }}>{branding?.tagline ?? 'Travel quotation'}</div>
+        {theme?.headerHtml ? <div style={{ marginTop: 12 }} dangerouslySetInnerHTML={{ __html: theme.headerHtml }} /> : null}
       </div>
 
       <span
@@ -155,6 +180,7 @@ export default async function PublicQuotePage({ params }: QuotePageProps) {
       ) : null}
 
       <footer style={{ marginTop: 32, color: '#64748b' }}>
+        {theme?.footerHtml ? <div dangerouslySetInnerHTML={{ __html: theme.footerHtml }} /> : null}
         {branding?.supportEmail ? <div>Support: {branding.supportEmail}</div> : null}
         {branding?.supportPhone ? <div>Phone: {branding.supportPhone}</div> : null}
         {branding?.websiteUrl ? <div>Website: {branding.websiteUrl}</div> : null}
