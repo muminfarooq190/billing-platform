@@ -6,10 +6,12 @@ using MediatR;
 
 namespace CommunicationService.Application.Commands.CreateTemplate;
 
-public sealed class CreateTemplateCommandHandler(INotificationTemplateRepository templateRepository, IUnitOfWork unitOfWork) : IRequestHandler<CreateTemplateCommand, Guid>
+public sealed class CreateTemplateCommandHandler(INotificationTemplateRepository templateRepository, IFeatureGate featureGate, IUnitOfWork unitOfWork) : IRequestHandler<CreateTemplateCommand, Guid>
 {
     public async Task<Guid> Handle(CreateTemplateCommand request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync(FeatureKeys.CommunicationTemplatesManage, request.TenantId, cancellationToken);
+
         var template = NotificationTemplate.Create(
             request.TenantId,
             request.Name,
