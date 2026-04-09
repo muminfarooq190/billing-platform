@@ -14,13 +14,7 @@ public sealed class CompleteFollowUpCommandHandler(IFollowUpRepository followUpR
         var followUp = await followUpRepository.GetByIdAsync(request.FollowUpId, cancellationToken)
             ?? throw new DomainException($"Follow-up {request.FollowUpId} not found.");
 
-        followUp.Update(
-            followUp.Subject,
-            followUp.Notes,
-            followUp.Priority.ToString(),
-            followUp.DueDate,
-            followUp.AssignedToUserId,
-            FollowUpStatus.Completed.ToString());
+        followUp.MarkCompleted();
 
         await followUpRepository.UpdateAsync(followUp, cancellationToken);
         await activityWriter.WriteAsync(
