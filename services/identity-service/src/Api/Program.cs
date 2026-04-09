@@ -29,6 +29,7 @@ public sealed class Program
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
         builder.Services.AddScoped<IReadDbConnectionFactory, ReadDbConnectionFactory>();
+        builder.Services.AddScoped<IBrandAssetStorage, LocalBrandAssetStorage>();
         builder.Services.AddSingleton<JwtTokenService>();
         builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(builder.Configuration["REDIS_URL"] ?? "redis:6379"));
         builder.Services.AddStackExchangeRedisCache(options =>

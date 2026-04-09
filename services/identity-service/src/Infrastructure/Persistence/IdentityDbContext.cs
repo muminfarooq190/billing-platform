@@ -7,6 +7,8 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
 {
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<TenantBranding> TenantBranding => Set<TenantBranding>();
+    public DbSet<TenantBrandAsset> TenantBrandAssets => Set<TenantBrandAsset>();
     public DbSet<OutboxMessage> DomainEvents => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
