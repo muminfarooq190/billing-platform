@@ -21,7 +21,7 @@ public sealed class SendNotificationCommandHandler(
 
         var recipientType = Enum.Parse<RecipientType>(request.RecipientType, true);
         var priority = Enum.Parse<NotificationPriority>(request.Priority, true);
-        var placeholders = brandingTemplateRenderer.Enrich(request.TenantId, request.Placeholders ?? []);
+        var placeholders = await brandingTemplateRenderer.EnrichAsync(request.TenantId, "Email", request.Placeholders ?? [], cancellationToken);
 
         string subject;
         string body;

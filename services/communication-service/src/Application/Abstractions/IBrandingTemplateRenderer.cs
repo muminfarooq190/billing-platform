@@ -2,5 +2,5 @@ namespace CommunicationService.Application.Abstractions;
 
 public interface IBrandingTemplateRenderer
 {
-    Dictionary<string, string> Enrich(Guid tenantId, Dictionary<string, string> placeholders);
+    Task<Dictionary<string, string>> EnrichAsync(Guid tenantId, string scope, Dictionary<string, string> placeholders, CancellationToken cancellationToken);
 }

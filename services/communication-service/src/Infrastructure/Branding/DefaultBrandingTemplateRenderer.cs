@@ -4,7 +4,7 @@ namespace CommunicationService.Infrastructure.Branding;
 
 public sealed class DefaultBrandingTemplateRenderer : IBrandingTemplateRenderer
 {
-    public Dictionary<string, string> Enrich(Guid tenantId, Dictionary<string, string> placeholders)
+    public Task<Dictionary<string, string>> EnrichAsync(Guid tenantId, string scope, Dictionary<string, string> placeholders, CancellationToken cancellationToken)
     {
         var merged = new Dictionary<string, string>(placeholders, StringComparer.OrdinalIgnoreCase)
         {
@@ -13,6 +13,6 @@ public sealed class DefaultBrandingTemplateRenderer : IBrandingTemplateRenderer
             ["BrandSupportEmail"] = placeholders.GetValueOrDefault("BrandSupportEmail") ?? "support@voyara.local"
         };
 
-        return merged;
+        return Task.FromResult(merged);
     }
 }
