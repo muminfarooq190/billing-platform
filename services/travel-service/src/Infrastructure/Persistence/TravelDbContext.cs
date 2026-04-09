@@ -16,6 +16,7 @@ public sealed class TravelDbContext(DbContextOptions<TravelDbContext> options) :
     public DbSet<QuotationAttachment> QuotationAttachments => Set<QuotationAttachment>();
     public DbSet<QuotationStatusHistory> QuotationStatusHistory => Set<QuotationStatusHistory>();
     public DbSet<QuotationShareLink> QuotationShareLinks => Set<QuotationShareLink>();
+    public DbSet<QuotationApprovalRequest> QuotationApprovalRequests => Set<QuotationApprovalRequest>();
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<BookingStatusHistory> BookingStatusHistory => Set<BookingStatusHistory>();
     public DbSet<Traveler> Travelers => Set<Traveler>();

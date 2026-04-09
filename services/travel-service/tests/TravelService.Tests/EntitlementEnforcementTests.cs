@@ -32,6 +32,7 @@ public sealed class EntitlementEnforcementTests
             new SingleRevisionRepository(revision),
             new InMemoryShareLinkRepository(),
             new InMemoryStatusHistoryRepository(),
+            new InMemoryApprovalRepository(),
             new DenyFeatureGate(),
             new NoOpActivityWriter(),
             new FakeActorContext(quotation.TenantId),
@@ -113,6 +114,14 @@ public sealed class EntitlementEnforcementTests
     {
         public Task AddAsync(QuotationStatusHistory history, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task<IReadOnlyList<QuotationStatusHistory>> ListByQuotationIdAsync(Guid quotationId, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<QuotationStatusHistory>>([]);
+    }
+
+    private sealed class InMemoryApprovalRepository : IQuotationApprovalRequestRepository
+    {
+        public Task AddAsync(QuotationApprovalRequest request, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<QuotationApprovalRequest?> GetByIdAsync(Guid quotationId, Guid approvalRequestId, CancellationToken cancellationToken) => Task.FromResult<QuotationApprovalRequest?>(null);
+        public Task<IReadOnlyList<QuotationApprovalRequest>> ListByQuotationIdAsync(Guid quotationId, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<QuotationApprovalRequest>>([]);
+        public Task UpdateAsync(QuotationApprovalRequest request, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class InMemoryEntityNoteRepository : IEntityNoteRepository
