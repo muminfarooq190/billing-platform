@@ -377,10 +377,17 @@ A tenant can set colors and upload logos.
 
 ## Phase B2 - frontend portal theming
 
+Status: in progress / partially implemented
+
 ### Add
 - branding bootstrap endpoint usage in frontend
 - CSS variable application
 - logo rendering in shell/header/login surfaces
+
+Implemented so far:
+- admin and customer portal tracked layouts now use branding-aware shells
+- portals pull existing tenant branding from identity-service B1 APIs
+- shell/header surfaces now reflect tenant display/theme metadata instead of static app chrome
 
 ### Outcome
 Portal visibly changes by tenant.
@@ -389,10 +396,17 @@ Portal visibly changes by tenant.
 
 ## Phase B3 - travel quotation/public-view branding
 
+Status: implemented in tracked customer portal surface
+
 ### Add
 - tenant branding lookup in travel-service or frontend public view
 - quote/public page themed by tenant
 - logo + colors on quotation exports/views
+
+Implemented so far:
+- customer portal public quote page now loads real public quotation data
+- page also loads tenant branding and applies tenant-aware colors/support/footer details
+- public quotation experience is no longer a dead scaffold page
 
 ### Outcome
 Customer-facing quotation experience becomes white-labeled.
@@ -401,10 +415,17 @@ Customer-facing quotation experience becomes white-labeled.
 
 ## Phase B4 - communication template branding
 
+Status: initial implementation complete
+
 ### Add
 - email header/footer branding
 - notification template styling support
 - branding resolution cache
+
+Implemented so far:
+- communication-service now enriches notification placeholders with branding placeholders
+- default branding placeholders include `BrandDisplayName`, `BrandPrimaryColor`, and `BrandSupportEmail`
+- template rendering can now consume tenant-brand-style placeholders without hardcoding them into each template
 
 ### Outcome
 Emails and notifications feel tenant-owned.
@@ -412,6 +433,8 @@ Emails and notifications feel tenant-owned.
 ---
 
 ## Phase B5 - advanced template theming
+
+Status: initial docs/alignment pass complete, advanced surface still pending
 
 ### Add
 - per-surface template overrides

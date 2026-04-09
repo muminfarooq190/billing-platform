@@ -1,6 +1,7 @@
 using CommunicationService.Api.Filters;
 using CommunicationService.Application.Abstractions;
 using CommunicationService.Domain.Repositories;
+using CommunicationService.Infrastructure.Branding;
 using CommunicationService.Infrastructure.Caching;
 using CommunicationService.Infrastructure.Channels;
 using CommunicationService.Infrastructure.Entitlements;
@@ -64,6 +65,11 @@ public sealed class Program
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
         builder.Services.AddScoped<IReadDbConnectionFactory, ReadDbConnectionFactory>();
         builder.Services.AddScoped<ICacheService, RedisCacheService>();
+        builder.Services.AddHttpClient<IIdentityBrandingClient, IdentityBrandingClient>(client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["IDENTITY_SERVICE_URL"] ?? "http://localhost:8080/");
+        });
+        builder.Services.AddScoped<IBrandingTemplateRenderer, IdentityBackedBrandingTemplateRenderer>();
         builder.Services.AddHttpClient<IBillingEntitlementsClient, BillingEntitlementsClient>(client =>
         {
             client.BaseAddress = new Uri(builder.Configuration["BILLING_SERVICE_URL"] ?? "http://localhost:5080/");

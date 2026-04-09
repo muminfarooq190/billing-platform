@@ -12,6 +12,7 @@ public sealed class SendNotificationCommandHandler(
     INotificationTemplateRepository templateRepository,
     IRecipientPreferencesRepository preferencesRepository,
     IFeatureGate featureGate,
+    IBrandingTemplateRenderer brandingTemplateRenderer,
     IUnitOfWork unitOfWork) : IRequestHandler<SendNotificationCommand, Guid>
 {
     public async Task<Guid> Handle(SendNotificationCommand request, CancellationToken cancellationToken)
@@ -20,7 +21,7 @@ public sealed class SendNotificationCommandHandler(
 
         var recipientType = Enum.Parse<RecipientType>(request.RecipientType, true);
         var priority = Enum.Parse<NotificationPriority>(request.Priority, true);
-        var placeholders = request.Placeholders ?? [];
+        var placeholders = await brandingTemplateRenderer.EnrichAsync(request.TenantId, "Email", request.Placeholders ?? [], cancellationToken);
 
         string subject;
         string body;
