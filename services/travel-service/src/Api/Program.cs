@@ -36,6 +36,7 @@ public sealed class Program
         builder.Services.AddScoped<IQuotationStatusHistoryRepository, QuotationStatusHistoryRepository>();
         builder.Services.AddScoped<IQuotationShareLinkRepository, QuotationShareLinkRepository>();
         builder.Services.AddScoped<IQuotationApprovalRequestRepository, QuotationApprovalRequestRepository>();
+        builder.Services.AddScoped<IBookingChangeRequestRepository, BookingChangeRequestRepository>();
         builder.Services.AddScoped<IBookingRepository, BookingRepository>();
         builder.Services.AddScoped<IBookingStatusHistoryRepository, BookingStatusHistoryRepository>();
         builder.Services.AddScoped<ITravelerRepository, TravelerRepository>();
