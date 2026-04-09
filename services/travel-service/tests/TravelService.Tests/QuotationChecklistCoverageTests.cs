@@ -21,7 +21,7 @@ public sealed class QuotationChecklistCoverageTests
 
         var quotationRepository = new InMemoryQuotationRepository(quotation);
         var revisionRepository = new InMemoryQuotationRevisionRepository();
-        var createRevisionHandler = new CreateQuotationRevisionCommandHandler(quotationRepository, revisionRepository, new NoOpActivityWriter(), new NoOpUnitOfWork());
+        var createRevisionHandler = new CreateQuotationRevisionCommandHandler(quotationRepository, revisionRepository, new NoOpActivityWriter(), new NoOpAuditWriter(), new FakeActorContext(quotation.TenantId), new NoOpUnitOfWork());
 
         var createResult = await createRevisionHandler.Handle(new CreateQuotationRevisionCommand(
             quotation.TenantId,
@@ -116,6 +116,8 @@ public sealed class QuotationChecklistCoverageTests
             new InMemoryQuotationRepository(quotation),
             new InMemoryQuotationRevisionRepository(revision),
             new InMemoryQuotationStatusHistoryRepository(),
+            new NoOpAuditWriter(),
+            new FakeActorContext(quotation.TenantId),
             new NoOpUnitOfWork());
 
         await handler.Handle(new AcceptQuotationCommand(quotation.TenantId, quotation.Id, revision.Id, "Approved by customer"), CancellationToken.None);
@@ -266,6 +268,19 @@ public sealed class QuotationChecklistCoverageTests
     private sealed class NoOpActivityWriter : IActivityWriter
     {
         public Task WriteAsync(ActivityEntry entry, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class NoOpAuditWriter : IAuditWriter
+    {
+        public Task WriteAsync(AuditLog entry, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class FakeActorContext(Guid tenantId) : IActorContext
+    {
+        public Guid? UserId { get; } = Guid.NewGuid();
+        public Guid TenantId { get; } = tenantId;
+        public string? IpAddress { get; } = "127.0.0.1";
+        public string? UserAgent { get; } = "tests";
     }
 
     private sealed class NoOpUnitOfWork : IUnitOfWork

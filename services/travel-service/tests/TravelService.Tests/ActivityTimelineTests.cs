@@ -15,7 +15,7 @@ public sealed class ActivityTimelineTests
         var quotation = CreateQuotation();
         quotation.AddLineItem("Flight", 1200m, 1, "USD");
         var activityWriter = new RecordingActivityWriter();
-        var handler = new CreateQuotationRevisionCommandHandler(new InMemoryQuotationRepository(quotation), new InMemoryQuotationRevisionRepository(), activityWriter, new NoOpUnitOfWork());
+        var handler = new CreateQuotationRevisionCommandHandler(new InMemoryQuotationRepository(quotation), new InMemoryQuotationRevisionRepository(), activityWriter, new NoOpAuditWriter(), new FakeActorContext(quotation.TenantId), new NoOpUnitOfWork());
 
         await handler.Handle(new CreateQuotationRevisionCommand(quotation.TenantId, quotation.Id, quotation.Title, quotation.Destination, quotation.TravelDate, quotation.ReturnDate, quotation.Travellers, quotation.Currency, "Visible", "Internal", DateTimeOffset.UtcNow.AddDays(10), [new QuotationRevisionLineItemDto("Flight", 1200m, 1, "USD")]), CancellationToken.None);
 
@@ -78,6 +78,19 @@ public sealed class ActivityTimelineTests
     {
         public Task AddAsync(BookingStatusHistory history, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task<IReadOnlyList<BookingStatusHistory>> ListByBookingIdAsync(Guid bookingId, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<BookingStatusHistory>>([]);
+    }
+
+    private sealed class NoOpAuditWriter : IAuditWriter
+    {
+        public Task WriteAsync(AuditLog entry, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class FakeActorContext(Guid tenantId) : IActorContext
+    {
+        public Guid? UserId { get; } = Guid.NewGuid();
+        public Guid TenantId { get; } = tenantId;
+        public string? IpAddress { get; } = "127.0.0.1";
+        public string? UserAgent { get; } = "tests";
     }
 
     private sealed class NoOpUnitOfWork : IUnitOfWork

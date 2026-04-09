@@ -30,7 +30,7 @@ public sealed class TravelerCommandTests
     {
         var booking = CreateBooking();
         var traveler = Traveler.Create(booking.Id, booking.TenantId, "Jane", "Doe", null, null, null, null, null, null, null, null, null, null, null, true);
-        var handler = new UpdateTravelerCommandHandler(new InMemoryBookingRepository(booking), new InMemoryTravelerRepository(traveler), new NoOpUnitOfWork());
+        var handler = new UpdateTravelerCommandHandler(new InMemoryBookingRepository(booking), new InMemoryTravelerRepository(traveler), new NoOpAuditWriter(), new FakeActorContext(booking.TenantId), new NoOpUnitOfWork());
 
         await handler.Handle(new UpdateTravelerCommand(booking.TenantId, booking.Id, traveler.Id, "Janet", "Doe", null, null, "janet@example.com", null, null, null, null, null, null, null, null, true), CancellationToken.None);
 
@@ -81,6 +81,19 @@ public sealed class TravelerCommandTests
             => Task.FromResult<IReadOnlyList<Traveler>>(_travelers.Where(x => x.BookingId == bookingId && x.DeletedAt is null).ToList());
 
         public Task UpdateAsync(Traveler traveler, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class NoOpAuditWriter : IAuditWriter
+    {
+        public Task WriteAsync(AuditLog entry, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class FakeActorContext(Guid tenantId) : IActorContext
+    {
+        public Guid? UserId { get; } = Guid.NewGuid();
+        public Guid TenantId { get; } = tenantId;
+        public string? IpAddress { get; } = "127.0.0.1";
+        public string? UserAgent { get; } = "tests";
     }
 
     private sealed class NoOpUnitOfWork : IUnitOfWork

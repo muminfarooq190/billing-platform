@@ -31,7 +31,7 @@ public sealed class BookingItemCommandTests
         var booking = CreateBooking();
         var item = BookingItem.Create(booking.Id, booking.TenantId, "Hotel", "Example Hotels", "Rome stay", null, "Rome", null, null, 1200m, 900m, "USD", null, 1);
         var repository = new InMemoryBookingItemRepository(item);
-        var handler = new UpdateBookingItemStatusCommandHandler(new InMemoryBookingRepository(booking), repository, new NoOpUnitOfWork());
+        var handler = new UpdateBookingItemStatusCommandHandler(new InMemoryBookingRepository(booking), repository, new NoOpAuditWriter(), new FakeActorContext(booking.TenantId), new NoOpUnitOfWork());
 
         await handler.Handle(new UpdateBookingItemStatusCommand(booking.TenantId, booking.Id, item.Id, "Confirmed"), CancellationToken.None);
 
@@ -71,6 +71,19 @@ public sealed class BookingItemCommandTests
         public Task<BookingItem?> GetByIdAsync(Guid bookingId, Guid itemId, CancellationToken cancellationToken) => Task.FromResult(_items.SingleOrDefault(x => x.BookingId == bookingId && x.Id == itemId && x.DeletedAt is null));
         public Task<IReadOnlyList<BookingItem>> ListByBookingIdAsync(Guid bookingId, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<BookingItem>>(_items.Where(x => x.BookingId == bookingId && x.DeletedAt is null).ToList());
         public Task UpdateAsync(BookingItem item, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class NoOpAuditWriter : IAuditWriter
+    {
+        public Task WriteAsync(AuditLog entry, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class FakeActorContext(Guid tenantId) : IActorContext
+    {
+        public Guid? UserId { get; } = Guid.NewGuid();
+        public Guid TenantId { get; } = tenantId;
+        public string? IpAddress { get; } = "127.0.0.1";
+        public string? UserAgent { get; } = "tests";
     }
 
     private sealed class NoOpUnitOfWork : IUnitOfWork
