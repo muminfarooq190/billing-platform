@@ -1,5 +1,6 @@
 using MediatR;
 using TravelService.Application.Abstractions;
+using TravelService.Domain.Aggregates;
 using TravelService.Domain.Exceptions;
 using TravelService.Domain.Repositories;
 
@@ -8,6 +9,9 @@ namespace TravelService.Application.Commands.CreateQuotationRevision;
 public sealed class CreateQuotationRevisionCommandHandler(
     IQuotationRepository quotationRepository,
     IQuotationRevisionRepository quotationRevisionRepository,
+    IActivityWriter activityWriter,
+    IAuditWriter auditWriter,
+    IActorContext actorContext,
     IUnitOfWork unitOfWork) : IRequestHandler<CreateQuotationRevisionCommand, CreateQuotationRevisionResult>
 {
     public async Task<CreateQuotationRevisionResult> Handle(CreateQuotationRevisionCommand request, CancellationToken cancellationToken)
@@ -34,6 +38,20 @@ public sealed class CreateQuotationRevisionCommandHandler(
 
         await quotationRevisionRepository.AddAsync(revision, cancellationToken);
         await quotationRepository.UpdateAsync(quotation, cancellationToken);
+        await activityWriter.WriteAsync(ActivityEntry.Create(quotation.TenantId, "Quotation", quotation.Id, "RevisionCreated", $"Quotation revision v{revision.RevisionNumber} created", new { revision.Id, revision.RevisionNumber, revision.TotalAmount }), cancellationToken);
+        await auditWriter.WriteAsync(
+            AuditLog.Create(
+                quotation.TenantId,
+                "Quotation",
+                quotation.Id,
+                "RevisionCreated",
+                actorContext.UserId,
+                actorContext.IpAddress,
+                actorContext.UserAgent,
+                before: null,
+                after: new { revision.Id, revision.RevisionNumber, revision.TotalAmount, revision.ValidUntil },
+                metadata: new { revision.QuotationId, revision.CreatedByUserId }),
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new CreateQuotationRevisionResult(revision.Id, revision.RevisionNumber);

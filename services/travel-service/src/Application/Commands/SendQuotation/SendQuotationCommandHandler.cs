@@ -12,6 +12,8 @@ public sealed class SendQuotationCommandHandler(
     IQuotationRevisionRepository quotationRevisionRepository,
     IQuotationShareLinkRepository quotationShareLinkRepository,
     IQuotationStatusHistoryRepository quotationStatusHistoryRepository,
+    IActivityWriter activityWriter,
+    IActorContext actorContext,
     IUnitOfWork unitOfWork) : IRequestHandler<SendQuotationCommand, SendQuotationResult>
 {
     public async Task<SendQuotationResult> Handle(SendQuotationCommand request, CancellationToken cancellationToken)
@@ -43,6 +45,16 @@ public sealed class SendQuotationCommandHandler(
             QuotationStatusHistory.Create(quotation.Id, quotation.TenantId, previousStatus, quotation.Status.ToString(), request.Message),
             cancellationToken);
         await quotationRepository.UpdateAsync(quotation, cancellationToken);
+        await activityWriter.WriteAsync(
+            ActivityEntry.Create(
+                quotation.TenantId,
+                "Quotation",
+                quotation.Id,
+                "Sent",
+                $"Quote sent to {request.RecipientEmail}",
+                new { request.Channel, request.RecipientEmail, RevisionId = revision.Id, revision.RevisionNumber, shareLink.ExpiresAt },
+                actorContext.UserId),
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new SendQuotationResult(shareLink.Id, token, shareLink.ExpiresAt, $"/travel/quotations/public/{token}");

@@ -21,7 +21,7 @@ public sealed class QuotationChecklistCoverageTests
 
         var quotationRepository = new InMemoryQuotationRepository(quotation);
         var revisionRepository = new InMemoryQuotationRevisionRepository();
-        var createRevisionHandler = new CreateQuotationRevisionCommandHandler(quotationRepository, revisionRepository, new NoOpUnitOfWork());
+        var createRevisionHandler = new CreateQuotationRevisionCommandHandler(quotationRepository, revisionRepository, new NoOpActivityWriter(), new NoOpAuditWriter(), new FakeActorContext(quotation.TenantId), new NoOpUnitOfWork());
 
         var createResult = await createRevisionHandler.Handle(new CreateQuotationRevisionCommand(
             quotation.TenantId,
@@ -42,7 +42,7 @@ public sealed class QuotationChecklistCoverageTests
 
         var shareLinkRepository = new InMemoryQuotationShareLinkRepository();
         var historyRepository = new InMemoryQuotationStatusHistoryRepository();
-        var sendHandler = new SendQuotationCommandHandler(quotationRepository, revisionRepository, shareLinkRepository, historyRepository, new NoOpUnitOfWork());
+        var sendHandler = new SendQuotationCommandHandler(quotationRepository, revisionRepository, shareLinkRepository, historyRepository, new NoOpActivityWriter(), new FakeActorContext(quotation.TenantId), new NoOpUnitOfWork());
 
         var sendResult = await sendHandler.Handle(new SendQuotationCommand(
             quotation.TenantId,
@@ -90,6 +90,8 @@ public sealed class QuotationChecklistCoverageTests
             new InMemoryQuotationRevisionRepository(foreignRevision),
             new InMemoryQuotationShareLinkRepository(),
             new InMemoryQuotationStatusHistoryRepository(),
+            new NoOpActivityWriter(),
+            new FakeActorContext(quotation.TenantId),
             new NoOpUnitOfWork());
 
         var act = async () => await handler.Handle(new SendQuotationCommand(
@@ -116,6 +118,8 @@ public sealed class QuotationChecklistCoverageTests
             new InMemoryQuotationRepository(quotation),
             new InMemoryQuotationRevisionRepository(revision),
             new InMemoryQuotationStatusHistoryRepository(),
+            new NoOpAuditWriter(),
+            new FakeActorContext(quotation.TenantId),
             new NoOpUnitOfWork());
 
         await handler.Handle(new AcceptQuotationCommand(quotation.TenantId, quotation.Id, revision.Id, "Approved by customer"), CancellationToken.None);
@@ -138,6 +142,7 @@ public sealed class QuotationChecklistCoverageTests
             new InMemoryQuotationShareLinkRepository(expiredLink),
             new InMemoryQuotationRepository(quotation),
             new InMemoryQuotationStatusHistoryRepository(),
+            new NoOpActivityWriter(),
             new NoOpUnitOfWork());
 
         var updated = await handler.Handle(new MarkPublicQuotationViewedCommand("expired-token"), CancellationToken.None);
@@ -168,6 +173,8 @@ public sealed class QuotationChecklistCoverageTests
             new InMemoryQuotationRepository(quotation),
             attachmentRepository,
             new StubFileStorage(),
+            new NoOpActivityWriter(),
+            new FakeActorContext(quotation.TenantId),
             new NoOpUnitOfWork());
 
         await handler.Handle(new DeleteQuotationAttachmentCommand(quotation.TenantId, quotation.Id, attachment.Id), CancellationToken.None);
@@ -261,6 +268,24 @@ public sealed class QuotationChecklistCoverageTests
 
         public Task<IReadOnlyList<QuotationStatusHistory>> ListByQuotationIdAsync(Guid quotationId, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<QuotationStatusHistory>>(Items.Where(x => x.QuotationId == quotationId).ToList());
+    }
+
+    private sealed class NoOpActivityWriter : IActivityWriter
+    {
+        public Task WriteAsync(ActivityEntry entry, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class NoOpAuditWriter : IAuditWriter
+    {
+        public Task WriteAsync(AuditLog entry, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class FakeActorContext(Guid tenantId) : IActorContext
+    {
+        public Guid? UserId { get; } = Guid.NewGuid();
+        public Guid TenantId { get; } = tenantId;
+        public string? IpAddress { get; } = "127.0.0.1";
+        public string? UserAgent { get; } = "tests";
     }
 
     private sealed class NoOpUnitOfWork : IUnitOfWork

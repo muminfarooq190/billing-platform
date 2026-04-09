@@ -21,7 +21,7 @@ public sealed class QuotationSendShareTests
         var revisionRepository = new InMemoryQuotationRevisionRepository(revision);
         var shareLinkRepository = new InMemoryQuotationShareLinkRepository();
         var historyRepository = new InMemoryQuotationStatusHistoryRepository();
-        var handler = new SendQuotationCommandHandler(quotationRepository, revisionRepository, shareLinkRepository, historyRepository, new NoOpUnitOfWork());
+        var handler = new SendQuotationCommandHandler(quotationRepository, revisionRepository, shareLinkRepository, historyRepository, new NoOpActivityWriter(), new FakeActorContext(quotation.TenantId), new NoOpUnitOfWork());
 
         var result = await handler.Handle(new SendQuotationCommand(
             quotation.TenantId,
@@ -52,7 +52,7 @@ public sealed class QuotationSendShareTests
 
         var shareLinkRepository = new InMemoryQuotationShareLinkRepository(shareLink);
         var historyRepository = new InMemoryQuotationStatusHistoryRepository();
-        var handler = new MarkPublicQuotationViewedCommandHandler(shareLinkRepository, new InMemoryQuotationRepository(quotation), historyRepository, new NoOpUnitOfWork());
+        var handler = new MarkPublicQuotationViewedCommandHandler(shareLinkRepository, new InMemoryQuotationRepository(quotation), historyRepository, new NoOpActivityWriter(), new NoOpUnitOfWork());
 
         var updated = await handler.Handle(new MarkPublicQuotationViewedCommand("token-123"), CancellationToken.None);
 
@@ -121,6 +121,19 @@ public sealed class QuotationSendShareTests
 
         public Task<IReadOnlyList<QuotationStatusHistory>> ListByQuotationIdAsync(Guid quotationId, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<QuotationStatusHistory>>(Items.Where(x => x.QuotationId == quotationId).ToList());
+    }
+
+    private sealed class NoOpActivityWriter : IActivityWriter
+    {
+        public Task WriteAsync(ActivityEntry entry, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class FakeActorContext(Guid tenantId) : IActorContext
+    {
+        public Guid? UserId { get; } = Guid.NewGuid();
+        public Guid TenantId { get; } = tenantId;
+        public string? IpAddress { get; } = "127.0.0.1";
+        public string? UserAgent { get; } = "tests";
     }
 
     private sealed class NoOpUnitOfWork : IUnitOfWork

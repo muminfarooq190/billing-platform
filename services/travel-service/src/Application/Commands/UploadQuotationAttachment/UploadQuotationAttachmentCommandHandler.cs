@@ -12,6 +12,8 @@ public sealed class UploadQuotationAttachmentCommandHandler(
     IQuotationRevisionRepository quotationRevisionRepository,
     IQuotationAttachmentRepository quotationAttachmentRepository,
     IFileStorage fileStorage,
+    IActivityWriter activityWriter,
+    IActorContext actorContext,
     IUnitOfWork unitOfWork) : IRequestHandler<UploadQuotationAttachmentCommand, UploadQuotationAttachmentResult>
 {
     private const long MaxFileSizeBytes = 10 * 1024 * 1024;
@@ -69,6 +71,16 @@ public sealed class UploadQuotationAttachmentCommandHandler(
             request.SortOrder);
 
         await quotationAttachmentRepository.AddAsync(attachment, cancellationToken);
+        await activityWriter.WriteAsync(
+            ActivityEntry.Create(
+                request.TenantId,
+                "Quotation",
+                quotation.Id,
+                "DocumentUploaded",
+                $"Quotation attachment uploaded: {attachment.OriginalFileName}",
+                new { attachment.Id, attachment.AttachmentType, attachment.OriginalFileName, attachment.QuotationRevisionId, attachment.IsCustomerVisible },
+                actorContext.UserId),
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new UploadQuotationAttachmentResult(attachment.Id, attachment.StorageKey);

@@ -9,6 +9,8 @@ namespace TravelService.Application.Commands.AddTraveler;
 public sealed class AddTravelerCommandHandler(
     IBookingRepository bookingRepository,
     ITravelerRepository travelerRepository,
+    IActivityWriter activityWriter,
+    IActorContext actorContext,
     IUnitOfWork unitOfWork) : IRequestHandler<AddTravelerCommand, Guid>
 {
     public async Task<Guid> Handle(AddTravelerCommand request, CancellationToken cancellationToken)
@@ -38,6 +40,16 @@ public sealed class AddTravelerCommandHandler(
             request.LeadTraveler);
 
         await travelerRepository.AddAsync(traveler, cancellationToken);
+        await activityWriter.WriteAsync(
+            ActivityEntry.Create(
+                request.TenantId,
+                "Booking",
+                booking.Id,
+                "TravelerAdded",
+                $"Traveler added: {traveler.FirstName} {traveler.LastName}",
+                new { traveler.Id, traveler.Email, traveler.LeadTraveler },
+                actorContext.UserId),
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return traveler.Id;
     }

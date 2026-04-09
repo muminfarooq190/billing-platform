@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "baseUrl": ".",
+    "paths": {
+      "@voyara/ui": ["packages/ui/src"],
+      "@voyara/design-tokens": ["packages/design-tokens/src"],
+      "@voyara/types": ["packages/types/src"],
+      "@voyara/utils": ["packages/utils/src"],
+      "@voyara/api-client": ["packages/api-client/src"],
+      "@voyara/auth": ["packages/auth/src"]
+    }
+  }
+}

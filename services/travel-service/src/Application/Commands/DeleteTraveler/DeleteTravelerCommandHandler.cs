@@ -1,5 +1,6 @@
 using MediatR;
 using TravelService.Application.Abstractions;
+using TravelService.Domain.Aggregates;
 using TravelService.Domain.Exceptions;
 using TravelService.Domain.Repositories;
 
@@ -8,6 +9,8 @@ namespace TravelService.Application.Commands.DeleteTraveler;
 public sealed class DeleteTravelerCommandHandler(
     IBookingRepository bookingRepository,
     ITravelerRepository travelerRepository,
+    IActivityWriter activityWriter,
+    IActorContext actorContext,
     IUnitOfWork unitOfWork) : IRequestHandler<DeleteTravelerCommand>
 {
     public async Task Handle(DeleteTravelerCommand request, CancellationToken cancellationToken)
@@ -26,6 +29,16 @@ public sealed class DeleteTravelerCommandHandler(
 
         traveler.Delete();
         await travelerRepository.UpdateAsync(traveler, cancellationToken);
+        await activityWriter.WriteAsync(
+            ActivityEntry.Create(
+                request.TenantId,
+                "Booking",
+                booking.Id,
+                "Updated",
+                $"Traveler removed: {traveler.FirstName} {traveler.LastName}",
+                new { traveler.Id, traveler.Email, traveler.LeadTraveler },
+                actorContext.UserId),
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

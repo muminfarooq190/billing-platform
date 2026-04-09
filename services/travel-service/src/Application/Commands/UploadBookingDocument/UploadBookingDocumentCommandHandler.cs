@@ -11,6 +11,8 @@ public sealed class UploadBookingDocumentCommandHandler(
     ITravelerRepository travelerRepository,
     IBookingDocumentRepository bookingDocumentRepository,
     IFileStorage fileStorage,
+    IActivityWriter activityWriter,
+    IActorContext actorContext,
     IUnitOfWork unitOfWork) : IRequestHandler<UploadBookingDocumentCommand, UploadBookingDocumentResult>
 {
     private static readonly HashSet<string> AllowedContentTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
@@ -54,6 +56,16 @@ public sealed class UploadBookingDocumentCommandHandler(
             request.Description);
 
         await bookingDocumentRepository.AddAsync(document, cancellationToken);
+        await activityWriter.WriteAsync(
+            ActivityEntry.Create(
+                request.TenantId,
+                "Booking",
+                booking.Id,
+                "DocumentUploaded",
+                $"Booking document uploaded: {document.OriginalFileName}",
+                new { document.Id, document.DocumentType, document.TravelerId, document.IsCustomerVisible },
+                actorContext.UserId),
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return new UploadBookingDocumentResult(document.Id);
     }

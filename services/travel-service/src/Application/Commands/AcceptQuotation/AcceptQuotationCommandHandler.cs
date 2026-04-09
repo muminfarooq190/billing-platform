@@ -10,6 +10,8 @@ public sealed class AcceptQuotationCommandHandler(
     IQuotationRepository quotationRepository,
     IQuotationRevisionRepository quotationRevisionRepository,
     IQuotationStatusHistoryRepository quotationStatusHistoryRepository,
+    IAuditWriter auditWriter,
+    IActorContext actorContext,
     IUnitOfWork unitOfWork) : IRequestHandler<AcceptQuotationCommand>
 {
     public async Task Handle(AcceptQuotationCommand request, CancellationToken cancellationToken)
@@ -34,6 +36,19 @@ public sealed class AcceptQuotationCommandHandler(
             cancellationToken);
 
         await quotationRepository.UpdateAsync(quotation, cancellationToken);
+        await auditWriter.WriteAsync(
+            AuditLog.Create(
+                quotation.TenantId,
+                "Quotation",
+                quotation.Id,
+                "Accepted",
+                actorContext.UserId,
+                actorContext.IpAddress,
+                actorContext.UserAgent,
+                before: new { Status = previousStatus, quotation.AcceptedRevisionId },
+                after: new { Status = quotation.Status.ToString(), quotation.AcceptedRevisionId },
+                metadata: new { request.RevisionId, request.Reason }),
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

@@ -1,0 +1,18 @@
+{
+  "name": "@voyara/customer-mobile",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "lint": "echo lint customer-mobile",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "expo": "~51.0.28",
+    "react": "18.2.0",
+    "react-native": "0.74.5"
+  }
+}

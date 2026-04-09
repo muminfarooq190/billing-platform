@@ -1,5 +1,6 @@
 using MediatR;
 using TravelService.Application.Abstractions;
+using TravelService.Domain.Aggregates;
 using TravelService.Domain.Exceptions;
 using TravelService.Domain.Repositories;
 
@@ -9,6 +10,8 @@ public sealed class DeleteBookingDocumentCommandHandler(
     IBookingRepository bookingRepository,
     IBookingDocumentRepository bookingDocumentRepository,
     IFileStorage fileStorage,
+    IActivityWriter activityWriter,
+    IActorContext actorContext,
     IUnitOfWork unitOfWork) : IRequestHandler<DeleteBookingDocumentCommand>
 {
     public async Task Handle(DeleteBookingDocumentCommand request, CancellationToken cancellationToken)
@@ -28,6 +31,16 @@ public sealed class DeleteBookingDocumentCommandHandler(
         document.Delete();
         await bookingDocumentRepository.UpdateAsync(document, cancellationToken);
         await fileStorage.DeleteAsync(document.StorageKey, cancellationToken);
+        await activityWriter.WriteAsync(
+            ActivityEntry.Create(
+                request.TenantId,
+                "Booking",
+                booking.Id,
+                "Updated",
+                $"Booking document deleted: {document.OriginalFileName}",
+                new { document.Id, document.DocumentType, document.TravelerId },
+                actorContext.UserId),
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

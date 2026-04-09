@@ -499,48 +499,98 @@ Add indexes on:
 # 12. PR breakdown
 
 ## PR 8.1 - timeline foundation
+Status: completed on branch `feat/phase-8-timeline-foundation`
+
 Includes:
 - activity entry model
 - timeline query endpoints
 - first write hooks for quotation + booking creation/status flows
+
+Implemented:
+- `ActivityEntry` model + repository + writer abstraction
+- `GET /travel/timeline/{entityType}/{entityId}`
+- `GET /travel/quotations/{id}/timeline`
+- `GET /travel/bookings/{id}/timeline`
+- first write hooks for quotation revision creation and booking creation from quotation
+- activity timeline migration
+- activity timeline test coverage
 
 ### Must pass
 - timeline entries appear for key flows
 - pagination works
 
 ## PR 8.2 - audit infrastructure
+Status: completed on branch `feat/phase-8-timeline-foundation`
+
 Includes:
 - audit log model
 - actor context
 - before/after snapshot helpers
 - admin audit endpoint
 
+Implemented:
+- `AuditLog` model + repository + writer abstraction
+- `IActorContext` with HTTP-backed actor metadata
+- `GET /admin/audit/{entityType}/{entityId}`
+- audit hooks for quotation accept/reject/expire, quotation revision creation, traveler update, and booking item status change
+- audit log migration
+- audit-focused test coverage
+
 ### Must pass
 - important mutations create audit rows
 - admin endpoint returns useful snapshots
 
 ## PR 8.3 - notes/comments
+Status: completed on branch `feat/phase-8-timeline-foundation`
+
 Includes:
 - entity note model
 - create/list/update/delete note APIs
+
+Implemented:
+- `EntityNote` model + repository
+- `POST /travel/{entityType}/{entityId}/notes`
+- `GET /travel/{entityType}/{entityId}/notes`
+- `PUT /travel/notes/{noteId}`
+- `DELETE /travel/notes/{noteId}`
+- timeline hook for `CommentAdded`
+- entity notes migration
+- note CRUD and soft-delete test coverage
 
 ### Must pass
 - notes are entity-scoped and tenant-safe
 - soft delete works
 
 ## PR 8.4 - integration enrichment
+Status: completed on branch `feat/phase-8-timeline-foundation`
+
 Includes:
 - notification/payment/linking enrichment
 - cross-entity timeline propagation where needed
+
+Implemented:
+- quotation sent and viewed timeline entries
+- quotation attachment upload/delete timeline entries
+- booking document upload/delete timeline entries
+- traveler add/delete timeline entries
+- booking item add/update timeline entries
+- follow-up create/update/complete propagation to both `FollowUp` and linked `Contact` timelines
 
 ### Must pass
 - quote/booking timeline becomes genuinely useful
 
 ## PR 8.5 - tests + docs
+Status: completed on branch `feat/phase-8-timeline-foundation`
+
 Includes:
 - integration tests
 - postman updates
 - admin/support docs
+
+Implemented:
+- expanded targeted travel-service tests covering timeline, audit, notes, attachments, documents, share-link viewing, and workflow coverage
+- phase 8 API examples doc
+- implementation spec updated to reflect completed PRs
 
 ---
 

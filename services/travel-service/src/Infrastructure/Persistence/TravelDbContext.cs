@@ -5,6 +5,9 @@ namespace TravelService.Infrastructure.Persistence;
 
 public sealed class TravelDbContext(DbContextOptions<TravelDbContext> options) : DbContext(options)
 {
+    public DbSet<ActivityEntry> ActivityEntries => Set<ActivityEntry>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<EntityNote> EntityNotes => Set<EntityNote>();
     public DbSet<Contact> Contacts => Set<Contact>();
     public DbSet<FollowUp> FollowUps => Set<FollowUp>();
     public DbSet<Quotation> Quotations => Set<Quotation>();
