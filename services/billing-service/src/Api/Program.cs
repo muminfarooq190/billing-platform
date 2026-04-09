@@ -2,6 +2,7 @@ using BillingService.Api.Filters;
 using BillingService.Application.Abstractions;
 using BillingService.Domain.Repositories;
 using BillingService.Infrastructure.Caching;
+using BillingService.Infrastructure.Entitlements;
 using BillingService.Infrastructure.Jobs;
 using BillingService.Infrastructure.Payments;
 using BillingService.Infrastructure.Persistence;
@@ -22,7 +23,9 @@ public sealed class Program
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<ITenantContext, HeaderTenantContext>();
         builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+        builder.Services.AddScoped<IFeatureEntitlementRepository, FeatureEntitlementRepository>();
         builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+        builder.Services.AddScoped<IEntitlementResolver, PlanEntitlementResolver>();
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
         builder.Services.AddScoped<IReadDbConnectionFactory, ReadDbConnectionFactory>();
         builder.Services.AddScoped<ICacheService, RedisCacheService>();
