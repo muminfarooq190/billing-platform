@@ -17,6 +17,7 @@ builder.Services.AddHealthChecks()
     .AddDownstreamUrl("communication-service", "http://communication-service:8080/health")
     .AddDownstreamUrl("webhook-service", "http://webhook-service:3000/health");
 builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(builder.Configuration["REDIS_URL"] ?? "redis:6379"));
+builder.Services.Configure<FeatureEntitlementOptions>(builder.Configuration.GetSection("FeatureEntitlements"));
 builder.Services.AddHttpClient("billing-entitlements", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["BILLING_SERVICE_URL"] ?? "http://billing-service:8080/");

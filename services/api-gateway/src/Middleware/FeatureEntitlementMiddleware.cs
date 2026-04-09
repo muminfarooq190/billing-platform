@@ -1,21 +1,11 @@
 using System.Net.Http.Json;
+using ApiGateway.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace ApiGateway.Middleware;
 
-public sealed class FeatureEntitlementMiddleware(RequestDelegate next, IConfiguration configuration, IHttpClientFactory httpClientFactory, ILogger<FeatureEntitlementMiddleware> logger)
+public sealed class FeatureEntitlementMiddleware(RequestDelegate next, IHttpClientFactory httpClientFactory, IOptions<FeatureEntitlementOptions> options, ILogger<FeatureEntitlementMiddleware> logger)
 {
-    private static readonly Dictionary<string, string> RouteFeatureMap = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["POST:/api/travel/quotations"] = "travel.quotation.create",
-        ["POST:/api/travel/quotations/send"] = "travel.quotation.send",
-        ["POST:/api/travel/bookings/from-quotation"] = "travel.booking.create",
-        ["POST:/api/travel/bookings/documents"] = "travel.booking.documents.upload",
-        ["GET:/api/travel/timeline"] = "travel.timeline.read",
-        ["GET:/api/travel/admin/audit"] = "travel.audit.read",
-        ["POST:/api/communication/notifications"] = "communication.notification.send",
-        ["POST:/api/communication/templates"] = "communication.templates.manage",
-        ["PUT:/api/communication/templates"] = "communication.templates.manage"
-    };
 
     public async Task InvokeAsync(HttpContext context)
     {
@@ -26,7 +16,7 @@ public sealed class FeatureEntitlementMiddleware(RequestDelegate next, IConfigur
             return;
         }
 
-        var featureKey = MatchFeature(context.Request.Method, context.Request.Path);
+        var featureKey = MatchFeature(options.Value.Routes, context.Request.Method, context.Request.Path);
         if (featureKey is null)
         {
             await next(context);
@@ -51,17 +41,18 @@ public sealed class FeatureEntitlementMiddleware(RequestDelegate next, IConfigur
         await next(context);
     }
 
-    public static string? MatchFeature(string method, PathString path)
+    public static string? MatchFeature(IReadOnlyList<FeatureRoutePolicy> routes, string method, PathString path)
     {
         var value = path.Value ?? string.Empty;
-        foreach (var (prefix, featureKey) in RouteFeatureMap)
+        foreach (var route in routes)
         {
-            var parts = prefix.Split(':', 2);
-            if (!string.Equals(parts[0], method, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(route.Method, method, StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (string.IsNullOrWhiteSpace(route.PathPrefix) || string.IsNullOrWhiteSpace(route.FeatureKey))
                 continue;
 
-            if (value.StartsWith(parts[1], StringComparison.OrdinalIgnoreCase))
-                return featureKey;
+            if (value.StartsWith(route.PathPrefix, StringComparison.OrdinalIgnoreCase))
+                return route.FeatureKey;
         }
 
         return null;
