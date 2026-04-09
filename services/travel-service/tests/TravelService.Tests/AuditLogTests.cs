@@ -64,6 +64,7 @@ public sealed class AuditLogTests
         var handler = new CreateQuotationRevisionCommandHandler(
             new InMemoryQuotationRepository(quotation),
             new InMemoryQuotationRevisionRepository(),
+            new AllowAllFeatureGate(),
             new NoOpActivityWriter(),
             auditWriter,
             actorContext,
@@ -79,6 +80,13 @@ public sealed class AuditLogTests
 
     private static Booking CreateBooking()
         => Booking.CreateFromAcceptedQuotation(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "VOY-BKG-2026-000001", "Rome Trip", "Rome", DateTimeOffset.UtcNow.AddDays(10), DateTimeOffset.UtcNow.AddDays(15), 2, "USD", 2500m);
+
+    private sealed class AllowAllFeatureGate : IFeatureGate
+    {
+        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(true);
+        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
+    }
 
     private sealed class RecordingAuditWriter : IAuditWriter
     {

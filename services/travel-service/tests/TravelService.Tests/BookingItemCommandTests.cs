@@ -16,7 +16,7 @@ public sealed class BookingItemCommandTests
     {
         var booking = CreateBooking();
         var repository = new InMemoryBookingItemRepository();
-        var handler = new AddBookingItemCommandHandler(new InMemoryBookingRepository(booking), repository, new NoOpActivityWriter(), new FakeActorContext(booking.TenantId), new NoOpUnitOfWork());
+        var handler = new AddBookingItemCommandHandler(new InMemoryBookingRepository(booking), repository, new AllowAllFeatureGate(), new NoOpActivityWriter(), new FakeActorContext(booking.TenantId), new NoOpUnitOfWork());
 
         await handler.Handle(new AddBookingItemCommand(booking.TenantId, booking.Id, "Hotel", "Rome hotel stay", "4 nights", "Example Hotels", null, "Rome", DateTimeOffset.UtcNow.AddDays(10), DateTimeOffset.UtcNow.AddDays(14), 1200m, 900m, "USD", null, null, null, "Late check-in confirmed", 1), CancellationToken.None);
 
@@ -31,7 +31,7 @@ public sealed class BookingItemCommandTests
         var booking = CreateBooking();
         var item = BookingItem.Create(booking.Id, booking.TenantId, "Hotel", "Example Hotels", "Rome stay", null, "Rome", null, null, 1200m, 900m, "USD", null, 1);
         var repository = new InMemoryBookingItemRepository(item);
-        var handler = new UpdateBookingItemStatusCommandHandler(new InMemoryBookingRepository(booking), repository, new NoOpAuditWriter(), new FakeActorContext(booking.TenantId), new NoOpUnitOfWork());
+        var handler = new UpdateBookingItemStatusCommandHandler(new InMemoryBookingRepository(booking), repository, new AllowAllFeatureGate(), new NoOpAuditWriter(), new FakeActorContext(booking.TenantId), new NoOpUnitOfWork());
 
         await handler.Handle(new UpdateBookingItemStatusCommand(booking.TenantId, booking.Id, item.Id, "Confirmed"), CancellationToken.None);
 
@@ -71,6 +71,13 @@ public sealed class BookingItemCommandTests
         public Task<BookingItem?> GetByIdAsync(Guid bookingId, Guid itemId, CancellationToken cancellationToken) => Task.FromResult(_items.SingleOrDefault(x => x.BookingId == bookingId && x.Id == itemId && x.DeletedAt is null));
         public Task<IReadOnlyList<BookingItem>> ListByBookingIdAsync(Guid bookingId, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<BookingItem>>(_items.Where(x => x.BookingId == bookingId && x.DeletedAt is null).ToList());
         public Task UpdateAsync(BookingItem item, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class AllowAllFeatureGate : IFeatureGate
+    {
+        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(true);
+        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
     }
 
     private sealed class NoOpActivityWriter : IActivityWriter

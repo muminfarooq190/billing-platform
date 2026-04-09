@@ -12,7 +12,7 @@ public sealed class EntityNoteCommandTests
     public async Task CreateNote_ShouldPersistEntityScopedNote()
     {
         var repository = new InMemoryEntityNoteRepository();
-        var handler = new CreateEntityNoteCommandHandler(repository, new FakeActorContext(Guid.NewGuid()), new RecordingActivityWriter(), new NoOpUnitOfWork());
+        var handler = new CreateEntityNoteCommandHandler(repository, new AllowAllFeatureGate(), new FakeActorContext(Guid.NewGuid()), new RecordingActivityWriter(), new NoOpUnitOfWork());
         var tenantId = Guid.NewGuid();
         var entityId = Guid.NewGuid();
 
@@ -31,7 +31,7 @@ public sealed class EntityNoteCommandTests
         var tenantId = Guid.NewGuid();
         var note = EntityNote.Create(tenantId, "Booking", Guid.NewGuid(), "Internal", "Old note", Guid.NewGuid());
         var repository = new InMemoryEntityNoteRepository(note);
-        var handler = new UpdateEntityNoteCommandHandler(repository, new NoOpUnitOfWork());
+        var handler = new UpdateEntityNoteCommandHandler(repository, new AllowAllFeatureGate(), new NoOpUnitOfWork());
 
         await handler.Handle(new UpdateEntityNoteCommand(tenantId, note.Id, "CustomerVisible", "Updated note"), CancellationToken.None);
 
@@ -46,7 +46,7 @@ public sealed class EntityNoteCommandTests
         var entityId = Guid.NewGuid();
         var note = EntityNote.Create(tenantId, "Traveler", entityId, "Internal", "Passport pending", Guid.NewGuid());
         var repository = new InMemoryEntityNoteRepository(note);
-        var handler = new DeleteEntityNoteCommandHandler(repository, new NoOpUnitOfWork());
+        var handler = new DeleteEntityNoteCommandHandler(repository, new AllowAllFeatureGate(), new NoOpUnitOfWork());
 
         await handler.Handle(new DeleteEntityNoteCommand(tenantId, note.Id), CancellationToken.None);
 
@@ -60,7 +60,7 @@ public sealed class EntityNoteCommandTests
     {
         var note = EntityNote.Create(Guid.NewGuid(), "Booking", Guid.NewGuid(), "Internal", "Private", Guid.NewGuid());
         var repository = new InMemoryEntityNoteRepository(note);
-        var handler = new UpdateEntityNoteCommandHandler(repository, new NoOpUnitOfWork());
+        var handler = new UpdateEntityNoteCommandHandler(repository, new AllowAllFeatureGate(), new NoOpUnitOfWork());
 
         var act = async () => await handler.Handle(new UpdateEntityNoteCommand(Guid.NewGuid(), note.Id, "Internal", "Hacked"), CancellationToken.None);
 
@@ -84,6 +84,13 @@ public sealed class EntityNoteCommandTests
             => Task.FromResult<IReadOnlyList<EntityNote>>(_notes.Where(x => x.TenantId == tenantId && x.EntityType == entityType && x.EntityId == entityId && x.DeletedAt is null).ToList());
 
         public Task UpdateAsync(EntityNote note, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class AllowAllFeatureGate : IFeatureGate
+    {
+        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(true);
+        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
     }
 
     private sealed class RecordingActivityWriter : IActivityWriter

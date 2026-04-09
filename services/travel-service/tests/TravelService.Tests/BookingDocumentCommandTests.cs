@@ -16,7 +16,7 @@ public sealed class BookingDocumentCommandTests
         var traveler = Traveler.Create(booking.Id, booking.TenantId, "Jane", "Doe", null, null, null, null, null, null, null, null, null, null, null, true);
         var documentRepository = new InMemoryBookingDocumentRepository();
         var fileStorage = new RecordingFileStorage();
-        var handler = new UploadBookingDocumentCommandHandler(new InMemoryBookingRepository(booking), new InMemoryTravelerRepository(traveler), documentRepository, fileStorage, new NoOpActivityWriter(), new FakeActorContext(booking.TenantId), new NoOpUnitOfWork());
+        var handler = new UploadBookingDocumentCommandHandler(new InMemoryBookingRepository(booking), new InMemoryTravelerRepository(traveler), documentRepository, fileStorage, new AllowAllFeatureGate(), new NoOpActivityWriter(), new FakeActorContext(booking.TenantId), new NoOpUnitOfWork());
 
         var result = await handler.Handle(new UploadBookingDocumentCommand(booking.TenantId, booking.Id, traveler.Id, "voucher.pdf", "application/pdf", 128, "Voucher", true, "Customer voucher", [1,2,3]), CancellationToken.None);
 
@@ -79,6 +79,13 @@ public sealed class BookingDocumentCommandTests
         public Task DeleteAsync(string storageKey, CancellationToken cancellationToken) { DeletedStorageKeys.Add(storageKey); return Task.CompletedTask; }
         public Task<string> GetReadUrlAsync(string storageKey, CancellationToken cancellationToken) => Task.FromResult($"https://files.test/{storageKey}");
         public Task<string> GetSignedReadUrlAsync(string storageKey, TimeSpan ttl, CancellationToken cancellationToken) => Task.FromResult($"https://files.test/{storageKey}?ttl={(int)ttl.TotalSeconds}");
+    }
+
+    private sealed class AllowAllFeatureGate : IFeatureGate
+    {
+        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(true);
+        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
     }
 
     private sealed class NoOpActivityWriter : IActivityWriter

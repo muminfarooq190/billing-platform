@@ -26,6 +26,7 @@ public sealed class BookingCoreTests
             new InMemoryQuotationRevisionRepository(revision),
             bookingRepository,
             historyRepository,
+            new AllowAllFeatureGate(),
             new NoOpActivityWriter(),
             new NoOpUnitOfWork());
 
@@ -50,6 +51,7 @@ public sealed class BookingCoreTests
             new InMemoryQuotationRevisionRepository(),
             new InMemoryBookingRepository(),
             new InMemoryBookingStatusHistoryRepository(),
+            new AllowAllFeatureGate(),
             new NoOpActivityWriter(),
             new NoOpUnitOfWork());
 
@@ -72,6 +74,7 @@ public sealed class BookingCoreTests
             new InMemoryQuotationRevisionRepository(revision),
             new InMemoryBookingRepository(),
             new InMemoryBookingStatusHistoryRepository(),
+            new AllowAllFeatureGate(),
             new NoOpActivityWriter(),
             new NoOpUnitOfWork());
 
@@ -116,6 +119,13 @@ public sealed class BookingCoreTests
         public List<BookingStatusHistory> Items { get; } = [];
         public Task AddAsync(BookingStatusHistory history, CancellationToken cancellationToken) { Items.Add(history); return Task.CompletedTask; }
         public Task<IReadOnlyList<BookingStatusHistory>> ListByBookingIdAsync(Guid bookingId, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<BookingStatusHistory>>(Items.Where(x => x.BookingId == bookingId).ToList());
+    }
+
+    private sealed class AllowAllFeatureGate : IFeatureGate
+    {
+        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(true);
+        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
     }
 
     private sealed class NoOpActivityWriter : IActivityWriter

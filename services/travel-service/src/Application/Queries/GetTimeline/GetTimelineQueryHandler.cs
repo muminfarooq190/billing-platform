@@ -4,10 +4,12 @@ using TravelService.Application.Abstractions;
 
 namespace TravelService.Application.Queries.GetTimeline;
 
-public sealed class GetTimelineQueryHandler(IReadDbConnectionFactory connectionFactory) : IRequestHandler<GetTimelineQuery, TimelinePageReadModel>
+public sealed class GetTimelineQueryHandler(IReadDbConnectionFactory connectionFactory, IFeatureGate featureGate) : IRequestHandler<GetTimelineQuery, TimelinePageReadModel>
 {
     public async Task<TimelinePageReadModel> Handle(GetTimelineQuery request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelTimelineRead, request.TenantId, cancellationToken);
+
         var page = request.Page <= 0 ? 1 : request.Page;
         var pageSize = request.PageSize <= 0 ? 20 : Math.Min(request.PageSize, 100);
         var offset = (page - 1) * pageSize;

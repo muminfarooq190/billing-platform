@@ -21,7 +21,7 @@ public sealed class QuotationSendShareTests
         var revisionRepository = new InMemoryQuotationRevisionRepository(revision);
         var shareLinkRepository = new InMemoryQuotationShareLinkRepository();
         var historyRepository = new InMemoryQuotationStatusHistoryRepository();
-        var handler = new SendQuotationCommandHandler(quotationRepository, revisionRepository, shareLinkRepository, historyRepository, new NoOpActivityWriter(), new FakeActorContext(quotation.TenantId), new NoOpUnitOfWork());
+        var handler = new SendQuotationCommandHandler(quotationRepository, revisionRepository, shareLinkRepository, historyRepository, new AllowAllFeatureGate(), new NoOpActivityWriter(), new FakeActorContext(quotation.TenantId), new NoOpUnitOfWork());
 
         var result = await handler.Handle(new SendQuotationCommand(
             quotation.TenantId,
@@ -121,6 +121,13 @@ public sealed class QuotationSendShareTests
 
         public Task<IReadOnlyList<QuotationStatusHistory>> ListByQuotationIdAsync(Guid quotationId, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<QuotationStatusHistory>>(Items.Where(x => x.QuotationId == quotationId).ToList());
+    }
+
+    private sealed class AllowAllFeatureGate : IFeatureGate
+    {
+        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(true);
+        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
     }
 
     private sealed class NoOpActivityWriter : IActivityWriter

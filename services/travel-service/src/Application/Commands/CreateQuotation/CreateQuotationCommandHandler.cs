@@ -5,10 +5,12 @@ using MediatR;
 
 namespace TravelService.Application.Commands.CreateQuotation;
 
-public sealed class CreateQuotationCommandHandler(IQuotationRepository quotationRepository, IUnitOfWork unitOfWork) : IRequestHandler<CreateQuotationCommand, Guid>
+public sealed class CreateQuotationCommandHandler(IQuotationRepository quotationRepository, IFeatureGate featureGate, IUnitOfWork unitOfWork) : IRequestHandler<CreateQuotationCommand, Guid>
 {
     public async Task<Guid> Handle(CreateQuotationCommand request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelQuotationCreate, request.TenantId, cancellationToken);
+
         var quotation = Quotation.Create(
             request.TenantId,
             request.CustomerContactId,

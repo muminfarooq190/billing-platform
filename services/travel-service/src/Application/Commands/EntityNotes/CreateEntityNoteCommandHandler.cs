@@ -8,12 +8,14 @@ namespace TravelService.Application.Commands.EntityNotes;
 
 public sealed class CreateEntityNoteCommandHandler(
     IEntityNoteRepository entityNoteRepository,
+    IFeatureGate featureGate,
     IActorContext actorContext,
     IActivityWriter activityWriter,
     IUnitOfWork unitOfWork) : IRequestHandler<CreateEntityNoteCommand, Guid>
 {
     public async Task<Guid> Handle(CreateEntityNoteCommand request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelNotesWrite, request.TenantId, cancellationToken);
         EnsureSupportedEntityType(request.EntityType);
 
         var note = EntityNote.Create(request.TenantId, request.EntityType, request.EntityId, request.Visibility, request.Content, actorContext.UserId);

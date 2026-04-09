@@ -9,6 +9,7 @@ namespace TravelService.Application.Commands.CreateQuotationRevision;
 public sealed class CreateQuotationRevisionCommandHandler(
     IQuotationRepository quotationRepository,
     IQuotationRevisionRepository quotationRevisionRepository,
+    IFeatureGate featureGate,
     IActivityWriter activityWriter,
     IAuditWriter auditWriter,
     IActorContext actorContext,
@@ -16,6 +17,8 @@ public sealed class CreateQuotationRevisionCommandHandler(
 {
     public async Task<CreateQuotationRevisionResult> Handle(CreateQuotationRevisionCommand request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelQuotationCreate, request.TenantId, cancellationToken);
+
         var quotation = await quotationRepository.GetByIdAsync(request.QuotationId, cancellationToken)
             ?? throw new DomainException($"Quotation {request.QuotationId} not found.");
 

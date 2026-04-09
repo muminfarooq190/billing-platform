@@ -7,10 +7,13 @@ namespace TravelService.Application.Commands.EntityNotes;
 
 public sealed class UpdateEntityNoteCommandHandler(
     IEntityNoteRepository entityNoteRepository,
+    IFeatureGate featureGate,
     IUnitOfWork unitOfWork) : IRequestHandler<UpdateEntityNoteCommand>
 {
     public async Task Handle(UpdateEntityNoteCommand request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelNotesWrite, request.TenantId, cancellationToken);
+
         var note = await entityNoteRepository.GetByIdAsync(request.NoteId, cancellationToken)
             ?? throw new DomainException($"Note {request.NoteId} not found.");
 

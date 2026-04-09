@@ -19,7 +19,7 @@ public sealed class QuotationAttachmentCommandTests
         var revisionRepository = new InMemoryQuotationRevisionRepository();
         var attachmentRepository = new InMemoryQuotationAttachmentRepository();
         var fileStorage = new RecordingFileStorage();
-        var handler = new UploadQuotationAttachmentCommandHandler(quotationRepository, revisionRepository, attachmentRepository, fileStorage, new NoOpActivityWriter(), new FakeActorContext(quotation.TenantId), new NoOpUnitOfWork());
+        var handler = new UploadQuotationAttachmentCommandHandler(quotationRepository, revisionRepository, attachmentRepository, fileStorage, new AllowAllFeatureGate(), new NoOpActivityWriter(), new FakeActorContext(quotation.TenantId), new NoOpUnitOfWork());
 
         var result = await handler.Handle(new UploadQuotationAttachmentCommand(
             quotation.TenantId,
@@ -50,6 +50,7 @@ public sealed class QuotationAttachmentCommandTests
             new InMemoryQuotationRevisionRepository(),
             new InMemoryQuotationAttachmentRepository(),
             new RecordingFileStorage(),
+            new AllowAllFeatureGate(),
             new NoOpActivityWriter(),
             new FakeActorContext(quotation.TenantId),
             new NoOpUnitOfWork());
@@ -92,6 +93,7 @@ public sealed class QuotationAttachmentCommandTests
             new InMemoryQuotationRepository(quotation),
             new InMemoryQuotationAttachmentRepository(attachment),
             fileStorage,
+            new AllowAllFeatureGate(),
             new NoOpActivityWriter(),
             new FakeActorContext(quotation.TenantId),
             new NoOpUnitOfWork());
@@ -166,6 +168,13 @@ public sealed class QuotationAttachmentCommandTests
 
         public Task<string> GetSignedReadUrlAsync(string storageKey, TimeSpan ttl, CancellationToken cancellationToken)
             => Task.FromResult($"https://files.test/{storageKey}?ttl={(int)ttl.TotalSeconds}");
+    }
+
+    private sealed class AllowAllFeatureGate : IFeatureGate
+    {
+        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(true);
+        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
     }
 
     private sealed class NoOpActivityWriter : IActivityWriter

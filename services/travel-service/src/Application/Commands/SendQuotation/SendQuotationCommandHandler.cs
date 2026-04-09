@@ -12,12 +12,15 @@ public sealed class SendQuotationCommandHandler(
     IQuotationRevisionRepository quotationRevisionRepository,
     IQuotationShareLinkRepository quotationShareLinkRepository,
     IQuotationStatusHistoryRepository quotationStatusHistoryRepository,
+    IFeatureGate featureGate,
     IActivityWriter activityWriter,
     IActorContext actorContext,
     IUnitOfWork unitOfWork) : IRequestHandler<SendQuotationCommand, SendQuotationResult>
 {
     public async Task<SendQuotationResult> Handle(SendQuotationCommand request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelQuotationSend, request.TenantId, cancellationToken);
+
         var quotation = await quotationRepository.GetByIdAsync(request.QuotationId, cancellationToken)
             ?? throw new DomainException($"Quotation {request.QuotationId} not found.");
 

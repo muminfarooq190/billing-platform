@@ -11,6 +11,7 @@ public sealed class UploadBookingDocumentCommandHandler(
     ITravelerRepository travelerRepository,
     IBookingDocumentRepository bookingDocumentRepository,
     IFileStorage fileStorage,
+    IFeatureGate featureGate,
     IActivityWriter activityWriter,
     IActorContext actorContext,
     IUnitOfWork unitOfWork) : IRequestHandler<UploadBookingDocumentCommand, UploadBookingDocumentResult>
@@ -19,6 +20,8 @@ public sealed class UploadBookingDocumentCommandHandler(
 
     public async Task<UploadBookingDocumentResult> Handle(UploadBookingDocumentCommand request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelBookingDocumentsUpload, request.TenantId, cancellationToken);
+
         var booking = await bookingRepository.GetByIdAsync(request.BookingId, cancellationToken)
             ?? throw new DomainException($"Booking {request.BookingId} not found.");
 
