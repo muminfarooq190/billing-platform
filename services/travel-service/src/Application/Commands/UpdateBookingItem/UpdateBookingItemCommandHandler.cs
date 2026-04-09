@@ -1,5 +1,6 @@
 using MediatR;
 using TravelService.Application.Abstractions;
+using TravelService.Domain.Aggregates;
 using TravelService.Domain.Exceptions;
 using TravelService.Domain.Repositories;
 
@@ -8,6 +9,8 @@ namespace TravelService.Application.Commands.UpdateBookingItem;
 public sealed class UpdateBookingItemCommandHandler(
     IBookingRepository bookingRepository,
     IBookingItemRepository bookingItemRepository,
+    IActivityWriter activityWriter,
+    IActorContext actorContext,
     IUnitOfWork unitOfWork) : IRequestHandler<UpdateBookingItemCommand>
 {
     public async Task Handle(UpdateBookingItemCommand request, CancellationToken cancellationToken)
@@ -43,6 +46,16 @@ public sealed class UpdateBookingItemCommandHandler(
             request.SortOrder);
 
         await bookingItemRepository.UpdateAsync(item, cancellationToken);
+        await activityWriter.WriteAsync(
+            ActivityEntry.Create(
+                request.TenantId,
+                "Booking",
+                booking.Id,
+                "Updated",
+                $"Booking item updated: {item.Title}",
+                new { item.Id, item.Type, item.Status, item.SupplierName, item.StartAt, item.EndAt },
+                actorContext.UserId),
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

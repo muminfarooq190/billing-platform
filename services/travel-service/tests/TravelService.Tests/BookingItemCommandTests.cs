@@ -16,7 +16,7 @@ public sealed class BookingItemCommandTests
     {
         var booking = CreateBooking();
         var repository = new InMemoryBookingItemRepository();
-        var handler = new AddBookingItemCommandHandler(new InMemoryBookingRepository(booking), repository, new NoOpUnitOfWork());
+        var handler = new AddBookingItemCommandHandler(new InMemoryBookingRepository(booking), repository, new NoOpActivityWriter(), new FakeActorContext(booking.TenantId), new NoOpUnitOfWork());
 
         await handler.Handle(new AddBookingItemCommand(booking.TenantId, booking.Id, "Hotel", "Rome hotel stay", "4 nights", "Example Hotels", null, "Rome", DateTimeOffset.UtcNow.AddDays(10), DateTimeOffset.UtcNow.AddDays(14), 1200m, 900m, "USD", null, null, null, "Late check-in confirmed", 1), CancellationToken.None);
 
@@ -71,6 +71,11 @@ public sealed class BookingItemCommandTests
         public Task<BookingItem?> GetByIdAsync(Guid bookingId, Guid itemId, CancellationToken cancellationToken) => Task.FromResult(_items.SingleOrDefault(x => x.BookingId == bookingId && x.Id == itemId && x.DeletedAt is null));
         public Task<IReadOnlyList<BookingItem>> ListByBookingIdAsync(Guid bookingId, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<BookingItem>>(_items.Where(x => x.BookingId == bookingId && x.DeletedAt is null).ToList());
         public Task UpdateAsync(BookingItem item, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class NoOpActivityWriter : IActivityWriter
+    {
+        public Task WriteAsync(ActivityEntry entry, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class NoOpAuditWriter : IAuditWriter

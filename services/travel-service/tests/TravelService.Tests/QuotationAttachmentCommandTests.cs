@@ -19,7 +19,7 @@ public sealed class QuotationAttachmentCommandTests
         var revisionRepository = new InMemoryQuotationRevisionRepository();
         var attachmentRepository = new InMemoryQuotationAttachmentRepository();
         var fileStorage = new RecordingFileStorage();
-        var handler = new UploadQuotationAttachmentCommandHandler(quotationRepository, revisionRepository, attachmentRepository, fileStorage, new NoOpUnitOfWork());
+        var handler = new UploadQuotationAttachmentCommandHandler(quotationRepository, revisionRepository, attachmentRepository, fileStorage, new NoOpActivityWriter(), new FakeActorContext(quotation.TenantId), new NoOpUnitOfWork());
 
         var result = await handler.Handle(new UploadQuotationAttachmentCommand(
             quotation.TenantId,
@@ -50,6 +50,8 @@ public sealed class QuotationAttachmentCommandTests
             new InMemoryQuotationRevisionRepository(),
             new InMemoryQuotationAttachmentRepository(),
             new RecordingFileStorage(),
+            new NoOpActivityWriter(),
+            new FakeActorContext(quotation.TenantId),
             new NoOpUnitOfWork());
 
         var act = async () => await handler.Handle(new UploadQuotationAttachmentCommand(
@@ -90,6 +92,8 @@ public sealed class QuotationAttachmentCommandTests
             new InMemoryQuotationRepository(quotation),
             new InMemoryQuotationAttachmentRepository(attachment),
             fileStorage,
+            new NoOpActivityWriter(),
+            new FakeActorContext(quotation.TenantId),
             new NoOpUnitOfWork());
 
         await handler.Handle(new DeleteQuotationAttachmentCommand(quotation.TenantId, quotation.Id, attachment.Id), CancellationToken.None);
@@ -162,6 +166,19 @@ public sealed class QuotationAttachmentCommandTests
 
         public Task<string> GetSignedReadUrlAsync(string storageKey, TimeSpan ttl, CancellationToken cancellationToken)
             => Task.FromResult($"https://files.test/{storageKey}?ttl={(int)ttl.TotalSeconds}");
+    }
+
+    private sealed class NoOpActivityWriter : IActivityWriter
+    {
+        public Task WriteAsync(ActivityEntry entry, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class FakeActorContext(Guid tenantId) : IActorContext
+    {
+        public Guid? UserId { get; } = Guid.NewGuid();
+        public Guid TenantId { get; } = tenantId;
+        public string? IpAddress { get; } = "127.0.0.1";
+        public string? UserAgent { get; } = "tests";
     }
 
     private sealed class NoOpUnitOfWork : IUnitOfWork

@@ -9,6 +9,7 @@ public sealed class MarkPublicQuotationViewedCommandHandler(
     IQuotationShareLinkRepository quotationShareLinkRepository,
     IQuotationRepository quotationRepository,
     IQuotationStatusHistoryRepository quotationStatusHistoryRepository,
+    IActivityWriter activityWriter,
     IUnitOfWork unitOfWork) : IRequestHandler<MarkPublicQuotationViewedCommand, bool>
 {
     public async Task<bool> Handle(MarkPublicQuotationViewedCommand request, CancellationToken cancellationToken)
@@ -34,6 +35,16 @@ public sealed class MarkPublicQuotationViewedCommandHandler(
 
         await quotationShareLinkRepository.UpdateAsync(shareLink, cancellationToken);
         await quotationRepository.UpdateAsync(quotation, cancellationToken);
+        await activityWriter.WriteAsync(
+            ActivityEntry.Create(
+                quotation.TenantId,
+                "Quotation",
+                quotation.Id,
+                "Viewed",
+                "Public quote viewed by customer",
+                new { shareLink.Id, shareLink.QuotationRevisionId, shareLink.LastViewedAt },
+                null),
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }

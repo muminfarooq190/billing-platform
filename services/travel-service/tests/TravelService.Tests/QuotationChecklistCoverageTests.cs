@@ -42,7 +42,7 @@ public sealed class QuotationChecklistCoverageTests
 
         var shareLinkRepository = new InMemoryQuotationShareLinkRepository();
         var historyRepository = new InMemoryQuotationStatusHistoryRepository();
-        var sendHandler = new SendQuotationCommandHandler(quotationRepository, revisionRepository, shareLinkRepository, historyRepository, new NoOpUnitOfWork());
+        var sendHandler = new SendQuotationCommandHandler(quotationRepository, revisionRepository, shareLinkRepository, historyRepository, new NoOpActivityWriter(), new FakeActorContext(quotation.TenantId), new NoOpUnitOfWork());
 
         var sendResult = await sendHandler.Handle(new SendQuotationCommand(
             quotation.TenantId,
@@ -90,6 +90,8 @@ public sealed class QuotationChecklistCoverageTests
             new InMemoryQuotationRevisionRepository(foreignRevision),
             new InMemoryQuotationShareLinkRepository(),
             new InMemoryQuotationStatusHistoryRepository(),
+            new NoOpActivityWriter(),
+            new FakeActorContext(quotation.TenantId),
             new NoOpUnitOfWork());
 
         var act = async () => await handler.Handle(new SendQuotationCommand(
@@ -140,6 +142,7 @@ public sealed class QuotationChecklistCoverageTests
             new InMemoryQuotationShareLinkRepository(expiredLink),
             new InMemoryQuotationRepository(quotation),
             new InMemoryQuotationStatusHistoryRepository(),
+            new NoOpActivityWriter(),
             new NoOpUnitOfWork());
 
         var updated = await handler.Handle(new MarkPublicQuotationViewedCommand("expired-token"), CancellationToken.None);
@@ -170,6 +173,8 @@ public sealed class QuotationChecklistCoverageTests
             new InMemoryQuotationRepository(quotation),
             attachmentRepository,
             new StubFileStorage(),
+            new NoOpActivityWriter(),
+            new FakeActorContext(quotation.TenantId),
             new NoOpUnitOfWork());
 
         await handler.Handle(new DeleteQuotationAttachmentCommand(quotation.TenantId, quotation.Id, attachment.Id), CancellationToken.None);

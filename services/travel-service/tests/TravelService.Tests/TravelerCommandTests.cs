@@ -16,7 +16,7 @@ public sealed class TravelerCommandTests
         var booking = CreateBooking();
         var bookingRepository = new InMemoryBookingRepository(booking);
         var travelerRepository = new InMemoryTravelerRepository();
-        var handler = new AddTravelerCommandHandler(bookingRepository, travelerRepository, new NoOpUnitOfWork());
+        var handler = new AddTravelerCommandHandler(bookingRepository, travelerRepository, new NoOpActivityWriter(), new FakeActorContext(booking.TenantId), new NoOpUnitOfWork());
 
         await handler.Handle(new AddTravelerCommand(booking.TenantId, booking.Id, "Jane", "Doe", null, null, "jane@example.com", null, null, null, null, null, null, null, null, true), CancellationToken.None);
         await handler.Handle(new AddTravelerCommand(booking.TenantId, booking.Id, "John", "Doe", null, null, "john@example.com", null, null, null, null, null, null, null, null, false), CancellationToken.None);
@@ -44,7 +44,7 @@ public sealed class TravelerCommandTests
         var booking = CreateBooking();
         var traveler = Traveler.Create(booking.Id, booking.TenantId, "Jane", "Doe", null, null, null, null, null, null, null, null, null, null, null, true);
         var travelerRepository = new InMemoryTravelerRepository(traveler);
-        var handler = new DeleteTravelerCommandHandler(new InMemoryBookingRepository(booking), travelerRepository, new NoOpUnitOfWork());
+        var handler = new DeleteTravelerCommandHandler(new InMemoryBookingRepository(booking), travelerRepository, new NoOpActivityWriter(), new FakeActorContext(booking.TenantId), new NoOpUnitOfWork());
 
         await handler.Handle(new DeleteTravelerCommand(booking.TenantId, booking.Id, traveler.Id), CancellationToken.None);
 
@@ -81,6 +81,11 @@ public sealed class TravelerCommandTests
             => Task.FromResult<IReadOnlyList<Traveler>>(_travelers.Where(x => x.BookingId == bookingId && x.DeletedAt is null).ToList());
 
         public Task UpdateAsync(Traveler traveler, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class NoOpActivityWriter : IActivityWriter
+    {
+        public Task WriteAsync(ActivityEntry entry, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class NoOpAuditWriter : IAuditWriter

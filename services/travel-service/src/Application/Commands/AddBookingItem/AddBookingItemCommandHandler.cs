@@ -9,6 +9,8 @@ namespace TravelService.Application.Commands.AddBookingItem;
 public sealed class AddBookingItemCommandHandler(
     IBookingRepository bookingRepository,
     IBookingItemRepository bookingItemRepository,
+    IActivityWriter activityWriter,
+    IActorContext actorContext,
     IUnitOfWork unitOfWork) : IRequestHandler<AddBookingItemCommand, Guid>
 {
     public async Task<Guid> Handle(AddBookingItemCommand request, CancellationToken cancellationToken)
@@ -54,6 +56,16 @@ public sealed class AddBookingItemCommandHandler(
             request.SortOrder);
 
         await bookingItemRepository.AddAsync(item, cancellationToken);
+        await activityWriter.WriteAsync(
+            ActivityEntry.Create(
+                request.TenantId,
+                "Booking",
+                booking.Id,
+                "Created",
+                $"Booking item added: {item.Title}",
+                new { item.Id, item.Type, item.Status, item.SupplierName, item.StartAt, item.EndAt },
+                actorContext.UserId),
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return item.Id;
     }
