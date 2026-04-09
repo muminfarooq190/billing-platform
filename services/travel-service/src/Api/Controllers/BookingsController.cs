@@ -12,6 +12,7 @@ using TravelService.Application.Commands.UpdateBookingItemStatus;
 using TravelService.Application.Commands.UpdateTraveler;
 using TravelService.Application.Commands.UploadBookingDocument;
 using TravelService.Application.Queries.GetBookingById;
+using TravelService.Application.Queries.GetBookingFinancialSummary;
 using TravelService.Application.Queries.ListBookingDocuments;
 using TravelService.Application.Queries.ListBookingItems;
 using TravelService.Application.Queries.ListBookings;
@@ -51,6 +52,13 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     {
         var booking = await mediator.Send(new GetBookingByIdQuery(tenantContext.TenantId, id), cancellationToken);
         return booking is null ? NotFound() : Ok(booking);
+    }
+
+    [HttpGet("{id:guid}/financial-summary")]
+    public async Task<IActionResult> GetFinancialSummary(Guid id, CancellationToken cancellationToken)
+    {
+        var summary = await mediator.Send(new GetBookingFinancialSummaryQuery(tenantContext.TenantId, id), cancellationToken);
+        return summary is null ? NotFound() : Ok(summary);
     }
 
     [HttpPost("{id:guid}/travelers")]
