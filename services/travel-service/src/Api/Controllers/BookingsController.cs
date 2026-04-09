@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using TravelService.Api.Contracts;
 using TravelService.Application.Commands.AddBookingItem;
 using TravelService.Application.Commands.AddTraveler;
+using TravelService.Application.Commands.BookingFulfillment;
 using TravelService.Application.Commands.CreateBookingFromQuotation;
 using TravelService.Application.Commands.DeleteBookingDocument;
 using TravelService.Application.Commands.DeleteBookingItem;
@@ -186,6 +187,27 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     public async Task<IActionResult> UpdateItemStatus(Guid id, Guid itemId, [FromBody] UpdateBookingItemStatusRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(new UpdateBookingItemStatusCommand(tenantContext.TenantId, id, itemId, request.Status), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/items/{itemId:guid}/request-confirmation")]
+    public async Task<IActionResult> RequestItemConfirmation(Guid id, Guid itemId, [FromBody] RequestBookingItemConfirmationRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new RequestBookingItemConfirmationCommand(tenantContext.TenantId, id, itemId, request.ConfirmationDeadline, request.Notes), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/items/{itemId:guid}/confirm")]
+    public async Task<IActionResult> ConfirmItem(Guid id, Guid itemId, [FromBody] ConfirmBookingItemRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new ConfirmBookingItemCommand(tenantContext.TenantId, id, itemId, request.ConfirmationNumber, request.ConfirmedAt, request.Notes), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/items/{itemId:guid}/issue")]
+    public async Task<IActionResult> IssueItem(Guid id, Guid itemId, [FromBody] IssueBookingItemRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new IssueBookingItemCommand(tenantContext.TenantId, id, itemId, request.VoucherNumber, request.IssuedAt, request.Notes), cancellationToken);
         return NoContent();
     }
 
