@@ -17,7 +17,7 @@ public sealed class GetEffectiveEntitlementsQueryHandler(ISubscriptionRepository
             .ToDictionary(x => x.FeatureKey, StringComparer.OrdinalIgnoreCase);
 
         var now = DateTimeOffset.UtcNow;
-        foreach (var entry in overrides.Where(x => x.IsEffectiveAt(now)))
+        foreach (var entry in overrides.Where(x => x.IsEffectiveAt(now)).OrderBy(x => x.EffectiveFrom))
         {
             resolved[entry.FeatureKey] = new FeatureEntitlementReadModel
             {
