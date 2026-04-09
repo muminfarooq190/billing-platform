@@ -1,5 +1,6 @@
 using MediatR;
 using TravelService.Application.Abstractions;
+using TravelService.Domain.Aggregates;
 using TravelService.Domain.Exceptions;
 using TravelService.Domain.Repositories;
 
