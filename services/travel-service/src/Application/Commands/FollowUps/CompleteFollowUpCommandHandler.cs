@@ -19,8 +19,7 @@ public sealed class CompleteFollowUpCommandHandler(IFollowUpRepository followUpR
             followUp.Notes,
             followUp.Priority,
             followUp.DueDate,
-            followUp.AssignedToUserId,
-            FollowUpStatus.Completed);
+            followUp.AssignedToUserId);
 
         await followUpRepository.UpdateAsync(followUp, cancellationToken);
         await activityWriter.WriteAsync(

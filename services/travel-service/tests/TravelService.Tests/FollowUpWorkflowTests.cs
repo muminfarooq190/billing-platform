@@ -37,6 +37,17 @@ public sealed class FollowUpWorkflowTests
         public Task AddAsync(FollowUp followUp, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task<FollowUp?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(id == followUp.Id ? followUp : null);
         public Task<IReadOnlyList<FollowUp>> ListByTenantIdAsync(Guid tenantId, int page, int pageSize, string? status, string? customerName, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<FollowUp>>([followUp]);
+
+        public Task<IReadOnlyList<FollowUp>> ListByTenantIdAsync(Guid tenantId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IReadOnlyList<FollowUp>> ListOverdueAsync(DateTimeOffset asOf, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task UpdateAsync(FollowUp followUp, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 

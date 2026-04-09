@@ -5,6 +5,7 @@ using TravelService.Application.Queries.GetFollowUpById;
 using TravelService.Application.Queries.ListFollowUpsByTenant;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using TravelService.Application.Commands.FollowUps;
 
 namespace TravelService.Api.Controllers;
 
