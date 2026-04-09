@@ -17,6 +17,10 @@ builder.Services.AddHealthChecks()
     .AddDownstreamUrl("communication-service", "http://communication-service:8080/health")
     .AddDownstreamUrl("webhook-service", "http://webhook-service:3000/health");
 builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(builder.Configuration["REDIS_URL"] ?? "redis:6379"));
+builder.Services.AddHttpClient("billing-entitlements", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["BILLING_SERVICE_URL"] ?? "http://billing-service:8080/");
+});
 builder.Services.AddGatewayReverseProxy(builder.Configuration);
 
 var allowedOrigins = (builder.Configuration["ALLOWED_ORIGINS"] ?? string.Empty)
@@ -53,6 +57,7 @@ var app = builder.Build();
 app.UseHttpMetrics();
 app.UseCors("FrontendClients");
 app.UseMiddleware<JwtValidationMiddleware>();
+app.UseMiddleware<FeatureEntitlementMiddleware>();
 app.UseMiddleware<RateLimitMiddleware>();
 
 app.MapHealthChecks("/health");
