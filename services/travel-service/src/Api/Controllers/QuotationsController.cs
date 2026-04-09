@@ -6,6 +6,7 @@ using TravelService.Application.Commands.CreateQuotationRevision;
 using TravelService.Application.Commands.DeleteQuotationAttachment;
 using TravelService.Application.Commands.ExpireQuotation;
 using TravelService.Application.Commands.MarkPublicQuotationViewed;
+using TravelService.Application.Commands.PublicQuotationActions;
 using TravelService.Application.Commands.QuotationApproval;
 using TravelService.Application.Commands.RejectQuotation;
 using TravelService.Application.Commands.SendQuotation;
@@ -209,6 +210,20 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     public async Task<IActionResult> MarkPublicViewed(string token, CancellationToken cancellationToken)
     {
         var updated = await mediator.Send(new MarkPublicQuotationViewedCommand(token), cancellationToken);
+        return updated ? NoContent() : NotFound();
+    }
+
+    [HttpPost("public/{token}/accept")]
+    public async Task<IActionResult> AcceptPublicQuotation(string token, [FromBody] PublicQuotationDecisionRequest request, CancellationToken cancellationToken)
+    {
+        var updated = await mediator.Send(new AcceptPublicQuotationCommand(token, request.Reason), cancellationToken);
+        return updated ? NoContent() : NotFound();
+    }
+
+    [HttpPost("public/{token}/reject")]
+    public async Task<IActionResult> RejectPublicQuotation(string token, [FromBody] PublicQuotationDecisionRequest request, CancellationToken cancellationToken)
+    {
+        var updated = await mediator.Send(new RejectPublicQuotationCommand(token, request.Reason), cancellationToken);
         return updated ? NoContent() : NotFound();
     }
 
