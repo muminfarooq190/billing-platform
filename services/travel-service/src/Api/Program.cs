@@ -23,6 +23,7 @@ public sealed class Program
         builder.Services.AddScoped<IActorContext, HttpActorContext>();
         builder.Services.AddScoped<IActivityEntryRepository, ActivityEntryRepository>();
         builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+        builder.Services.AddScoped<IEntityNoteRepository, EntityNoteRepository>();
         builder.Services.AddScoped<IActivityWriter, ActivityWriter>();
         builder.Services.AddScoped<IAuditWriter, AuditWriter>();
         builder.Services.AddScoped<IContactRepository, ContactRepository>();
