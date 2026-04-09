@@ -5,10 +5,12 @@ using MediatR;
 
 namespace CommunicationService.Application.Queries.ListTemplatesByTenant;
 
-public sealed class ListTemplatesByTenantQueryHandler(IReadDbConnectionFactory connectionFactory) : IRequestHandler<ListTemplatesByTenantQuery, IReadOnlyList<TemplateReadModel>>
+public sealed class ListTemplatesByTenantQueryHandler(IReadDbConnectionFactory connectionFactory, IFeatureGate featureGate) : IRequestHandler<ListTemplatesByTenantQuery, IReadOnlyList<TemplateReadModel>>
 {
     public async Task<IReadOnlyList<TemplateReadModel>> Handle(ListTemplatesByTenantQuery request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync(FeatureKeys.CommunicationLogsRead, request.TenantId, cancellationToken);
+
         var page = Math.Max(1, request.Page);
         var pageSize = Math.Clamp(request.PageSize, 1, 100);
 

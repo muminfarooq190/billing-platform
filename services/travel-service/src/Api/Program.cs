@@ -2,6 +2,7 @@ using TravelService.Api.Filters;
 using TravelService.Application.Abstractions;
 using TravelService.Domain.Repositories;
 using TravelService.Infrastructure.Caching;
+using TravelService.Infrastructure.Entitlements;
 using TravelService.Infrastructure.Files;
 using TravelService.Infrastructure.Persistence;
 using TravelService.Infrastructure.Persistence.Outbox;
@@ -43,6 +44,11 @@ public sealed class Program
         builder.Services.AddScoped<IReadDbConnectionFactory, ReadDbConnectionFactory>();
         builder.Services.AddScoped<IFileStorage, LocalFileStorage>();
         builder.Services.AddScoped<ICacheService, RedisCacheService>();
+        builder.Services.AddHttpClient<IBillingEntitlementsClient, BillingEntitlementsClient>(client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["BILLING_SERVICE_URL"] ?? "http://localhost:5080/");
+        });
+        builder.Services.AddScoped<IFeatureGate, CachedFeatureGate>();
 
         builder.Services.AddStackExchangeRedisCache(options => options.Configuration = builder.Configuration["REDIS_URL"] ?? "redis:6379");
         builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));

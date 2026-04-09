@@ -9,12 +9,15 @@ namespace TravelService.Application.Commands.DeleteTraveler;
 public sealed class DeleteTravelerCommandHandler(
     IBookingRepository bookingRepository,
     ITravelerRepository travelerRepository,
+    IFeatureGate featureGate,
     IActivityWriter activityWriter,
     IActorContext actorContext,
     IUnitOfWork unitOfWork) : IRequestHandler<DeleteTravelerCommand>
 {
     public async Task Handle(DeleteTravelerCommand request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelBookingCreate, request.TenantId, cancellationToken);
+
         var booking = await bookingRepository.GetByIdAsync(request.BookingId, cancellationToken)
             ?? throw new DomainException($"Booking {request.BookingId} not found.");
 

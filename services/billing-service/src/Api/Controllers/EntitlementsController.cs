@@ -1,3 +1,5 @@
+using BillingService.Api.Contracts;
+using BillingService.Application.Commands.GrantFeatureEntitlement;
 using BillingService.Application.Queries.GetEffectiveEntitlements;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -20,5 +22,12 @@ public sealed class EntitlementsController(IMediator mediator, ITenantContext te
     {
         var model = await mediator.Send(new GetEffectiveEntitlementsQuery(tenantId), cancellationToken);
         return Ok(model);
+    }
+
+    [HttpPost("{tenantId:guid}/grants")]
+    public async Task<IActionResult> Grant(Guid tenantId, [FromBody] GrantFeatureEntitlementRequest request, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GrantFeatureEntitlementCommand(tenantId, request.FeatureKey, request.Granted, request.LimitValue, request.EffectiveFrom, request.EffectiveTo, request.Reason), cancellationToken);
+        return Ok(result);
     }
 }

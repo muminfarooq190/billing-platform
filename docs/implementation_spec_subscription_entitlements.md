@@ -550,6 +550,12 @@ Some projections may continue to build regardless of tenant plan, but access to 
 - admin override model
 - docs/postman
 
+Current implementation status:
+- billing-service supports effective entitlement resolution with `LimitValue`
+- billing-service supports admin grant/override creation via `POST /billing/entitlements/{tenantId}/grants`
+- effective entitlement query now applies active overrides in effective-time order
+- tests cover plan defaults, active override precedence, expired override behavior, and admin grant creation
+
 ---
 
 # 17. Minimum tests required

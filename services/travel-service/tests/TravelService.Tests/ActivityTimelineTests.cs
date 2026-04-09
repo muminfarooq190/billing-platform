@@ -15,7 +15,7 @@ public sealed class ActivityTimelineTests
         var quotation = CreateQuotation();
         quotation.AddLineItem("Flight", 1200m, 1, "USD");
         var activityWriter = new RecordingActivityWriter();
-        var handler = new CreateQuotationRevisionCommandHandler(new InMemoryQuotationRepository(quotation), new InMemoryQuotationRevisionRepository(), activityWriter, new NoOpAuditWriter(), new FakeActorContext(quotation.TenantId), new NoOpUnitOfWork());
+        var handler = new CreateQuotationRevisionCommandHandler(new InMemoryQuotationRepository(quotation), new InMemoryQuotationRevisionRepository(), new AllowAllFeatureGate(), activityWriter, new NoOpAuditWriter(), new FakeActorContext(quotation.TenantId), new NoOpUnitOfWork());
 
         await handler.Handle(new CreateQuotationRevisionCommand(quotation.TenantId, quotation.Id, quotation.Title, quotation.Destination, quotation.TravelDate, quotation.ReturnDate, quotation.Travellers, quotation.Currency, "Visible", "Internal", DateTimeOffset.UtcNow.AddDays(10), [new QuotationRevisionLineItemDto("Flight", 1200m, 1, "USD")]), CancellationToken.None);
 
@@ -31,7 +31,7 @@ public sealed class ActivityTimelineTests
         quotation.Send();
         quotation.Accept(revision.Id);
         var activityWriter = new RecordingActivityWriter();
-        var handler = new CreateBookingFromQuotationCommandHandler(new InMemoryQuotationRepository(quotation), new InMemoryQuotationRevisionRepository(revision), new InMemoryBookingRepository(), new InMemoryBookingStatusHistoryRepository(), activityWriter, new NoOpUnitOfWork());
+        var handler = new CreateBookingFromQuotationCommandHandler(new InMemoryQuotationRepository(quotation), new InMemoryQuotationRevisionRepository(revision), new InMemoryBookingRepository(), new InMemoryBookingStatusHistoryRepository(), new AllowAllFeatureGate(), activityWriter, new NoOpUnitOfWork());
 
         await handler.Handle(new CreateBookingFromQuotationCommand(quotation.TenantId, quotation.Id, null, "Priority booking"), CancellationToken.None);
 
@@ -41,6 +41,13 @@ public sealed class ActivityTimelineTests
 
     private static Quotation CreateQuotation()
         => Quotation.Create(Guid.NewGuid(), Guid.NewGuid(), "Ava", "Summer Trip", "Istanbul", DateTimeOffset.UtcNow.AddDays(20), DateTimeOffset.UtcNow.AddDays(25), 2, "USD", "notes");
+
+    private sealed class AllowAllFeatureGate : IFeatureGate
+    {
+        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(true);
+        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
+    }
 
     private sealed class RecordingActivityWriter : IActivityWriter
     {

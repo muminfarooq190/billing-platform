@@ -4,10 +4,12 @@ using TravelService.Application.Abstractions;
 
 namespace TravelService.Application.Queries.GetAuditLog;
 
-public sealed class GetAuditLogQueryHandler(IReadDbConnectionFactory connectionFactory) : IRequestHandler<GetAuditLogQuery, AuditLogPageReadModel>
+public sealed class GetAuditLogQueryHandler(IReadDbConnectionFactory connectionFactory, IFeatureGate featureGate) : IRequestHandler<GetAuditLogQuery, AuditLogPageReadModel>
 {
     public async Task<AuditLogPageReadModel> Handle(GetAuditLogQuery request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelAuditRead, request.TenantId, cancellationToken);
+
         var page = request.Page <= 0 ? 1 : request.Page;
         var pageSize = request.PageSize <= 0 ? 20 : Math.Min(request.PageSize, 100);
         var offset = (page - 1) * pageSize;

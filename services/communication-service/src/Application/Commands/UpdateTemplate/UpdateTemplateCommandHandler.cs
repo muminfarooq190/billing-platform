@@ -5,12 +5,14 @@ using MediatR;
 
 namespace CommunicationService.Application.Commands.UpdateTemplate;
 
-public sealed class UpdateTemplateCommandHandler(INotificationTemplateRepository templateRepository, IUnitOfWork unitOfWork) : IRequestHandler<UpdateTemplateCommand>
+public sealed class UpdateTemplateCommandHandler(INotificationTemplateRepository templateRepository, IFeatureGate featureGate, IUnitOfWork unitOfWork) : IRequestHandler<UpdateTemplateCommand>
 {
     public async Task Handle(UpdateTemplateCommand request, CancellationToken cancellationToken)
     {
         var template = await templateRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new DomainException($"Template {request.Id} not found.");
+
+        await featureGate.EnsureEnabledAsync(FeatureKeys.CommunicationTemplatesManage, template.TenantId, cancellationToken);
 
         switch (request.Action?.ToLowerInvariant())
         {

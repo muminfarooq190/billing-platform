@@ -21,7 +21,7 @@ public sealed class QuotationChecklistCoverageTests
 
         var quotationRepository = new InMemoryQuotationRepository(quotation);
         var revisionRepository = new InMemoryQuotationRevisionRepository();
-        var createRevisionHandler = new CreateQuotationRevisionCommandHandler(quotationRepository, revisionRepository, new NoOpActivityWriter(), new NoOpAuditWriter(), new FakeActorContext(quotation.TenantId), new NoOpUnitOfWork());
+        var createRevisionHandler = new CreateQuotationRevisionCommandHandler(quotationRepository, revisionRepository, new AllowAllFeatureGate(), new NoOpActivityWriter(), new NoOpAuditWriter(), new FakeActorContext(quotation.TenantId), new NoOpUnitOfWork());
 
         var createResult = await createRevisionHandler.Handle(new CreateQuotationRevisionCommand(
             quotation.TenantId,
@@ -42,7 +42,7 @@ public sealed class QuotationChecklistCoverageTests
 
         var shareLinkRepository = new InMemoryQuotationShareLinkRepository();
         var historyRepository = new InMemoryQuotationStatusHistoryRepository();
-        var sendHandler = new SendQuotationCommandHandler(quotationRepository, revisionRepository, shareLinkRepository, historyRepository, new NoOpActivityWriter(), new FakeActorContext(quotation.TenantId), new NoOpUnitOfWork());
+        var sendHandler = new SendQuotationCommandHandler(quotationRepository, revisionRepository, shareLinkRepository, historyRepository, new AllowAllFeatureGate(), new NoOpActivityWriter(), new FakeActorContext(quotation.TenantId), new NoOpUnitOfWork());
 
         var sendResult = await sendHandler.Handle(new SendQuotationCommand(
             quotation.TenantId,
@@ -90,6 +90,7 @@ public sealed class QuotationChecklistCoverageTests
             new InMemoryQuotationRevisionRepository(foreignRevision),
             new InMemoryQuotationShareLinkRepository(),
             new InMemoryQuotationStatusHistoryRepository(),
+            new AllowAllFeatureGate(),
             new NoOpActivityWriter(),
             new FakeActorContext(quotation.TenantId),
             new NoOpUnitOfWork());
@@ -173,6 +174,7 @@ public sealed class QuotationChecklistCoverageTests
             new InMemoryQuotationRepository(quotation),
             attachmentRepository,
             new StubFileStorage(),
+            new AllowAllFeatureGate(),
             new NoOpActivityWriter(),
             new FakeActorContext(quotation.TenantId),
             new NoOpUnitOfWork());
@@ -268,6 +270,13 @@ public sealed class QuotationChecklistCoverageTests
 
         public Task<IReadOnlyList<QuotationStatusHistory>> ListByQuotationIdAsync(Guid quotationId, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<QuotationStatusHistory>>(Items.Where(x => x.QuotationId == quotationId).ToList());
+    }
+
+    private sealed class AllowAllFeatureGate : IFeatureGate
+    {
+        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(true);
+        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
     }
 
     private sealed class NoOpActivityWriter : IActivityWriter

@@ -9,12 +9,15 @@ namespace TravelService.Application.Commands.AddTraveler;
 public sealed class AddTravelerCommandHandler(
     IBookingRepository bookingRepository,
     ITravelerRepository travelerRepository,
+    IFeatureGate featureGate,
     IActivityWriter activityWriter,
     IActorContext actorContext,
     IUnitOfWork unitOfWork) : IRequestHandler<AddTravelerCommand, Guid>
 {
     public async Task<Guid> Handle(AddTravelerCommand request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelBookingCreate, request.TenantId, cancellationToken);
+
         var booking = await bookingRepository.GetByIdAsync(request.BookingId, cancellationToken)
             ?? throw new DomainException($"Booking {request.BookingId} not found.");
 

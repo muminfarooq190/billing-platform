@@ -11,10 +11,13 @@ public sealed class SendNotificationCommandHandler(
     INotificationRepository notificationRepository,
     INotificationTemplateRepository templateRepository,
     IRecipientPreferencesRepository preferencesRepository,
+    IFeatureGate featureGate,
     IUnitOfWork unitOfWork) : IRequestHandler<SendNotificationCommand, Guid>
 {
     public async Task<Guid> Handle(SendNotificationCommand request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync(FeatureKeys.CommunicationNotificationSend, request.TenantId, cancellationToken);
+
         var recipientType = Enum.Parse<RecipientType>(request.RecipientType, true);
         var priority = Enum.Parse<NotificationPriority>(request.Priority, true);
         var placeholders = request.Placeholders ?? [];
