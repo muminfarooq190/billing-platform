@@ -17,7 +17,7 @@ public sealed class BookingFinancialSummaryTests
             new(Guid.NewGuid(), booking.TenantId, "Paid", 2000m, "USD", DateTimeOffset.UtcNow.AddDays(-5), DateTimeOffset.UtcNow.AddDays(-4)),
             new(Guid.NewGuid(), booking.TenantId, "Issued", 3000m, "USD", DateTimeOffset.UtcNow.AddDays(7), null)
         };
-        var handler = new GetBookingFinancialSummaryQueryHandler(new SingleBookingRepository(booking), new StubBillingFinanceClient(invoices));
+        var handler = new GetBookingFinancialSummaryQueryHandler(new SingleBookingRepository(booking), new StubBillingFinanceClient(invoices), new AllowAllFeatureGate());
 
         var result = await handler.Handle(new GetBookingFinancialSummaryQuery(booking.TenantId, booking.Id), CancellationToken.None);
 
@@ -41,5 +41,12 @@ public sealed class BookingFinancialSummaryTests
     {
         public Task<IReadOnlyList<BookingInvoiceDto>> GetInvoicesAsync(Guid tenantId, CancellationToken cancellationToken)
             => Task.FromResult(invoices.Where(x => x.TenantId == tenantId).ToList() as IReadOnlyList<BookingInvoiceDto>);
+    }
+
+    private sealed class AllowAllFeatureGate : IFeatureGate
+    {
+        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(true);
+        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
     }
 }

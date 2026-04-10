@@ -7,12 +7,14 @@ using MediatR;
 
 namespace TravelService.Application.Commands.UpdateFollowUp;
 
-public sealed class UpdateFollowUpCommandHandler(IFollowUpRepository followUpRepository, IActivityWriter activityWriter, IActorContext actorContext, IUnitOfWork unitOfWork) : IRequestHandler<UpdateFollowUpCommand>
+public sealed class UpdateFollowUpCommandHandler(IFollowUpRepository followUpRepository, IFeatureGate featureGate, IActivityWriter activityWriter, IActorContext actorContext, IUnitOfWork unitOfWork) : IRequestHandler<UpdateFollowUpCommand>
 {
     public async Task Handle(UpdateFollowUpCommand request, CancellationToken cancellationToken)
     {
         var followUp = await followUpRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new DomainException($"Follow-up {request.Id} not found.");
+
+        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelTimelineRead, followUp.TenantId, cancellationToken);
 
         var previousStatus = followUp.Status;
         followUp.Update(request.Subject, request.Notes, Enum.Parse<FollowUpPriority>(request.Priority, true), request.DueDate, request.AssignedToUserId);

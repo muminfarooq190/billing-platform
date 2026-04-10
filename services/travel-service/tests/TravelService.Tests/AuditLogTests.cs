@@ -23,6 +23,7 @@ public sealed class AuditLogTests
             new InMemoryQuotationRepository(quotation),
             new InMemoryQuotationRevisionRepository(revision),
             new InMemoryQuotationStatusHistoryRepository(),
+            new AllowAllFeatureGate(),
             auditWriter,
             actorContext,
             new NoOpUnitOfWork());

@@ -4,10 +4,12 @@ using TravelService.Application.Abstractions;
 
 namespace TravelService.Application.Queries.SearchTravel;
 
-public sealed class SearchTravelQueryHandler(IReadDbConnectionFactory connectionFactory) : IRequestHandler<SearchTravelQuery, IReadOnlyList<SearchResultReadModel>>
+public sealed class SearchTravelQueryHandler(IReadDbConnectionFactory connectionFactory, IFeatureGate featureGate) : IRequestHandler<SearchTravelQuery, IReadOnlyList<SearchResultReadModel>>
 {
     public async Task<IReadOnlyList<SearchResultReadModel>> Handle(SearchTravelQuery request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelTimelineRead, request.TenantId, cancellationToken);
+
         var page = Math.Max(1, request.Page);
         var pageSize = Math.Clamp(request.PageSize, 1, 100);
         var q = $"%{request.Query}%";

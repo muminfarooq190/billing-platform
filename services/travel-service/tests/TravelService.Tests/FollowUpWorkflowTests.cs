@@ -15,7 +15,7 @@ public sealed class FollowUpWorkflowTests
     {
         var followUp = FollowUp.Create(Guid.NewGuid(), Guid.NewGuid(), "Jane Doe", "Call customer", "Check payment", FollowUpPriority.High, DateTimeOffset.UtcNow.AddDays(1), null);
         var assignee = Guid.NewGuid();
-        var handler = new ReassignFollowUpCommandHandler(new SingleFollowUpRepository(followUp), new NoOpActivityWriter(), new FakeActorContext(followUp.TenantId), new NoOpUnitOfWork());
+        var handler = new ReassignFollowUpCommandHandler(new SingleFollowUpRepository(followUp), new AllowAllFeatureGate(), new NoOpActivityWriter(), new FakeActorContext(followUp.TenantId), new NoOpUnitOfWork());
 
         await handler.Handle(new ReassignFollowUpCommand(followUp.Id, assignee), CancellationToken.None);
 
@@ -52,6 +52,13 @@ public sealed class FollowUpWorkflowTests
     private sealed class NoOpActivityWriter : IActivityWriter
     {
         public Task WriteAsync(ActivityEntry entry, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class AllowAllFeatureGate : IFeatureGate
+    {
+        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(true);
+        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
     }
 
     private sealed class NoOpUnitOfWork : IUnitOfWork

@@ -4,10 +4,12 @@ using TravelService.Application.Abstractions;
 
 namespace TravelService.Application.Queries.GetWorkQueue;
 
-public sealed class GetWorkQueueQueryHandler(IReadDbConnectionFactory connectionFactory) : IRequestHandler<GetWorkQueueQuery, IReadOnlyList<WorkQueueItemReadModel>>
+public sealed class GetWorkQueueQueryHandler(IReadDbConnectionFactory connectionFactory, IFeatureGate featureGate) : IRequestHandler<GetWorkQueueQuery, IReadOnlyList<WorkQueueItemReadModel>>
 {
     public async Task<IReadOnlyList<WorkQueueItemReadModel>> Handle(GetWorkQueueQuery request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelTimelineRead, request.TenantId, cancellationToken);
+
         var page = Math.Max(1, request.Page);
         var pageSize = Math.Clamp(request.PageSize, 1, 100);
 
