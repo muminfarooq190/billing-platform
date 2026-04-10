@@ -13,7 +13,7 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("tenants")]
-[Authorize(Policy = PermissionPolicies.TenantAdmin)]
+[RequirePermission("identity.tenant.manage")]
 public sealed class TenantsController(IMediator mediator, ITenantRepository tenantRepository, Application.Abstractions.IUnitOfWork unitOfWork) : ControllerBase
 {
     [HttpGet("{id:guid}")]

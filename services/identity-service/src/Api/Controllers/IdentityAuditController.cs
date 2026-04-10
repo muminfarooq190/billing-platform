@@ -8,7 +8,7 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("identity")]
-[Authorize(Policy = PermissionPolicies.AuditRead)]
+[RequirePermission("identity.audit.read")]
 public sealed class IdentityAuditController(IdentityDbContext dbContext) : ControllerBase
 {
     [HttpGet("audit/users/{userId:guid}")]

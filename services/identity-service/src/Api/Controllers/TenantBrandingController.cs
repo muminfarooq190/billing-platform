@@ -11,7 +11,7 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("tenant-branding")]
-[Authorize(Policy = PermissionPolicies.BrandingManage)]
+[RequirePermission("branding.theme.manage")]
 public sealed class TenantBrandingController(IdentityDbContext dbContext, IBrandAssetStorage storage) : ControllerBase
 {
     [HttpGet]

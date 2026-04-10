@@ -10,7 +10,7 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("tenant-branding/templates")]
-[Authorize(Policy = PermissionPolicies.BrandingManage)]
+[RequirePermission("branding.theme.manage")]
 public sealed class TenantTemplateThemesController(IdentityDbContext dbContext) : ControllerBase
 {
     [HttpGet("{scope}")]

@@ -24,21 +24,23 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
 
 public static class PermissionPolicies
 {
-    public const string UsersManage = "permission:identity.users.manage";
-    public const string RolesManage = "permission:identity.roles.manage";
-    public const string AuditRead = "permission:identity.audit.read";
-    public const string SettingsManage = "permission:identity.settings.manage";
-    public const string BrandingManage = "permission:branding.theme.manage";
-    public const string TenantAdmin = "permission:identity.tenant.manage";
-
     public static AuthorizationOptions AddPermissionPolicies(this AuthorizationOptions options)
     {
-        options.AddPolicy(UsersManage, p => p.Requirements.Add(new PermissionRequirement("identity.users.manage")));
-        options.AddPolicy(RolesManage, p => p.Requirements.Add(new PermissionRequirement("identity.roles.manage")));
-        options.AddPolicy(AuditRead, p => p.Requirements.Add(new PermissionRequirement("identity.audit.read")));
-        options.AddPolicy(SettingsManage, p => p.Requirements.Add(new PermissionRequirement("identity.settings.manage")));
-        options.AddPolicy(BrandingManage, p => p.Requirements.Add(new PermissionRequirement("branding.theme.manage")));
-        options.AddPolicy(TenantAdmin, p => p.Requirements.Add(new PermissionRequirement("identity.tenant.manage")));
+        var permissions = new[]
+        {
+            "identity.users.manage",
+            "identity.roles.manage",
+            "identity.audit.read",
+            "identity.settings.manage",
+            "branding.theme.manage",
+            "identity.tenant.manage"
+        };
+
+        foreach (var permission in permissions)
+        {
+            options.AddPolicy(RequirePermissionAttribute.PolicyPrefix + permission, p => p.Requirements.Add(new PermissionRequirement(permission)));
+        }
+
         return options;
     }
 }

@@ -10,7 +10,7 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("identity/tenant-settings")]
-[Authorize(Policy = PermissionPolicies.SettingsManage)]
+[RequirePermission("identity.settings.manage")]
 public sealed class TenantSettingsController(IdentityDbContext dbContext) : ControllerBase
 {
     [HttpGet]

@@ -9,7 +9,7 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("tenant-branding/files")]
-[Authorize(Policy = PermissionPolicies.BrandingManage)]
+[RequirePermission("branding.theme.manage")]
 public sealed class TenantBrandingAssetsController(IdentityDbContext dbContext, IBrandAssetStorage storage) : ControllerBase
 {
     [HttpGet("{**storageKey}")]
