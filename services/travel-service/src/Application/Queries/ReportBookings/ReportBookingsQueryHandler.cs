@@ -4,10 +4,12 @@ using TravelService.Application.Abstractions;
 
 namespace TravelService.Application.Queries.ReportBookings;
 
-public sealed class ReportBookingsQueryHandler(IReadDbConnectionFactory connectionFactory) : IRequestHandler<ReportBookingsQuery, IReadOnlyList<BookingReportRow>>
+public sealed class ReportBookingsQueryHandler(IReadDbConnectionFactory connectionFactory, IFeatureGate featureGate) : IRequestHandler<ReportBookingsQuery, IReadOnlyList<BookingReportRow>>
 {
     public async Task<IReadOnlyList<BookingReportRow>> Handle(ReportBookingsQuery request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelAuditRead, request.TenantId, cancellationToken);
+
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         var rows = await connection.QueryAsync<BookingReportRow>(@"
             SELECT id AS BookingId,
