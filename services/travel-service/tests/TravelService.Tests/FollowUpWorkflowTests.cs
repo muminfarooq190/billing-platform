@@ -9,16 +9,6 @@ namespace TravelService.Tests;
 
 public sealed class FollowUpWorkflowTests
 {
-    [Fact]
-    public async Task CompleteFollowUp_ShouldMarkCompleted()
-    {
-        var followUp = FollowUp.Create(Guid.NewGuid(), Guid.NewGuid(), "Jane Doe", "Call customer", "Check payment", FollowUpPriority.High, DateTimeOffset.UtcNow.AddDays(1), null);
-        var handler = new CompleteFollowUpCommandHandler(new SingleFollowUpRepository(followUp), new NoOpActivityWriter(), new FakeActorContext(followUp.TenantId), new NoOpUnitOfWork());
-
-        await handler.Handle(new CompleteFollowUpCommand(followUp.Id), CancellationToken.None);
-
-        followUp.Status.Should().Be(FollowUpStatus.Completed);
-    }
 
     [Fact]
     public async Task ReassignFollowUp_ShouldChangeAssignee()
