@@ -5,7 +5,7 @@ namespace TravelService.Domain.Aggregates;
 public sealed class BookingItem
 {
     private static readonly HashSet<string> AllowedTypes = ["Flight", "Hotel", "Transfer", "Tour", "Train", "Visa", "Insurance", "Cruise", "Other"];
-    private static readonly HashSet<string> AllowedStatuses = ["Pending", "Requested", "Confirmed", "Ticketed", "Issued", "Cancelled", "Failed"];
+    private static readonly HashSet<string> AllowedStatuses = ["Pending", "Requested", "PendingSupplier", "Confirmed", "Ticketed", "Issued", "Cancelled", "Failed", "RefundPending"];
 
     private BookingItem() { }
 
@@ -65,6 +65,9 @@ public sealed class BookingItem
     public string? Currency { get; private set; }
     public string? VoucherNumber { get; private set; }
     public string? ConfirmationNumber { get; private set; }
+    public DateTimeOffset? ConfirmationDeadline { get; private set; }
+    public DateTimeOffset? ConfirmedAt { get; private set; }
+    public DateTimeOffset? IssuedAt { get; private set; }
     public Guid? AssignedToUserId { get; private set; }
     public string? Notes { get; private set; }
     public int SortOrder { get; private set; }
@@ -108,6 +111,35 @@ public sealed class BookingItem
     public void UpdateStatus(string status)
     {
         Status = NormalizeRequired(status, AllowedStatuses, "Status");
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void RequestConfirmation(DateTimeOffset? confirmationDeadline, string? notes)
+    {
+        Status = "PendingSupplier";
+        ConfirmationDeadline = confirmationDeadline;
+        Notes = NormalizeOptional(notes) ?? Notes;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void Confirm(string confirmationNumber, DateTimeOffset? confirmedAt, string? notes)
+    {
+        if (string.IsNullOrWhiteSpace(confirmationNumber))
+            throw new DomainException("Confirmation number is required.");
+
+        Status = "Confirmed";
+        ConfirmationNumber = confirmationNumber.Trim();
+        ConfirmedAt = confirmedAt ?? DateTimeOffset.UtcNow;
+        Notes = NormalizeOptional(notes) ?? Notes;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void Issue(string? voucherNumber, DateTimeOffset? issuedAt, string? notes)
+    {
+        Status = "Issued";
+        VoucherNumber = NormalizeOptional(voucherNumber) ?? VoucherNumber;
+        IssuedAt = issuedAt ?? DateTimeOffset.UtcNow;
+        Notes = NormalizeOptional(notes) ?? Notes;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 

@@ -12,6 +12,7 @@ public sealed class SendQuotationCommandHandler(
     IQuotationRevisionRepository quotationRevisionRepository,
     IQuotationShareLinkRepository quotationShareLinkRepository,
     IQuotationStatusHistoryRepository quotationStatusHistoryRepository,
+    IQuotationApprovalRequestRepository approvalRequestRepository,
     IFeatureGate featureGate,
     IActivityWriter activityWriter,
     IActorContext actorContext,
@@ -35,6 +36,16 @@ public sealed class SendQuotationCommandHandler(
 
         if (request.ExpiresAt.HasValue && request.ExpiresAt.Value <= DateTimeOffset.UtcNow)
             throw new DomainException("Share link expiry must be in the future.");
+
+        var approvals = await approvalRequestRepository.ListByQuotationIdAsync(quotation.Id, cancellationToken);
+        var latestApproval = approvals.OrderByDescending(x => x.RequestedAt).FirstOrDefault();
+        if (latestApproval is not null)
+        {
+            if (latestApproval.Status == TravelService.Domain.Enums.QuotationApprovalStatus.Pending)
+                throw new DomainException("Quotation cannot be sent while approval is pending.");
+            if (latestApproval.Status == TravelService.Domain.Enums.QuotationApprovalStatus.Rejected)
+                throw new DomainException("Quotation cannot be sent because the latest approval request was rejected.");
+        }
 
         var previousStatus = quotation.Status.ToString();
         var token = GenerateToken();

@@ -6,6 +6,8 @@ using TravelService.Application.Commands.CreateQuotationRevision;
 using TravelService.Application.Commands.DeleteQuotationAttachment;
 using TravelService.Application.Commands.ExpireQuotation;
 using TravelService.Application.Commands.MarkPublicQuotationViewed;
+using TravelService.Application.Commands.PublicQuotationActions;
+using TravelService.Application.Commands.QuotationApproval;
 using TravelService.Application.Commands.RejectQuotation;
 using TravelService.Application.Commands.SendQuotation;
 using TravelService.Application.Commands.UpdateQuotation;
@@ -71,6 +73,27 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
             request.ExpiresAt), cancellationToken);
 
         return Ok(result);
+    }
+
+    [HttpPost("{id:guid}/approval-requests")]
+    public async Task<IActionResult> CreateApprovalRequest(Guid id, [FromBody] CreateQuotationApprovalRequestRequest request, CancellationToken cancellationToken)
+    {
+        var approvalRequestId = await mediator.Send(new CreateQuotationApprovalRequestCommand(tenantContext.TenantId, id, request.RevisionId, request.Reason, request.MarginPercent, request.DiscountPercent), cancellationToken);
+        return Created($"/travel/quotations/{id}/approval-requests/{approvalRequestId}", new { approvalRequestId });
+    }
+
+    [HttpPost("{id:guid}/approval-requests/{approvalRequestId:guid}/approve")]
+    public async Task<IActionResult> ApproveApprovalRequest(Guid id, Guid approvalRequestId, [FromBody] DecideQuotationApprovalRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new ApproveQuotationApprovalRequestCommand(tenantContext.TenantId, id, approvalRequestId, request.Reason), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/approval-requests/{approvalRequestId:guid}/reject")]
+    public async Task<IActionResult> RejectApprovalRequest(Guid id, Guid approvalRequestId, [FromBody] DecideQuotationApprovalRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new RejectQuotationApprovalRequestCommand(tenantContext.TenantId, id, approvalRequestId, request.Reason), cancellationToken);
+        return NoContent();
     }
 
     [HttpPost("{id:guid}/accept")]
@@ -187,6 +210,20 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     public async Task<IActionResult> MarkPublicViewed(string token, CancellationToken cancellationToken)
     {
         var updated = await mediator.Send(new MarkPublicQuotationViewedCommand(token), cancellationToken);
+        return updated ? NoContent() : NotFound();
+    }
+
+    [HttpPost("public/{token}/accept")]
+    public async Task<IActionResult> AcceptPublicQuotation(string token, [FromBody] PublicQuotationDecisionRequest request, CancellationToken cancellationToken)
+    {
+        var updated = await mediator.Send(new AcceptPublicQuotationCommand(token, request.Reason), cancellationToken);
+        return updated ? NoContent() : NotFound();
+    }
+
+    [HttpPost("public/{token}/reject")]
+    public async Task<IActionResult> RejectPublicQuotation(string token, [FromBody] PublicQuotationDecisionRequest request, CancellationToken cancellationToken)
+    {
+        var updated = await mediator.Send(new RejectPublicQuotationCommand(token, request.Reason), cancellationToken);
         return updated ? NoContent() : NotFound();
     }
 

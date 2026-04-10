@@ -42,7 +42,7 @@ public sealed class QuotationChecklistCoverageTests
 
         var shareLinkRepository = new InMemoryQuotationShareLinkRepository();
         var historyRepository = new InMemoryQuotationStatusHistoryRepository();
-        var sendHandler = new SendQuotationCommandHandler(quotationRepository, revisionRepository, shareLinkRepository, historyRepository, new AllowAllFeatureGate(), new NoOpActivityWriter(), new FakeActorContext(quotation.TenantId), new NoOpUnitOfWork());
+        var sendHandler = new SendQuotationCommandHandler(quotationRepository, revisionRepository, shareLinkRepository, historyRepository, new InMemoryQuotationApprovalRequestRepository(), new AllowAllFeatureGate(), new NoOpActivityWriter(), new FakeActorContext(quotation.TenantId), new NoOpUnitOfWork());
 
         var sendResult = await sendHandler.Handle(new SendQuotationCommand(
             quotation.TenantId,
@@ -90,6 +90,7 @@ public sealed class QuotationChecklistCoverageTests
             new InMemoryQuotationRevisionRepository(foreignRevision),
             new InMemoryQuotationShareLinkRepository(),
             new InMemoryQuotationStatusHistoryRepository(),
+            new InMemoryQuotationApprovalRequestRepository(),
             new AllowAllFeatureGate(),
             new NoOpActivityWriter(),
             new FakeActorContext(quotation.TenantId),
@@ -270,6 +271,14 @@ public sealed class QuotationChecklistCoverageTests
 
         public Task<IReadOnlyList<QuotationStatusHistory>> ListByQuotationIdAsync(Guid quotationId, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<QuotationStatusHistory>>(Items.Where(x => x.QuotationId == quotationId).ToList());
+    }
+
+    private sealed class InMemoryQuotationApprovalRequestRepository : IQuotationApprovalRequestRepository
+    {
+        public Task AddAsync(QuotationApprovalRequest request, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<QuotationApprovalRequest?> GetByIdAsync(Guid quotationId, Guid approvalRequestId, CancellationToken cancellationToken) => Task.FromResult<QuotationApprovalRequest?>(null);
+        public Task<IReadOnlyList<QuotationApprovalRequest>> ListByQuotationIdAsync(Guid quotationId, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<QuotationApprovalRequest>>([]);
+        public Task UpdateAsync(QuotationApprovalRequest request, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class AllowAllFeatureGate : IFeatureGate

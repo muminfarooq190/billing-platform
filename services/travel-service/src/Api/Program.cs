@@ -1,6 +1,7 @@
 using TravelService.Api.Filters;
 using TravelService.Application.Abstractions;
 using TravelService.Domain.Repositories;
+using TravelService.Infrastructure.Billing;
 using TravelService.Infrastructure.Caching;
 using TravelService.Infrastructure.Entitlements;
 using TravelService.Infrastructure.Files;
@@ -34,6 +35,8 @@ public sealed class Program
         builder.Services.AddScoped<IQuotationAttachmentRepository, QuotationAttachmentRepository>();
         builder.Services.AddScoped<IQuotationStatusHistoryRepository, QuotationStatusHistoryRepository>();
         builder.Services.AddScoped<IQuotationShareLinkRepository, QuotationShareLinkRepository>();
+        builder.Services.AddScoped<IQuotationApprovalRequestRepository, QuotationApprovalRequestRepository>();
+        builder.Services.AddScoped<IBookingChangeRequestRepository, BookingChangeRequestRepository>();
         builder.Services.AddScoped<IBookingRepository, BookingRepository>();
         builder.Services.AddScoped<IBookingStatusHistoryRepository, BookingStatusHistoryRepository>();
         builder.Services.AddScoped<ITravelerRepository, TravelerRepository>();
@@ -44,6 +47,10 @@ public sealed class Program
         builder.Services.AddScoped<IReadDbConnectionFactory, ReadDbConnectionFactory>();
         builder.Services.AddScoped<IFileStorage, LocalFileStorage>();
         builder.Services.AddScoped<ICacheService, RedisCacheService>();
+        builder.Services.AddHttpClient<IBillingFinanceClient, BillingFinanceClient>(client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["BILLING_SERVICE_URL"] ?? "http://localhost:5080/");
+        });
         builder.Services.AddHttpClient<IBillingEntitlementsClient, BillingEntitlementsClient>(client =>
         {
             client.BaseAddress = new Uri(builder.Configuration["BILLING_SERVICE_URL"] ?? "http://localhost:5080/");

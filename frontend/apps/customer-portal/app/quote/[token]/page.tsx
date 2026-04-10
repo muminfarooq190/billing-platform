@@ -1,3 +1,5 @@
+import { QuoteDecisionActions } from './QuoteDecisionActions';
+
 type QuotePageProps = {
   params: {
     token: string;
@@ -150,6 +152,7 @@ export default async function PublicQuotePage({ params }: QuotePageProps) {
         <p><strong>Valid until:</strong> {quote.validUntil}</p>
         <p><strong>Total:</strong> {quote.currency} {quote.totalAmount}</p>
         {quote.visibleNotes ? <p><strong>Notes:</strong> {quote.visibleNotes}</p> : null}
+        <QuoteDecisionActions token={params.token} />
       </section>
 
       <section style={{ marginTop: 24, border: '1px solid #cbd5e1', borderRadius: 16, padding: 20, background: '#fff' }}>
