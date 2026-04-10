@@ -56,6 +56,7 @@ public sealed class Program
         {
             var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
             db.Database.Migrate();
+            IdentitySeed.SeedDefaultsAsync(db, CancellationToken.None).GetAwaiter().GetResult();
         }
 
         app.UseSwagger();
