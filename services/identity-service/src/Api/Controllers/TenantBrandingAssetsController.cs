@@ -1,4 +1,5 @@
 using IdentityService.Application.Abstractions;
+using IdentityService.Infrastructure.Auth;
 using IdentityService.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +9,7 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("tenant-branding/files")]
-[Authorize(Roles = "Admin,Owner")]
+[RequirePermission(Permissions.Branding.ThemeManage)]
 public sealed class TenantBrandingAssetsController(IdentityDbContext dbContext, IBrandAssetStorage storage) : ControllerBase
 {
     [HttpGet("{**storageKey}")]

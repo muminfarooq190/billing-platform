@@ -3,6 +3,7 @@ using System;
 using IdentityService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace IdentityService.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(IdentityDbContext))]
-    partial class IdentityDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260410131227_AddIdentitySaasCore")]
+    partial class AddIdentitySaasCore
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -65,109 +68,6 @@ namespace IdentityService.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId", "TargetUserId", "OccurredAt");
 
                     b.ToTable("identity_audit_logs", (string)null);
-                });
-
-            modelBuilder.Entity("IdentityService.Domain.Aggregates.PermissionDefinition", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
-
-                    b.Property<string>("Key")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Key")
-                        .IsUnique();
-
-                    b.ToTable("permission_definitions", (string)null);
-                });
-
-            modelBuilder.Entity("IdentityService.Domain.Aggregates.RoleDefinition", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
-
-                    b.Property<bool>("IsSystemDefault")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_system_default");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("NormalizedName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid?>("TenantId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "NormalizedName")
-                        .IsUnique();
-
-                    b.ToTable("role_definitions", (string)null);
-                });
-
-            modelBuilder.Entity("IdentityService.Domain.Aggregates.RolePermissionAssignment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("PermissionKey")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<Guid>("RoleDefinitionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RoleDefinitionId", "PermissionKey")
-                        .IsUnique();
-
-                    b.ToTable("role_permission_assignments", (string)null);
                 });
 
             modelBuilder.Entity("IdentityService.Domain.Aggregates.SecurityEvent", b =>
@@ -613,78 +513,6 @@ namespace IdentityService.Infrastructure.Persistence.Migrations
                     b.ToTable("user_invitations", (string)null);
                 });
 
-            modelBuilder.Entity("IdentityService.Domain.Aggregates.UserMfaEnrollment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTimeOffset?>("DisabledAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("disabled_at");
-
-                    b.Property<string>("RecoveryCodesJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<string>("Secret")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset?>("VerifiedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("verified_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "UserId")
-                        .IsUnique();
-
-                    b.ToTable("user_mfa_enrollments", (string)null);
-                });
-
-            modelBuilder.Entity("IdentityService.Domain.Aggregates.UserRoleAssignment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("RoleDefinitionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "UserId", "RoleDefinitionId")
-                        .IsUnique();
-
-                    b.ToTable("user_role_assignments", (string)null);
-                });
-
             modelBuilder.Entity("IdentityService.Domain.Aggregates.UserSession", b =>
                 {
                     b.Property<Guid>("Id")
@@ -774,20 +602,6 @@ namespace IdentityService.Infrastructure.Persistence.Migrations
                         .HasFilter("published_at IS NULL");
 
                     b.ToTable("domain_events", (string)null);
-                });
-
-            modelBuilder.Entity("IdentityService.Domain.Aggregates.RolePermissionAssignment", b =>
-                {
-                    b.HasOne("IdentityService.Domain.Aggregates.RoleDefinition", null)
-                        .WithMany("Permissions")
-                        .HasForeignKey("RoleDefinitionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("IdentityService.Domain.Aggregates.RoleDefinition", b =>
-                {
-                    b.Navigation("Permissions");
                 });
 #pragma warning restore 612, 618
         }

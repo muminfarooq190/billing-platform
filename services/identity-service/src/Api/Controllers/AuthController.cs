@@ -1,27 +1,38 @@
 using Dapper;
 using IdentityService.Api.Contracts;
 using IdentityService.Application.Commands.RegisterTenant;
+using IdentityService.Domain.Aggregates;
+using IdentityService.Domain.Enums;
 using IdentityService.Domain.Repositories;
 using IdentityService.Application.Queries.GetTenantByEmail;
 using IdentityService.Infrastructure.Auth;
+using IdentityService.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using OtpNet;
 
 namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("auth")]
-public sealed class AuthController(IMediator mediator, JwtTokenService jwtTokenService, RefreshTokenService refreshTokenService, IConfiguration configuration, IUserRepository userRepository) : ControllerBase
+public sealed class AuthController(IMediator mediator, JwtTokenService jwtTokenService, RefreshTokenService refreshTokenService, IConfiguration configuration, IUserRepository userRepository, IdentityDbContext dbContext) : ControllerBase
 {
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new RegisterTenantCommand(request.TenantName, request.Email, request.Password), cancellationToken);
-        var token = jwtTokenService.GenerateAccessToken(result.OwnerUserId, result.TenantId, request.Email, "Owner");
+
+        var ownerRole = await dbContext.RoleDefinitions.AsNoTracking().FirstAsync(x => x.TenantId == null && x.NormalizedName == "OWNER", cancellationToken);
+        dbContext.UserRoleAssignments.Add(UserRoleAssignment.Create(result.TenantId, result.OwnerUserId, ownerRole.Id));
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        var permissions = await ResolvePermissionsAsync(result.OwnerUserId, result.TenantId, cancellationToken);
+        var token = jwtTokenService.GenerateAccessToken(result.OwnerUserId, result.TenantId, request.Email, "Owner", permissions, false);
         var refreshToken = await refreshTokenService.IssueRefreshTokenAsync(result.OwnerUserId, result.TenantId, cancellationToken);
 
-        return Created(string.Empty, new { tenantId = result.TenantId, userId = result.OwnerUserId, accessToken = token, refreshToken });
+        return Created(string.Empty, new { tenantId = result.TenantId, userId = result.OwnerUserId, accessToken = token, refreshToken, permissions });
     }
 
     [HttpPost("login")]
@@ -40,7 +51,9 @@ public sealed class AuthController(IMediator mediator, JwtTokenService jwtTokenS
             SELECT "Id" AS Id,
                    "TenantId" AS TenantId,
                    "PasswordHash" AS PasswordHash,
-                   "Role" AS Role
+                   "Role" AS Role,
+                   "Status" AS Status,
+                   "MustChangePassword" AS MustChangePassword
             FROM users
             WHERE "TenantId" = @TenantId AND "Email" = @Email AND deleted_at IS NULL;
             """;
@@ -48,7 +61,35 @@ public sealed class AuthController(IMediator mediator, JwtTokenService jwtTokenS
         var user = await connection.QuerySingleOrDefaultAsync<UserAuthRow>(new CommandDefinition(sql, new { TenantId = tenant.Id, Email = request.Email.ToLowerInvariant() }, cancellationToken: cancellationToken));
         if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
+            dbContext.SecurityEvents.Add(SecurityEvent.Create(tenant.Id, null, "LoginFailed", HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Headers.UserAgent.ToString(), $"{{\"email\":\"{request.Email.ToLowerInvariant()}\"}}"));
+            await dbContext.SaveChangesAsync(cancellationToken);
             return Unauthorized();
+        }
+
+        if (!string.Equals(user.Status, UserStatus.Active.ToString(), StringComparison.OrdinalIgnoreCase))
+        {
+            dbContext.SecurityEvents.Add(SecurityEvent.Create(user.TenantId, user.Id, "LoginDenied", HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Headers.UserAgent.ToString(), $"{{\"status\":\"{user.Status}\"}}"));
+            await dbContext.SaveChangesAsync(cancellationToken);
+            return StatusCode(StatusCodes.Status403Forbidden, new { code = "user_inactive", message = $"User is {user.Status}." });
+        }
+
+        var mfa = await dbContext.UserMfaEnrollments.AsNoTracking().FirstOrDefaultAsync(x => x.TenantId == user.TenantId && x.UserId == user.Id && x.VerifiedAt != null && x.DisabledAt == null, cancellationToken);
+        var mfaVerified = false;
+        if (mfa is not null)
+        {
+            if (string.IsNullOrWhiteSpace(request.MfaCode))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { code = "mfa_required", message = "MFA code is required." });
+            }
+
+            var totp = new Totp(Base32Encoding.ToBytes(mfa.Secret));
+            mfaVerified = totp.VerifyTotp(request.MfaCode.Replace(" ", string.Empty), out _, new VerificationWindow(1, 1));
+            if (!mfaVerified)
+            {
+                dbContext.SecurityEvents.Add(SecurityEvent.Create(user.TenantId, user.Id, "LoginDeniedMfa", HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Headers.UserAgent.ToString(), null));
+                await dbContext.SaveChangesAsync(cancellationToken);
+                return StatusCode(StatusCodes.Status403Forbidden, new { code = "mfa_invalid", message = "Invalid MFA code." });
+            }
         }
 
         var domainUser = await userRepository.GetByIdAsync(user.Id, cancellationToken);
@@ -58,9 +99,13 @@ public sealed class AuthController(IMediator mediator, JwtTokenService jwtTokenS
             await userRepository.UpdateAsync(domainUser, cancellationToken);
         }
 
-        var accessToken = jwtTokenService.GenerateAccessToken(user.Id, user.TenantId, request.Email, user.Role);
+        var permissions = await ResolvePermissionsAsync(user.Id, user.TenantId, cancellationToken);
+        dbContext.SecurityEvents.Add(SecurityEvent.Create(user.TenantId, user.Id, "LoginSucceeded", HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Headers.UserAgent.ToString(), $"{{\"mustChangePassword\":{user.MustChangePassword.ToString().ToLowerInvariant()},\"mfaVerified\":{mfaVerified.ToString().ToLowerInvariant()}}}"));
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        var accessToken = jwtTokenService.GenerateAccessToken(user.Id, user.TenantId, request.Email, user.Role, permissions, mfaVerified);
         var refreshToken = await refreshTokenService.IssueRefreshTokenAsync(user.Id, user.TenantId, cancellationToken);
-        return Ok(new { accessToken, refreshToken });
+        return Ok(new { accessToken, refreshToken, mustChangePassword = user.MustChangePassword, permissions, mfaVerified });
     }
 
     [HttpPost("refresh")]
@@ -73,10 +118,14 @@ public sealed class AuthController(IMediator mediator, JwtTokenService jwtTokenS
         }
 
         var (userId, tenantId) = pair.Value;
-        var accessToken = jwtTokenService.GenerateAccessToken(userId, tenantId, "unknown@masked.local", "Member");
+        var permissions = await ResolvePermissionsAsync(userId, tenantId, cancellationToken);
+        var accessToken = jwtTokenService.GenerateAccessToken(userId, tenantId, "unknown@masked.local", "Member", permissions, false);
         var newRefreshToken = await refreshTokenService.IssueRefreshTokenAsync(userId, tenantId, cancellationToken);
 
-        return Ok(new { accessToken, refreshToken = newRefreshToken });
+        dbContext.SecurityEvents.Add(SecurityEvent.Create(tenantId, userId, "TokenRefreshed", HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Headers.UserAgent.ToString(), null));
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return Ok(new { accessToken, refreshToken = newRefreshToken, permissions });
     }
 
     [HttpPost("logout")]
@@ -92,5 +141,17 @@ public sealed class AuthController(IMediator mediator, JwtTokenService jwtTokenS
         return Content(jwtTokenService.BuildJwks(), "application/json");
     }
 
-    private sealed record UserAuthRow(Guid Id, Guid TenantId, string PasswordHash, string Role);
+    private async Task<IReadOnlyList<string>> ResolvePermissionsAsync(Guid userId, Guid tenantId, CancellationToken cancellationToken)
+    {
+        return await (from assignment in dbContext.UserRoleAssignments.AsNoTracking()
+                      join role in dbContext.RoleDefinitions.AsNoTracking() on assignment.RoleDefinitionId equals role.Id
+                      join permission in dbContext.RolePermissionAssignments.AsNoTracking() on role.Id equals permission.RoleDefinitionId
+                      where assignment.UserId == userId && assignment.TenantId == tenantId
+                      select permission.PermissionKey)
+            .Distinct()
+            .OrderBy(x => x)
+            .ToListAsync(cancellationToken);
+    }
+
+    private sealed record UserAuthRow(Guid Id, Guid TenantId, string PasswordHash, string Role, string Status, bool MustChangePassword);
 }

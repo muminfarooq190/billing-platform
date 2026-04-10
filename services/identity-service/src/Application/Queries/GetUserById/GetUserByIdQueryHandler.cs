@@ -12,7 +12,16 @@ public sealed class GetUserByIdQueryHandler(IReadDbConnectionFactory connectionF
     {
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         const string sql = """
-            SELECT id, tenant_id AS TenantId, email, role::text AS role, created_at AS CreatedAt, updated_at AS UpdatedAt
+            SELECT id,
+                   tenant_id AS TenantId,
+                   email,
+                   role::text AS role,
+                   status::text AS status,
+                   created_at AS CreatedAt,
+                   updated_at AS UpdatedAt,
+                   last_login_at AS LastLoginAt,
+                   password_changed_at AS PasswordChangedAt,
+                   must_change_password AS MustChangePassword
             FROM users
             WHERE id = @UserId AND deleted_at IS NULL;
             """;

@@ -1,6 +1,7 @@
 using IdentityService.Api.Contracts;
 using IdentityService.Application.Abstractions;
 using IdentityService.Domain.Aggregates;
+using IdentityService.Infrastructure.Auth;
 using IdentityService.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,7 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("tenant-branding")]
-[Authorize(Roles = "Admin,Owner")]
+[RequirePermission(Permissions.Branding.ThemeManage)]
 public sealed class TenantBrandingController(IdentityDbContext dbContext, IBrandAssetStorage storage) : ControllerBase
 {
     [HttpGet]

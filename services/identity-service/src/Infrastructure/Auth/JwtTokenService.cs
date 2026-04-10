@@ -3,12 +3,11 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using Microsoft.IdentityModel.Tokens;
 
-
 namespace IdentityService.Infrastructure.Auth;
 
 public sealed class JwtTokenService(IConfiguration configuration)
 {
-    public string GenerateAccessToken(Guid userId, Guid tenantId, string email, string role)
+    public string GenerateAccessToken(Guid userId, Guid tenantId, string email, string role, IReadOnlyCollection<string>? permissions = null, bool mfaVerified = false)
     {
         var privateKeyPem = LoadPem("JWT_PRIVATE_KEY", "JWT_PRIVATE_KEY_PATH") ?? throw new InvalidOperationException("JWT private key is not configured.");
         var rsa = RSA.Create();
@@ -23,10 +22,17 @@ public sealed class JwtTokenService(IConfiguration configuration)
         {
             new(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new("tenant_id", tenantId.ToString()),
+            new("tenantId", tenantId.ToString()),
             new(JwtRegisteredClaimNames.Email, email),
             new(ClaimTypes.Role, role),
+            new("mfa_verified", mfaVerified.ToString().ToLowerInvariant()),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+
+        if (permissions is not null)
+        {
+            claims.AddRange(permissions.Distinct(StringComparer.OrdinalIgnoreCase).Select(x => new Claim("permission", x)));
+        }
 
         var token = new JwtSecurityToken(
             issuer: issuer,

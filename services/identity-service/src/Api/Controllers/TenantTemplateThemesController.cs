@@ -1,5 +1,6 @@
 using IdentityService.Api.Contracts;
 using IdentityService.Domain.Aggregates;
+using IdentityService.Infrastructure.Auth;
 using IdentityService.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +10,7 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("tenant-branding/templates")]
-[Authorize(Roles = "Admin,Owner")]
+[RequirePermission(Permissions.Branding.ThemeManage)]
 public sealed class TenantTemplateThemesController(IdentityDbContext dbContext) : ControllerBase
 {
     [HttpGet("{scope}")]
