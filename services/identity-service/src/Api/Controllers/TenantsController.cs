@@ -4,6 +4,7 @@ using IdentityService.Application.Queries.GetTenantById;
 using IdentityService.Domain.Enums;
 using IdentityService.Domain.Exceptions;
 using IdentityService.Domain.Repositories;
+using IdentityService.Infrastructure.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +13,7 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("tenants")]
-[Authorize(Roles = "Admin,Owner")]
+[Authorize(Policy = PermissionPolicies.TenantAdmin)]
 public sealed class TenantsController(IMediator mediator, ITenantRepository tenantRepository, Application.Abstractions.IUnitOfWork unitOfWork) : ControllerBase
 {
     [HttpGet("{id:guid}")]

@@ -1,3 +1,4 @@
+using IdentityService.Infrastructure.Auth;
 using IdentityService.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +8,7 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("identity")]
-[Authorize(Roles = "Admin,Owner")]
+[Authorize(Policy = PermissionPolicies.AuditRead)]
 public sealed class IdentityAuditController(IdentityDbContext dbContext) : ControllerBase
 {
     [HttpGet("audit/users/{userId:guid}")]

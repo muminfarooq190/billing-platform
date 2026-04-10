@@ -26,7 +26,7 @@ public sealed class SessionsController(RefreshTokenService refreshTokenService) 
     }
 
     [HttpDelete("users/{userId:guid}/sessions")]
-    [Authorize(Roles = "Admin,Owner")]
+    [Authorize(Policy = PermissionPolicies.UsersManage)]
     public async Task<IActionResult> RevokeAllForUser(Guid userId, CancellationToken cancellationToken)
     {
         await refreshTokenService.RevokeAllForUserAsync(userId, cancellationToken);

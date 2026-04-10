@@ -6,6 +6,7 @@ using IdentityService.Domain.Enums;
 using IdentityService.Domain.Exceptions;
 using IdentityService.Domain.Repositories;
 using IdentityService.Domain.ValueObjects;
+using IdentityService.Infrastructure.Auth;
 using IdentityService.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +16,7 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("identity/users/invitations")]
-[Authorize(Roles = "Admin,Owner")]
+[Authorize(Policy = PermissionPolicies.UsersManage)]
 public sealed class UserInvitationsController(IdentityDbContext dbContext, IUserRepository userRepository) : ControllerBase
 {
     [HttpPost]

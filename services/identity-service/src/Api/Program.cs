@@ -7,6 +7,7 @@ using IdentityService.Infrastructure.Persistence.Outbox;
 using IdentityService.Infrastructure.Persistence.Repositories;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
@@ -37,6 +38,7 @@ public sealed class Program
             options.Configuration = builder.Configuration["REDIS_URL"] ?? "redis:6379";
         });
         builder.Services.AddScoped<RefreshTokenService>();
+        builder.Services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
         builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
         builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(IUnitOfWork).Assembly));
@@ -95,6 +97,6 @@ public sealed class Program
                 };
             });
 
-        builder.Services.AddAuthorization();
+        builder.Services.AddAuthorization(options => options.AddPermissionPolicies());
     }
 }

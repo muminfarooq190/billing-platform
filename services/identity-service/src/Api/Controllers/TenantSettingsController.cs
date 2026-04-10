@@ -1,5 +1,6 @@
 using IdentityService.Api.Contracts;
 using IdentityService.Domain.Aggregates;
+using IdentityService.Infrastructure.Auth;
 using IdentityService.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +10,7 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("identity/tenant-settings")]
-[Authorize(Roles = "Admin,Owner")]
+[Authorize(Policy = PermissionPolicies.SettingsManage)]
 public sealed class TenantSettingsController(IdentityDbContext dbContext) : ControllerBase
 {
     [HttpGet]

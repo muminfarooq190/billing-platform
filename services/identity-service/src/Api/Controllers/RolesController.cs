@@ -1,6 +1,7 @@
 using IdentityService.Api.Contracts;
 using IdentityService.Domain.Aggregates;
 using IdentityService.Domain.Exceptions;
+using IdentityService.Infrastructure.Auth;
 using IdentityService.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,7 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("identity")]
-[Authorize(Roles = "Admin,Owner")]
+[Authorize(Policy = PermissionPolicies.RolesManage)]
 public sealed class RolesController(IdentityDbContext dbContext) : ControllerBase
 {
     [HttpGet("permissions")]

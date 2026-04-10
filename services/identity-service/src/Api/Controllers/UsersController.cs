@@ -6,6 +6,7 @@ using IdentityService.Application.Queries.GetUserById;
 using IdentityService.Application.Queries.GetUsersByTenant;
 using IdentityService.Domain.Aggregates;
 using IdentityService.Domain.Exceptions;
+using IdentityService.Infrastructure.Auth;
 using IdentityService.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -16,7 +17,7 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("identity/users")]
-[Authorize(Roles = "Admin,Owner")]
+[Authorize(Policy = PermissionPolicies.UsersManage)]
 public sealed class UsersController(IMediator mediator, ITenantContext tenantContext, IdentityDbContext dbContext) : ControllerBase
 {
     [HttpPost]
