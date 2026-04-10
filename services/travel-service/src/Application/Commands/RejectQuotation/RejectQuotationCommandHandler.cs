@@ -9,12 +9,15 @@ namespace TravelService.Application.Commands.RejectQuotation;
 public sealed class RejectQuotationCommandHandler(
     IQuotationRepository quotationRepository,
     IQuotationStatusHistoryRepository quotationStatusHistoryRepository,
+    IFeatureGate featureGate,
     IAuditWriter auditWriter,
     IActorContext actorContext,
     IUnitOfWork unitOfWork) : IRequestHandler<RejectQuotationCommand>
 {
     public async Task Handle(RejectQuotationCommand request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelQuotationSend, request.TenantId, cancellationToken);
+
         var quotation = await quotationRepository.GetByIdAsync(request.QuotationId, cancellationToken)
             ?? throw new DomainException($"Quotation {request.QuotationId} not found.");
 

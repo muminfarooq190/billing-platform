@@ -120,6 +120,7 @@ public sealed class QuotationChecklistCoverageTests
             new InMemoryQuotationRepository(quotation),
             new InMemoryQuotationRevisionRepository(revision),
             new InMemoryQuotationStatusHistoryRepository(),
+            new AllowAllFeatureGate(),
             new NoOpAuditWriter(),
             new FakeActorContext(quotation.TenantId),
             new NoOpUnitOfWork());

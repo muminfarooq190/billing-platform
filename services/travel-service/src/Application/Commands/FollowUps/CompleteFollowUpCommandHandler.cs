@@ -7,12 +7,16 @@ using TravelService.Domain.Repositories;
 
 namespace TravelService.Application.Commands.FollowUps;
 
-public sealed class CompleteFollowUpCommandHandler(IFollowUpRepository followUpRepository, IActivityWriter activityWriter, IActorContext actorContext, IUnitOfWork unitOfWork) : IRequestHandler<CompleteFollowUpCommand>
+public sealed class CompleteFollowUpCommandHandler(IFollowUpRepository followUpRepository, IFeatureGate featureGate, IActivityWriter activityWriter, IActorContext actorContext, IUnitOfWork unitOfWork) : IRequestHandler<CompleteFollowUpCommand>
 {
     public async Task Handle(CompleteFollowUpCommand request, CancellationToken cancellationToken)
     {
         var followUp = await followUpRepository.GetByIdAsync(request.FollowUpId, cancellationToken)
             ?? throw new DomainException($"Follow-up {request.FollowUpId} not found.");
+
+        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelTimelineRead, followUp.TenantId, cancellationToken);
+
+        followUp.Complete();
 
         followUp.Update(
             followUp.Subject,

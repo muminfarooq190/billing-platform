@@ -4,10 +4,12 @@ using TravelService.Domain.Repositories;
 
 namespace TravelService.Application.Queries.GetBookingFinancialSummary;
 
-public sealed class GetBookingFinancialSummaryQueryHandler(IBookingRepository bookingRepository, IBillingFinanceClient billingFinanceClient) : IRequestHandler<GetBookingFinancialSummaryQuery, BookingFinancialSummaryReadModel?>
+public sealed class GetBookingFinancialSummaryQueryHandler(IBookingRepository bookingRepository, IBillingFinanceClient billingFinanceClient, IFeatureGate featureGate) : IRequestHandler<GetBookingFinancialSummaryQuery, BookingFinancialSummaryReadModel?>
 {
     public async Task<BookingFinancialSummaryReadModel?> Handle(GetBookingFinancialSummaryQuery request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelAuditRead, request.TenantId, cancellationToken);
+
         var booking = await bookingRepository.GetByIdAsync(request.BookingId, cancellationToken);
         if (booking is null || booking.TenantId != request.TenantId)
             return null;
