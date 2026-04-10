@@ -7,6 +7,11 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
 {
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<UserInvitation> UserInvitations => Set<UserInvitation>();
+    public DbSet<TenantSettings> TenantSettings => Set<TenantSettings>();
+    public DbSet<IdentityAuditLog> IdentityAuditLogs => Set<IdentityAuditLog>();
+    public DbSet<SecurityEvent> SecurityEvents => Set<SecurityEvent>();
+    public DbSet<UserSession> UserSessions => Set<UserSession>();
     public DbSet<TenantBranding> TenantBranding => Set<TenantBranding>();
     public DbSet<TenantBrandAsset> TenantBrandAssets => Set<TenantBrandAsset>();
     public DbSet<TenantTemplateTheme> TenantTemplateThemes => Set<TenantTemplateTheme>();

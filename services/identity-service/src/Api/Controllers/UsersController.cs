@@ -4,14 +4,20 @@ using IdentityService.Application.Commands.DeleteUser;
 using IdentityService.Application.Commands.UpdateUser;
 using IdentityService.Application.Queries.GetUserById;
 using IdentityService.Application.Queries.GetUsersByTenant;
+using IdentityService.Domain.Aggregates;
+using IdentityService.Domain.Exceptions;
+using IdentityService.Infrastructure.Persistence;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("identity/users")]
-public sealed class UsersController(IMediator mediator, ITenantContext tenantContext) : ControllerBase
+[Authorize(Roles = "Admin,Owner")]
+public sealed class UsersController(IMediator mediator, ITenantContext tenantContext, IdentityDbContext dbContext) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateUserRequest request, CancellationToken cancellationToken)
@@ -48,5 +54,33 @@ public sealed class UsersController(IMediator mediator, ITenantContext tenantCon
     {
         await mediator.Send(new DeleteUserCommand(userId), cancellationToken);
         return NoContent();
+    }
+
+    [HttpPost("{userId:guid}/suspend")]
+    public async Task<IActionResult> Suspend(Guid userId, CancellationToken cancellationToken)
+    {
+        var user = await dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId && x.DeletedAt == null, cancellationToken)
+            ?? throw new NotFoundException("User not found.");
+        user.Suspend();
+        dbContext.IdentityAuditLogs.Add(IdentityAuditLog.Create(user.TenantId, ResolveActorUserId(), user.Id, "UserSuspended", null, $"{{\"status\":\"{user.Status}\"}}", HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Headers.UserAgent.ToString()));
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return Ok(new { user.Id, Status = user.Status.ToString() });
+    }
+
+    [HttpPost("{userId:guid}/reactivate")]
+    public async Task<IActionResult> Reactivate(Guid userId, CancellationToken cancellationToken)
+    {
+        var user = await dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId && x.DeletedAt == null, cancellationToken)
+            ?? throw new NotFoundException("User not found.");
+        user.Reactivate();
+        dbContext.IdentityAuditLogs.Add(IdentityAuditLog.Create(user.TenantId, ResolveActorUserId(), user.Id, "UserReactivated", null, $"{{\"status\":\"{user.Status}\"}}", HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Headers.UserAgent.ToString()));
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return Ok(new { user.Id, Status = user.Status.ToString() });
+    }
+
+    private Guid ResolveActorUserId()
+    {
+        var raw = User.Claims.FirstOrDefault(x => x.Type == "sub")?.Value;
+        return Guid.TryParse(raw, out var userId) ? userId : Guid.Empty;
     }
 }

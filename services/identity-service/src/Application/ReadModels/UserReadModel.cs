@@ -5,6 +5,9 @@ public sealed record UserReadModel(
     Guid TenantId,
     string Email,
     string Role,
+    string Status,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
-    DateTimeOffset? LastLoginAt);
+    DateTimeOffset? LastLoginAt,
+    DateTimeOffset? PasswordChangedAt,
+    bool MustChangePassword);

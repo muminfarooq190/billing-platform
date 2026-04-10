@@ -4,4 +4,5 @@ public sealed record CreateUserRequest(
     Guid TenantId,
     string Email,
     string Password,
-    string Role);
+    string Role,
+    bool MustChangePassword = false);
