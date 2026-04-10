@@ -26,17 +26,7 @@ public static class PermissionPolicies
 {
     public static AuthorizationOptions AddPermissionPolicies(this AuthorizationOptions options)
     {
-        var permissions = new[]
-        {
-            "identity.users.manage",
-            "identity.roles.manage",
-            "identity.audit.read",
-            "identity.settings.manage",
-            "branding.theme.manage",
-            "identity.tenant.manage"
-        };
-
-        foreach (var permission in permissions)
+        foreach (var permission in Permissions.All)
         {
             options.AddPolicy(RequirePermissionAttribute.PolicyPrefix + permission, p => p.Requirements.Add(new PermissionRequirement(permission)));
         }

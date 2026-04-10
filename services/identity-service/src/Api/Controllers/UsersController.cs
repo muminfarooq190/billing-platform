@@ -17,7 +17,7 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("identity/users")]
-[RequirePermission("identity.users.manage")]
+[RequirePermission(Permissions.Identity.UsersManage)]
 public sealed class UsersController(IMediator mediator, ITenantContext tenantContext, IdentityDbContext dbContext) : ControllerBase
 {
     [HttpPost]

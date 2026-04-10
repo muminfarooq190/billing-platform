@@ -11,7 +11,7 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("identity")]
-[RequirePermission("identity.roles.manage")]
+[RequirePermission(Permissions.Identity.RolesManage)]
 public sealed class RolesController(IdentityDbContext dbContext) : ControllerBase
 {
     [HttpGet("permissions")]

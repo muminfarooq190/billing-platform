@@ -16,7 +16,7 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("identity/users/invitations")]
-[RequirePermission("identity.users.manage")]
+[RequirePermission(Permissions.Identity.UsersManage)]
 public sealed class UserInvitationsController(IdentityDbContext dbContext, IUserRepository userRepository) : ControllerBase
 {
     [HttpPost]
