@@ -7,6 +7,10 @@ public sealed class BillingDbContext(DbContextOptions<BillingDbContext> options)
 {
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<FeatureEntitlement> FeatureEntitlements => Set<FeatureEntitlement>();
+    public DbSet<FeatureCatalogEntry> FeatureCatalog => Set<FeatureCatalogEntry>();
+    public DbSet<CommercialPackage> CommercialPackages => Set<CommercialPackage>();
+    public DbSet<CommercialPackageFeature> CommercialPackageFeatures => Set<CommercialPackageFeature>();
+    public DbSet<TenantSubscriptionPackage> TenantSubscriptionPackages => Set<TenantSubscriptionPackage>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
     public DbSet<OutboxMessage> DomainEvents => Set<OutboxMessage>();
 

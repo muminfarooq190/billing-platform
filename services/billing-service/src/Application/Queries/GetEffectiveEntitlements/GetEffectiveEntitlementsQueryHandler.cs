@@ -1,11 +1,17 @@
 using BillingService.Application.Abstractions;
 using BillingService.Application.ReadModels;
 using BillingService.Domain.Repositories;
+using BillingService.Infrastructure.Entitlements;
 using MediatR;
 
 namespace BillingService.Application.Queries.GetEffectiveEntitlements;
 
-public sealed class GetEffectiveEntitlementsQueryHandler(ISubscriptionRepository subscriptionRepository, IFeatureEntitlementRepository featureEntitlementRepository, IEntitlementResolver entitlementResolver) : IRequestHandler<GetEffectiveEntitlementsQuery, IReadOnlyList<FeatureEntitlementReadModel>>
+public sealed class GetEffectiveEntitlementsQueryHandler(
+    ISubscriptionRepository subscriptionRepository,
+    IFeatureEntitlementRepository featureEntitlementRepository,
+    ICommercialPackageRepository commercialPackageRepository,
+    ITenantSubscriptionPackageRepository tenantSubscriptionPackageRepository,
+    IEntitlementResolver entitlementResolver) : IRequestHandler<GetEffectiveEntitlementsQuery, IReadOnlyList<FeatureEntitlementReadModel>>
 {
     public async Task<IReadOnlyList<FeatureEntitlementReadModel>> Handle(GetEffectiveEntitlementsQuery request, CancellationToken cancellationToken)
     {
@@ -13,8 +19,22 @@ public sealed class GetEffectiveEntitlementsQueryHandler(ISubscriptionRepository
             ?? throw new InvalidOperationException("Subscription not found.");
 
         var overrides = await featureEntitlementRepository.ListByTenantIdAsync(request.TenantId, cancellationToken);
-        var resolved = entitlementResolver.ResolveForPlan(request.TenantId, subscription.PlanType)
-            .ToDictionary(x => x.FeatureKey, StringComparer.OrdinalIgnoreCase);
+        var packageAssignments = await tenantSubscriptionPackageRepository.ListByTenantIdAsync(request.TenantId, cancellationToken);
+        IReadOnlyList<FeatureEntitlementReadModel> baseResolved;
+
+        if (packageAssignments.Count > 0)
+        {
+            var packages = await commercialPackageRepository.ListActiveAsync(cancellationToken);
+            var packageIds = packageAssignments.Select(x => x.CommercialPackageId).Distinct().ToList();
+            var packageFeatures = await commercialPackageRepository.ListFeaturesByPackageIdsAsync(packageIds, cancellationToken);
+            baseResolved = FlexibleEntitlementResolver.Resolve(request.TenantId, packageAssignments, packages, packageFeatures);
+        }
+        else
+        {
+            baseResolved = entitlementResolver.ResolveForPlan(request.TenantId, subscription.PlanType);
+        }
+
+        var resolved = baseResolved.ToDictionary(x => x.FeatureKey, StringComparer.OrdinalIgnoreCase);
 
         var now = DateTimeOffset.UtcNow;
         foreach (var entry in overrides.Where(x => x.IsEffectiveAt(now)).OrderBy(x => x.EffectiveFrom))

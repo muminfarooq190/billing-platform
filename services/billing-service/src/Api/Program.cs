@@ -24,6 +24,8 @@ public sealed class Program
         builder.Services.AddScoped<ITenantContext, HeaderTenantContext>();
         builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
         builder.Services.AddScoped<IFeatureEntitlementRepository, FeatureEntitlementRepository>();
+        builder.Services.AddScoped<ICommercialPackageRepository, CommercialPackageRepository>();
+        builder.Services.AddScoped<ITenantSubscriptionPackageRepository, TenantSubscriptionPackageRepository>();
         builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         builder.Services.AddScoped<IEntitlementResolver, PlanEntitlementResolver>();
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -56,6 +58,7 @@ public sealed class Program
         {
             var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
             db.Database.Migrate();
+            BillingSeed.SeedFlexibleEntitlementsAsync(db, CancellationToken.None).GetAwaiter().GetResult();
         }
 
         app.UseSwagger();
