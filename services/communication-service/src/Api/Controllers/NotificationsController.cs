@@ -31,16 +31,16 @@ public sealed class NotificationsController(IMediator mediator) : ControllerBase
     }
 
     [HttpGet("recipient/{recipientId:guid}")]
-    public async Task<IActionResult> ListByRecipient(Guid recipientId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> ListByRecipient(Guid recipientId, [FromQuery] Guid tenantId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
-        var models = await mediator.Send(new ListNotificationsByRecipientQuery(recipientId, page, pageSize), cancellationToken);
+        var models = await mediator.Send(new ListNotificationsByRecipientQuery(tenantId, recipientId, page, pageSize), cancellationToken);
         return Ok(models);
     }
 
     [HttpGet("recipient/{recipientId:guid}/unread-count")]
-    public async Task<IActionResult> GetUnreadCount(Guid recipientId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetUnreadCount(Guid recipientId, [FromQuery] Guid tenantId, CancellationToken cancellationToken)
     {
-        var count = await mediator.Send(new GetUnreadNotificationCountQuery(recipientId), cancellationToken);
+        var count = await mediator.Send(new GetUnreadNotificationCountQuery(tenantId, recipientId), cancellationToken);
         return Ok(new { count });
     }
 

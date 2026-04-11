@@ -16,7 +16,7 @@ public sealed class TenantBrandingAssetsController(IdentityDbContext dbContext, 
     public async Task<IActionResult> Read(string storageKey, CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();
-        await featureGate.EnsureEnabledAsync(FeatureKeys.BrandingThemeManage, tenantId, cancellationToken);
+        await featureGate.EnsureEnabledAsync(FeatureKeys.BrandingAssetsManage, tenantId, cancellationToken);
         var asset = await dbContext.TenantBrandAssets.AsNoTracking()
             .SingleOrDefaultAsync(x => x.StorageKey == storageKey && x.TenantId == tenantId && x.DeletedAt == null, cancellationToken);
 

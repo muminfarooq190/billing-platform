@@ -1,4 +1,5 @@
 using IdentityService.Api.Contracts;
+using IdentityService.Application.Abstractions;
 using IdentityService.Domain.Aggregates;
 using IdentityService.Domain.Exceptions;
 using IdentityService.Infrastructure.Auth;
@@ -12,7 +13,7 @@ namespace IdentityService.Api.Controllers;
 [ApiController]
 [Route("identity")]
 [RequirePermission(Permissions.Identity.RolesManage)]
-public sealed class RolesController(IdentityDbContext dbContext) : ControllerBase
+public sealed class RolesController(IdentityDbContext dbContext, IFeatureGate featureGate) : ControllerBase
 {
     [HttpGet("permissions")]
     public async Task<IActionResult> GetPermissions(CancellationToken cancellationToken)
@@ -22,6 +23,7 @@ public sealed class RolesController(IdentityDbContext dbContext) : ControllerBas
     public async Task<IActionResult> GetRoles(CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();
+        await featureGate.EnsureEnabledAsync(FeatureKeys.IdentityRbacAdvanced, tenantId, cancellationToken);
         var roles = await dbContext.RoleDefinitions.AsNoTracking()
             .Where(x => x.TenantId == null || x.TenantId == tenantId)
             .OrderByDescending(x => x.IsSystemDefault)
@@ -43,6 +45,7 @@ public sealed class RolesController(IdentityDbContext dbContext) : ControllerBas
     public async Task<IActionResult> CreateRole([FromBody] CreateRoleRequest request, CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();
+        await featureGate.EnsureEnabledAsync(FeatureKeys.IdentityRbacAdvanced, tenantId, cancellationToken);
         var normalized = request.Name.Trim().ToUpperInvariant();
         var exists = await dbContext.RoleDefinitions.AnyAsync(x => x.TenantId == tenantId && x.NormalizedName == normalized, cancellationToken);
         if (exists) throw new ConflictException("Role already exists.");
@@ -58,6 +61,7 @@ public sealed class RolesController(IdentityDbContext dbContext) : ControllerBas
     public async Task<IActionResult> UpdateRole(Guid id, [FromBody] UpdateRoleRequest request, CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();
+        await featureGate.EnsureEnabledAsync(FeatureKeys.IdentityRbacAdvanced, tenantId, cancellationToken);
         var role = await dbContext.RoleDefinitions.Include(x => x.Permissions).FirstOrDefaultAsync(x => x.Id == id && (x.TenantId == tenantId || x.TenantId == null), cancellationToken)
             ?? throw new NotFoundException("Role not found.");
         role.Update(request.Name, request.Description);
@@ -70,6 +74,7 @@ public sealed class RolesController(IdentityDbContext dbContext) : ControllerBas
     public async Task<IActionResult> UpdateUserRoles(Guid userId, [FromBody] UpdateUserRolesRequest request, CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();
+        await featureGate.EnsureEnabledAsync(FeatureKeys.IdentityRbacAdvanced, tenantId, cancellationToken);
         var user = await dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId && x.TenantId == tenantId && x.DeletedAt == null, cancellationToken)
             ?? throw new NotFoundException("User not found.");
 
