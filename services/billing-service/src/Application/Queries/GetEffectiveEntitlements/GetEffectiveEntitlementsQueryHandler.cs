@@ -1,5 +1,6 @@
 using BillingService.Application.Abstractions;
 using BillingService.Application.ReadModels;
+using BillingService.Domain.Enums;
 using BillingService.Domain.Repositories;
 using BillingService.Infrastructure.Entitlements;
 using MediatR;
@@ -11,6 +12,7 @@ public sealed class GetEffectiveEntitlementsQueryHandler(
     IFeatureEntitlementRepository featureEntitlementRepository,
     ICommercialPackageRepository commercialPackageRepository,
     ITenantSubscriptionPackageRepository tenantSubscriptionPackageRepository,
+    ITenantFeatureOverrideRepository tenantFeatureOverrideRepository,
     IEntitlementResolver entitlementResolver) : IRequestHandler<GetEffectiveEntitlementsQuery, IReadOnlyList<FeatureEntitlementReadModel>>
 {
     public async Task<IReadOnlyList<FeatureEntitlementReadModel>> Handle(GetEffectiveEntitlementsQuery request, CancellationToken cancellationToken)
@@ -19,6 +21,7 @@ public sealed class GetEffectiveEntitlementsQueryHandler(
             ?? throw new InvalidOperationException("Subscription not found.");
 
         var overrides = await featureEntitlementRepository.ListByTenantIdAsync(request.TenantId, cancellationToken);
+        var tenantOverrides = await tenantFeatureOverrideRepository.ListByTenantIdAsync(request.TenantId, cancellationToken);
         var packageAssignments = await tenantSubscriptionPackageRepository.ListByTenantIdAsync(request.TenantId, cancellationToken);
         IReadOnlyList<FeatureEntitlementReadModel> baseResolved;
 
@@ -45,6 +48,21 @@ public sealed class GetEffectiveEntitlementsQueryHandler(
                 Granted = entry.Granted,
                 Source = entry.Source.ToString(),
                 PlanType = entry.PlanType?.ToString(),
+                LimitValue = entry.LimitValue,
+                EffectiveFrom = entry.EffectiveFrom,
+                EffectiveTo = entry.EffectiveTo,
+                MetadataJson = entry.MetadataJson
+            };
+        }
+
+        foreach (var entry in tenantOverrides.Where(x => x.IsEffectiveAt(now)).OrderBy(x => x.EffectiveFrom))
+        {
+            resolved[entry.FeatureKey] = new FeatureEntitlementReadModel
+            {
+                FeatureKey = entry.FeatureKey,
+                Granted = entry.Granted,
+                Source = EntitlementSource.Override.ToString(),
+                PlanType = null,
                 LimitValue = entry.LimitValue,
                 EffectiveFrom = entry.EffectiveFrom,
                 EffectiveTo = entry.EffectiveTo,

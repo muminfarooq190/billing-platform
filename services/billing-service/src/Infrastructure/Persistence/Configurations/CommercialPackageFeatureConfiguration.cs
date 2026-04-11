@@ -1,4 +1,5 @@
 using BillingService.Domain.Aggregates;
+using BillingService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -14,6 +15,7 @@ public sealed class CommercialPackageFeatureConfiguration : IEntityTypeConfigura
         builder.Property(x => x.FeatureKey).HasColumnName("feature_key").HasMaxLength(200).IsRequired();
         builder.Property(x => x.Granted).HasColumnName("granted");
         builder.Property(x => x.LimitValue).HasColumnName("limit_value");
+        builder.Property(x => x.LimitMergePolicy).HasConversion<string>().HasColumnName("limit_merge_policy").HasMaxLength(50);
         builder.Property(x => x.MetadataJson).HasColumnName("metadata_json").HasColumnType("jsonb");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");

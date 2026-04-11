@@ -23,18 +23,40 @@ public static class FlexibleEntitlementResolver
             .Where(x => activePackageIds.Contains(x.CommercialPackageId))
             .GroupBy(x => x.FeatureKey, StringComparer.OrdinalIgnoreCase);
 
-        return grouped.Select(group => new FeatureEntitlementReadModel
+        return grouped.Select(group =>
         {
-            FeatureKey = group.Key,
-            Granted = group.Any(x => x.Granted),
-            Source = EntitlementSource.Plan.ToString(),
-            PlanType = null,
-            LimitValue = group.Where(x => x.LimitValue.HasValue).Select(x => x.LimitValue).DefaultIfEmpty(null).Max(),
-            EffectiveFrom = now,
-            EffectiveTo = null,
-            MetadataJson = null
+            var entries = group.ToList();
+            return new FeatureEntitlementReadModel
+            {
+                FeatureKey = group.Key,
+                Granted = entries.Any(x => x.Granted),
+                Source = EntitlementSource.Plan.ToString(),
+                PlanType = null,
+                LimitValue = ResolveLimit(entries),
+                EffectiveFrom = now,
+                EffectiveTo = null,
+                MetadataJson = null
+            };
         })
         .OrderBy(x => x.FeatureKey)
         .ToList();
+    }
+
+    private static int? ResolveLimit(IReadOnlyList<CommercialPackageFeature> entries)
+    {
+        var limitedEntries = entries.Where(x => x.LimitValue.HasValue).ToList();
+        if (limitedEntries.Count == 0)
+        {
+            return null;
+        }
+
+        var policy = limitedEntries.Last().LimitMergePolicy;
+        return policy switch
+        {
+            LimitMergePolicy.Sum => limitedEntries.Sum(x => x.LimitValue ?? 0),
+            LimitMergePolicy.LatestWins => limitedEntries.Last().LimitValue,
+            LimitMergePolicy.OverrideOnly => limitedEntries.Last().LimitValue,
+            _ => limitedEntries.Max(x => x.LimitValue)
+        };
     }
 }

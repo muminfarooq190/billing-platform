@@ -20,6 +20,7 @@ public sealed class GetEffectiveEntitlementsQueryHandlerTests
             new InMemoryFeatureEntitlementRepository(),
             new InMemoryCommercialPackageRepository(),
             new InMemoryTenantSubscriptionPackageRepository(),
+            new InMemoryTenantFeatureOverrideRepository(),
             new PlanEntitlementResolver());
 
         var result = await handler.Handle(new GetEffectiveEntitlementsQuery(tenantId), CancellationToken.None);
@@ -47,6 +48,7 @@ public sealed class GetEffectiveEntitlementsQueryHandlerTests
             new InMemoryFeatureEntitlementRepository(),
             new InMemoryCommercialPackageRepository([package], features),
             new InMemoryTenantSubscriptionPackageRepository(assignment),
+            new InMemoryTenantFeatureOverrideRepository(),
             new PlanEntitlementResolver());
 
         var result = await handler.Handle(new GetEffectiveEntitlementsQuery(tenantId), CancellationToken.None);
@@ -66,6 +68,7 @@ public sealed class GetEffectiveEntitlementsQueryHandlerTests
             new InMemoryFeatureEntitlementRepository(overrideEntry),
             new InMemoryCommercialPackageRepository(),
             new InMemoryTenantSubscriptionPackageRepository(),
+            new InMemoryTenantFeatureOverrideRepository(),
             new PlanEntitlementResolver());
 
         var result = await handler.Handle(new GetEffectiveEntitlementsQuery(tenantId), CancellationToken.None);
@@ -84,11 +87,66 @@ public sealed class GetEffectiveEntitlementsQueryHandlerTests
             new InMemoryFeatureEntitlementRepository(expiredOverride),
             new InMemoryCommercialPackageRepository(),
             new InMemoryTenantSubscriptionPackageRepository(),
+            new InMemoryTenantFeatureOverrideRepository(),
             new PlanEntitlementResolver());
 
         var result = await handler.Handle(new GetEffectiveEntitlementsQuery(tenantId), CancellationToken.None);
 
         result.Should().Contain(x => x.FeatureKey == "travel.audit.read" && x.Granted == false && x.Source == EntitlementSource.Plan.ToString());
+    }
+
+    [Fact]
+    public async Task Handle_ShouldApplyTenantFeatureOverride_OverPackageResolution()
+    {
+        var tenantId = Guid.NewGuid();
+        var subscription = Subscription.Create(tenantId, PlanType.Free, BillingCycle.Monthly);
+        var package = CommercialPackage.Create("addon.audit-plus", "Audit Plus", "Addon", "Flat", "Adds audit read.");
+        var assignment = TenantSubscriptionPackage.Create(tenantId, package.Id, "Subscription", "Active", DateTimeOffset.UtcNow.AddDays(-1));
+        var features = new[]
+        {
+            CommercialPackageFeature.Create(package.Id, "travel.audit.read", true)
+        };
+        var overrideEntry = TenantFeatureOverride.Create(tenantId, "travel.audit.read", false, "Contract restriction", "Sales", effectiveFrom: DateTimeOffset.UtcNow.AddMinutes(-10));
+
+        var handler = new GetEffectiveEntitlementsQueryHandler(
+            new InMemorySubscriptionRepository(subscription),
+            new InMemoryFeatureEntitlementRepository(),
+            new InMemoryCommercialPackageRepository([package], features),
+            new InMemoryTenantSubscriptionPackageRepository(assignment),
+            new InMemoryTenantFeatureOverrideRepository(overrideEntry),
+            new PlanEntitlementResolver());
+
+        var result = await handler.Handle(new GetEffectiveEntitlementsQuery(tenantId), CancellationToken.None);
+
+        result.Should().Contain(x => x.FeatureKey == "travel.audit.read" && x.Granted == false && x.Source == EntitlementSource.Override.ToString());
+    }
+
+    [Fact]
+    public async Task Handle_ShouldSumLimits_WhenPackageFeaturesUseSumPolicy()
+    {
+        var tenantId = Guid.NewGuid();
+        var subscription = Subscription.Create(tenantId, PlanType.Free, BillingCycle.Monthly);
+        var packageA = CommercialPackage.Create("addon.notifications-1", "Notifications 1", "Addon", "Flat", "Adds message allowance.");
+        var packageB = CommercialPackage.Create("addon.notifications-2", "Notifications 2", "Addon", "Flat", "Adds more message allowance.");
+        var assignmentA = TenantSubscriptionPackage.Create(tenantId, packageA.Id, "Subscription", "Active", DateTimeOffset.UtcNow.AddDays(-1));
+        var assignmentB = TenantSubscriptionPackage.Create(tenantId, packageB.Id, "Subscription", "Active", DateTimeOffset.UtcNow.AddDays(-1));
+        var features = new[]
+        {
+            CommercialPackageFeature.Create(packageA.Id, "communication.notification.send", true, 1000, LimitMergePolicy.Sum),
+            CommercialPackageFeature.Create(packageB.Id, "communication.notification.send", true, 2500, LimitMergePolicy.Sum)
+        };
+
+        var handler = new GetEffectiveEntitlementsQueryHandler(
+            new InMemorySubscriptionRepository(subscription),
+            new InMemoryFeatureEntitlementRepository(),
+            new InMemoryCommercialPackageRepository([packageA, packageB], features),
+            new InMemoryTenantSubscriptionPackageRepository(assignmentA, assignmentB),
+            new InMemoryTenantFeatureOverrideRepository(),
+            new PlanEntitlementResolver());
+
+        var result = await handler.Handle(new GetEffectiveEntitlementsQuery(tenantId), CancellationToken.None);
+
+        result.Should().Contain(x => x.FeatureKey == "communication.notification.send" && x.LimitValue == 3500);
     }
 
     private sealed class InMemorySubscriptionRepository(Subscription subscription) : ISubscriptionRepository
@@ -132,5 +190,13 @@ public sealed class GetEffectiveEntitlementsQueryHandlerTests
         public Task<IReadOnlyList<TenantSubscriptionPackage>> ListByTenantIdAsync(Guid tenantId, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<TenantSubscriptionPackage>>(_assignments.Where(x => x.TenantId == tenantId).ToList());
         public Task AddRangeAsync(IReadOnlyCollection<TenantSubscriptionPackage> assignments, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class InMemoryTenantFeatureOverrideRepository(params TenantFeatureOverride[] overrides) : ITenantFeatureOverrideRepository
+    {
+        private readonly IReadOnlyList<TenantFeatureOverride> _overrides = overrides;
+        public Task AddRangeAsync(IReadOnlyCollection<TenantFeatureOverride> overrides, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<IReadOnlyList<TenantFeatureOverride>> ListByTenantIdAsync(Guid tenantId, CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<TenantFeatureOverride>>(_overrides.Where(x => x.TenantId == tenantId).ToList());
     }
 }
