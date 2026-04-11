@@ -1,9 +1,7 @@
-using BillingService.Application.Abstractions;
 using BillingService.Application.Queries.GetEffectiveEntitlements;
 using BillingService.Domain.Aggregates;
 using BillingService.Domain.Enums;
 using BillingService.Domain.Repositories;
-using BillingService.Infrastructure.Entitlements;
 using FluentAssertions;
 
 namespace BillingService.Tests.Application;
@@ -11,7 +9,7 @@ namespace BillingService.Tests.Application;
 public sealed class GetEffectiveEntitlementsQueryHandlerTests
 {
     [Fact]
-    public async Task Handle_ShouldResolvePlanDefaults_ForProPlan()
+    public async Task Handle_ShouldReturnEmptyBase_WhenNoPackageAssignmentsExist()
     {
         var tenantId = Guid.NewGuid();
         var subscription = Subscription.Create(tenantId, PlanType.Pro, BillingCycle.Monthly);
@@ -20,14 +18,11 @@ public sealed class GetEffectiveEntitlementsQueryHandlerTests
             new InMemoryFeatureEntitlementRepository(),
             new InMemoryCommercialPackageRepository(),
             new InMemoryTenantSubscriptionPackageRepository(),
-            new InMemoryTenantFeatureOverrideRepository(),
-            new PlanEntitlementResolver());
+            new InMemoryTenantFeatureOverrideRepository());
 
         var result = await handler.Handle(new GetEffectiveEntitlementsQuery(tenantId), CancellationToken.None);
 
-        result.Should().Contain(x => x.FeatureKey == "travel.quotation.create" && x.Granted);
-        result.Should().Contain(x => x.FeatureKey == "travel.audit.read" && x.Granted == false);
-        result.Should().Contain(x => x.FeatureKey == "branding.assets.manage" && x.LimitValue == 25);
+        result.Should().BeEmpty();
     }
 
     [Fact]
@@ -48,8 +43,7 @@ public sealed class GetEffectiveEntitlementsQueryHandlerTests
             new InMemoryFeatureEntitlementRepository(),
             new InMemoryCommercialPackageRepository([package], features),
             new InMemoryTenantSubscriptionPackageRepository(assignment),
-            new InMemoryTenantFeatureOverrideRepository(),
-            new PlanEntitlementResolver());
+            new InMemoryTenantFeatureOverrideRepository());
 
         var result = await handler.Handle(new GetEffectiveEntitlementsQuery(tenantId), CancellationToken.None);
 
@@ -68,8 +62,7 @@ public sealed class GetEffectiveEntitlementsQueryHandlerTests
             new InMemoryFeatureEntitlementRepository(overrideEntry),
             new InMemoryCommercialPackageRepository(),
             new InMemoryTenantSubscriptionPackageRepository(),
-            new InMemoryTenantFeatureOverrideRepository(),
-            new PlanEntitlementResolver());
+            new InMemoryTenantFeatureOverrideRepository());
 
         var result = await handler.Handle(new GetEffectiveEntitlementsQuery(tenantId), CancellationToken.None);
 
@@ -77,7 +70,7 @@ public sealed class GetEffectiveEntitlementsQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ShouldIgnoreExpiredOverride()
+    public async Task Handle_ShouldIgnoreExpiredOverride_WhenNoBaseEntitlementsExist()
     {
         var tenantId = Guid.NewGuid();
         var subscription = Subscription.Create(tenantId, PlanType.Pro, BillingCycle.Monthly);
@@ -87,12 +80,11 @@ public sealed class GetEffectiveEntitlementsQueryHandlerTests
             new InMemoryFeatureEntitlementRepository(expiredOverride),
             new InMemoryCommercialPackageRepository(),
             new InMemoryTenantSubscriptionPackageRepository(),
-            new InMemoryTenantFeatureOverrideRepository(),
-            new PlanEntitlementResolver());
+            new InMemoryTenantFeatureOverrideRepository());
 
         var result = await handler.Handle(new GetEffectiveEntitlementsQuery(tenantId), CancellationToken.None);
 
-        result.Should().Contain(x => x.FeatureKey == "travel.audit.read" && x.Granted == false && x.Source == EntitlementSource.Plan.ToString());
+        result.Should().NotContain(x => x.FeatureKey == "travel.audit.read");
     }
 
     [Fact]
@@ -113,8 +105,7 @@ public sealed class GetEffectiveEntitlementsQueryHandlerTests
             new InMemoryFeatureEntitlementRepository(),
             new InMemoryCommercialPackageRepository([package], features),
             new InMemoryTenantSubscriptionPackageRepository(assignment),
-            new InMemoryTenantFeatureOverrideRepository(overrideEntry),
-            new PlanEntitlementResolver());
+            new InMemoryTenantFeatureOverrideRepository(overrideEntry));
 
         var result = await handler.Handle(new GetEffectiveEntitlementsQuery(tenantId), CancellationToken.None);
 
@@ -141,8 +132,7 @@ public sealed class GetEffectiveEntitlementsQueryHandlerTests
             new InMemoryFeatureEntitlementRepository(),
             new InMemoryCommercialPackageRepository([packageA, packageB], features),
             new InMemoryTenantSubscriptionPackageRepository(assignmentA, assignmentB),
-            new InMemoryTenantFeatureOverrideRepository(),
-            new PlanEntitlementResolver());
+            new InMemoryTenantFeatureOverrideRepository());
 
         var result = await handler.Handle(new GetEffectiveEntitlementsQuery(tenantId), CancellationToken.None);
 
