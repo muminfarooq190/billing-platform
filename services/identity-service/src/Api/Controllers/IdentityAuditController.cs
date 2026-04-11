@@ -1,3 +1,4 @@
+using IdentityService.Application.Abstractions;
 using IdentityService.Infrastructure.Auth;
 using IdentityService.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
@@ -9,12 +10,13 @@ namespace IdentityService.Api.Controllers;
 [ApiController]
 [Route("identity")]
 [RequirePermission(Permissions.Identity.AuditRead)]
-public sealed class IdentityAuditController(IdentityDbContext dbContext) : ControllerBase
+public sealed class IdentityAuditController(IdentityDbContext dbContext, IFeatureGate featureGate) : ControllerBase
 {
     [HttpGet("audit/users/{userId:guid}")]
     public async Task<IActionResult> GetAudit(Guid userId, CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();
+        await featureGate.EnsureEnabledAsync(FeatureKeys.IdentityAuditRead, tenantId, cancellationToken);
         var items = await dbContext.IdentityAuditLogs.AsNoTracking()
             .Where(x => x.TenantId == tenantId && x.TargetUserId == userId)
             .OrderByDescending(x => x.OccurredAt)
@@ -26,6 +28,7 @@ public sealed class IdentityAuditController(IdentityDbContext dbContext) : Contr
     public async Task<IActionResult> GetSecurityEvents([FromQuery] Guid? userId, CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();
+        await featureGate.EnsureEnabledAsync(FeatureKeys.IdentityAuditRead, tenantId, cancellationToken);
         var query = dbContext.SecurityEvents.AsNoTracking().Where(x => x.TenantId == tenantId);
         if (userId.HasValue)
         {
