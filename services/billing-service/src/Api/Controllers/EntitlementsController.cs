@@ -1,4 +1,6 @@
 using BillingService.Api.Contracts;
+using BillingService.Application.Commands.AssignTenantPackage;
+using BillingService.Application.Commands.CreateTenantFeatureOverride;
 using BillingService.Application.Commands.GrantFeatureEntitlement;
 using BillingService.Application.Queries.GetEffectiveEntitlements;
 using MediatR;
@@ -29,5 +31,38 @@ public sealed class EntitlementsController(IMediator mediator, ITenantContext te
     {
         var result = await mediator.Send(new GrantFeatureEntitlementCommand(tenantId, request.FeatureKey, request.Granted, request.LimitValue, request.EffectiveFrom, request.EffectiveTo, request.Reason), cancellationToken);
         return Ok(result);
+    }
+
+    [HttpPost("{tenantId:guid}/packages")]
+    public async Task<IActionResult> AssignPackage(Guid tenantId, [FromBody] AssignTenantPackageRequest request, CancellationToken cancellationToken)
+    {
+        var id = await mediator.Send(new AssignTenantPackageCommand(
+            tenantId,
+            request.CommercialPackageId,
+            request.Source,
+            request.Status,
+            request.EffectiveFrom,
+            request.EffectiveTo,
+            request.MetadataJson), cancellationToken);
+
+        return Ok(new { Id = id });
+    }
+
+    [HttpPost("{tenantId:guid}/overrides")]
+    public async Task<IActionResult> CreateOverride(Guid tenantId, [FromBody] CreateTenantFeatureOverrideRequest request, CancellationToken cancellationToken)
+    {
+        var id = await mediator.Send(new CreateTenantFeatureOverrideCommand(
+            tenantId,
+            request.FeatureKey,
+            request.Granted,
+            request.LimitValue,
+            request.Reason,
+            request.Source,
+            request.CreatedBy,
+            request.EffectiveFrom,
+            request.EffectiveTo,
+            request.MetadataJson), cancellationToken);
+
+        return Ok(new { Id = id });
     }
 }

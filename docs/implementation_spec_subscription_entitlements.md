@@ -1,5 +1,12 @@
 # Implementation Spec - Subscription Entitlements & Feature Gating Across Services
 
+> Note: this document reflects the earlier plan-centric entitlement approach and is now partially superseded by the more flexible feature-first specs:
+> - `docs/implementation_spec_flexible_feature_entitlements.md`
+> - `docs/implementation_spec_flexible_feature_entitlements_billing_service.md`
+> - `docs/implementation_spec_flexible_feature_entitlements_rollout.md`
+>
+> Keep this document for historical context and incremental migration guidance, but use the newer specs for the long-term target architecture.
+
 _Last updated: 2026-04-09_
 
 This document defines how Voyara should enforce subscription-based access across all services and endpoints.

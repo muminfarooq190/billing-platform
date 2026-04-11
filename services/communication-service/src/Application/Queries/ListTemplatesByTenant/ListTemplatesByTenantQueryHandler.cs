@@ -9,7 +9,7 @@ public sealed class ListTemplatesByTenantQueryHandler(IReadDbConnectionFactory c
 {
     public async Task<IReadOnlyList<TemplateReadModel>> Handle(ListTemplatesByTenantQuery request, CancellationToken cancellationToken)
     {
-        await featureGate.EnsureEnabledAsync(FeatureKeys.CommunicationLogsRead, request.TenantId, cancellationToken);
+        await featureGate.EnsureEnabledAsync(FeatureKeys.CommunicationTemplatesManage, request.TenantId, cancellationToken);
 
         var page = Math.Max(1, request.Page);
         var pageSize = Math.Clamp(request.PageSize, 1, 100);

@@ -12,12 +12,13 @@ namespace IdentityService.Api.Controllers;
 [ApiController]
 [Route("tenant-branding")]
 [RequirePermission(Permissions.Branding.ThemeManage)]
-public sealed class TenantBrandingController(IdentityDbContext dbContext, IBrandAssetStorage storage) : ControllerBase
+public sealed class TenantBrandingController(IdentityDbContext dbContext, IBrandAssetStorage storage, IFeatureGate featureGate) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> Get(CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();
+        await featureGate.EnsureEnabledAsync(FeatureKeys.BrandingThemeManage, tenantId, cancellationToken);
         var branding = await dbContext.TenantBranding.AsNoTracking().FirstOrDefaultAsync(x => x.TenantId == tenantId, cancellationToken);
         return branding is null ? NotFound() : Ok(branding);
     }
@@ -26,6 +27,7 @@ public sealed class TenantBrandingController(IdentityDbContext dbContext, IBrand
     public async Task<IActionResult> Put([FromBody] UpdateTenantBrandingRequest request, CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();
+        await featureGate.EnsureEnabledAsync(FeatureKeys.BrandingThemeManage, tenantId, cancellationToken);
         var branding = await dbContext.TenantBranding.FirstOrDefaultAsync(x => x.TenantId == tenantId, cancellationToken);
 
         if (branding is null)
@@ -47,6 +49,7 @@ public sealed class TenantBrandingController(IdentityDbContext dbContext, IBrand
     public async Task<IActionResult> GetAssets(CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();
+        await featureGate.EnsureEnabledAsync(FeatureKeys.BrandingThemeManage, tenantId, cancellationToken);
         var assets = await dbContext.TenantBrandAssets
             .AsNoTracking()
             .Where(x => x.TenantId == tenantId && x.DeletedAt == null)
@@ -63,6 +66,7 @@ public sealed class TenantBrandingController(IdentityDbContext dbContext, IBrand
     public async Task<IActionResult> UploadAsset([FromForm] IFormFile file, [FromForm] string assetType, [FromForm] string? altText, CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();
+        await featureGate.EnsureEnabledAsync(FeatureKeys.BrandingThemeManage, tenantId, cancellationToken);
         if (file is null || file.Length == 0)
         {
             return BadRequest("File is required.");
@@ -96,6 +100,7 @@ public sealed class TenantBrandingController(IdentityDbContext dbContext, IBrand
     public async Task<IActionResult> DeleteAsset(Guid assetId, CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();
+        await featureGate.EnsureEnabledAsync(FeatureKeys.BrandingThemeManage, tenantId, cancellationToken);
         var asset = await dbContext.TenantBrandAssets.FirstOrDefaultAsync(x => x.Id == assetId && x.TenantId == tenantId, cancellationToken);
         if (asset is null)
         {

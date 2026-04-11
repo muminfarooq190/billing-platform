@@ -1,4 +1,5 @@
 using IdentityService.Api.Contracts;
+using IdentityService.Application.Abstractions;
 using IdentityService.Domain.Aggregates;
 using IdentityService.Infrastructure.Auth;
 using IdentityService.Infrastructure.Persistence;
@@ -11,12 +12,13 @@ namespace IdentityService.Api.Controllers;
 [ApiController]
 [Route("identity/tenant-settings")]
 [RequirePermission(Permissions.Identity.SettingsManage)]
-public sealed class TenantSettingsController(IdentityDbContext dbContext) : ControllerBase
+public sealed class TenantSettingsController(IdentityDbContext dbContext, IFeatureGate featureGate) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> Get(CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();
+        await featureGate.EnsureEnabledAsync(FeatureKeys.IdentitySettingsManage, tenantId, cancellationToken);
         var settings = await dbContext.TenantSettings.AsNoTracking().FirstOrDefaultAsync(x => x.TenantId == tenantId, cancellationToken);
         return settings is null ? NotFound() : Ok(settings);
     }
@@ -25,6 +27,7 @@ public sealed class TenantSettingsController(IdentityDbContext dbContext) : Cont
     public async Task<IActionResult> Put([FromBody] UpdateTenantSettingsRequest request, CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();
+        await featureGate.EnsureEnabledAsync(FeatureKeys.IdentitySettingsManage, tenantId, cancellationToken);
         var settings = await dbContext.TenantSettings.FirstOrDefaultAsync(x => x.TenantId == tenantId, cancellationToken);
         if (settings is null)
         {

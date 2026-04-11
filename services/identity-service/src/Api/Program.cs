@@ -2,6 +2,8 @@ using IdentityService.Api.Filters;
 using IdentityService.Application.Abstractions;
 using IdentityService.Domain.Repositories;
 using IdentityService.Infrastructure.Auth;
+using IdentityService.Infrastructure.Caching;
+using IdentityService.Infrastructure.Entitlements;
 using IdentityService.Infrastructure.Persistence;
 using IdentityService.Infrastructure.Persistence.Outbox;
 using IdentityService.Infrastructure.Persistence.Repositories;
@@ -31,6 +33,8 @@ public sealed class Program
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
         builder.Services.AddScoped<IReadDbConnectionFactory, ReadDbConnectionFactory>();
         builder.Services.AddScoped<IBrandAssetStorage, LocalBrandAssetStorage>();
+        builder.Services.AddScoped<ICacheService, RedisCacheService>();
+        builder.Services.AddScoped<IFeatureGate, CachedFeatureGate>();
         builder.Services.AddSingleton<JwtTokenService>();
         builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(builder.Configuration["REDIS_URL"] ?? "redis:6379"));
         builder.Services.AddStackExchangeRedisCache(options =>
@@ -39,6 +43,10 @@ public sealed class Program
         });
         builder.Services.AddScoped<RefreshTokenService>();
         builder.Services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        builder.Services.AddHttpClient<IBillingEntitlementsClient, BillingEntitlementsClient>(client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["BILLING_SERVICE_URL"] ?? "http://billing-service:8080/");
+        });
 
         builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
         builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(IUnitOfWork).Assembly));
