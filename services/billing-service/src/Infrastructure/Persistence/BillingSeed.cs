@@ -10,6 +10,7 @@ public static class BillingSeed
     {
         await SeedFeatureCatalogAsync(dbContext, cancellationToken);
         await SeedPlanPackagesAsync(dbContext, cancellationToken);
+        await BackfillTenantPlanAssignmentsAsync(dbContext, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
@@ -72,6 +73,73 @@ public static class BillingSeed
                 dbContext.CommercialPackageFeatures.AddRange(CreateLegacyFeatures(package.Id, definition.Plan));
                 await dbContext.SaveChangesAsync(cancellationToken);
             }
+        }
+    }
+
+    private static async Task BackfillTenantPlanAssignmentsAsync(BillingDbContext dbContext, CancellationToken cancellationToken)
+    {
+        var packageByPlan = await dbContext.CommercialPackages
+            .AsNoTracking()
+            .Where(x => x.Code == "legacy.free" || x.Code == "legacy.pro" || x.Code == "legacy.enterprise")
+            .ToDictionaryAsync(
+                x => x.Code,
+                x => x,
+                StringComparer.OrdinalIgnoreCase,
+                cancellationToken);
+
+        var subscriptions = await dbContext.Subscriptions
+            .AsNoTracking()
+            .Where(x => x.DeletedAt == null)
+            .ToListAsync(cancellationToken);
+
+        var existingAssignments = await dbContext.TenantSubscriptionPackages
+            .AsNoTracking()
+            .Where(x => x.DeletedAt == null)
+            .Select(x => new { x.TenantId, x.CommercialPackageId })
+            .ToListAsync(cancellationToken);
+
+        var assignmentSet = existingAssignments
+            .Select(x => (x.TenantId, x.CommercialPackageId))
+            .ToHashSet();
+
+        var newAssignments = new List<TenantSubscriptionPackage>();
+        foreach (var subscription in subscriptions)
+        {
+            var packageCode = subscription.PlanType switch
+            {
+                PlanType.Free => "legacy.free",
+                PlanType.Pro => "legacy.pro",
+                PlanType.Enterprise => "legacy.enterprise",
+                _ => null
+            };
+
+            if (packageCode is null || !packageByPlan.TryGetValue(packageCode, out var package))
+            {
+                continue;
+            }
+
+            if (assignmentSet.Contains((subscription.TenantId, package.Id)))
+            {
+                continue;
+            }
+
+            var status = subscription.Status == SubscriptionStatus.Active ? "Active" : subscription.Status.ToString();
+            var effectiveTo = subscription.Status == SubscriptionStatus.Cancelled ? subscription.CancelledAt : null;
+
+            newAssignments.Add(TenantSubscriptionPackage.Create(
+                subscription.TenantId,
+                package.Id,
+                "Backfill",
+                status,
+                subscription.StartDate,
+                effectiveTo,
+                $"{{\"source\":\"legacy-plan-backfill\",\"subscriptionId\":\"{subscription.Id}\",\"planType\":\"{subscription.PlanType}\"}}"));
+        }
+
+        if (newAssignments.Count > 0)
+        {
+            dbContext.TenantSubscriptionPackages.AddRange(newAssignments);
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
     }
 
