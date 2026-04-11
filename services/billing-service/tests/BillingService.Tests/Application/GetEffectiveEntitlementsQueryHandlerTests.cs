@@ -167,11 +167,17 @@ public sealed class GetEffectiveEntitlementsQueryHandlerTests
             _features = features ?? [];
         }
 
+        public Task<IReadOnlyList<CommercialPackage>> ListAsync(CancellationToken cancellationToken) => Task.FromResult(_packages);
         public Task<IReadOnlyList<CommercialPackage>> ListActiveAsync(CancellationToken cancellationToken) => Task.FromResult(_packages);
+        public Task<CommercialPackage?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(_packages.FirstOrDefault(x => x.Id == id));
         public Task<IReadOnlyList<CommercialPackageFeature>> ListFeaturesByPackageIdsAsync(IReadOnlyCollection<Guid> packageIds, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<CommercialPackageFeature>>(_features.Where(x => packageIds.Contains(x.CommercialPackageId)).ToList());
+        public Task<IReadOnlyList<CommercialPackageFeature>> ListFeaturesByPackageIdAsync(Guid packageId, CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<CommercialPackageFeature>>(_features.Where(x => x.CommercialPackageId == packageId).ToList());
+        public Task AddAsync(CommercialPackage package, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task AddRangeAsync(IReadOnlyCollection<CommercialPackage> packages, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task AddFeaturesAsync(IReadOnlyCollection<CommercialPackageFeature> features, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task RemoveFeaturesAsync(IReadOnlyCollection<CommercialPackageFeature> features, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class InMemoryTenantSubscriptionPackageRepository(params TenantSubscriptionPackage[] assignments) : ITenantSubscriptionPackageRepository
@@ -179,13 +185,17 @@ public sealed class GetEffectiveEntitlementsQueryHandlerTests
         private readonly IReadOnlyList<TenantSubscriptionPackage> _assignments = assignments;
         public Task<IReadOnlyList<TenantSubscriptionPackage>> ListByTenantIdAsync(Guid tenantId, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<TenantSubscriptionPackage>>(_assignments.Where(x => x.TenantId == tenantId).ToList());
+        public Task<TenantSubscriptionPackage?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(_assignments.FirstOrDefault(x => x.Id == id));
+        public Task AddAsync(TenantSubscriptionPackage assignment, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task AddRangeAsync(IReadOnlyCollection<TenantSubscriptionPackage> assignments, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class InMemoryTenantFeatureOverrideRepository(params TenantFeatureOverride[] overrides) : ITenantFeatureOverrideRepository
     {
         private readonly IReadOnlyList<TenantFeatureOverride> _overrides = overrides;
+        public Task AddAsync(TenantFeatureOverride entry, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task AddRangeAsync(IReadOnlyCollection<TenantFeatureOverride> overrides, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<TenantFeatureOverride?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(_overrides.FirstOrDefault(x => x.Id == id));
         public Task<IReadOnlyList<TenantFeatureOverride>> ListByTenantIdAsync(Guid tenantId, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<TenantFeatureOverride>>(_overrides.Where(x => x.TenantId == tenantId).ToList());
     }

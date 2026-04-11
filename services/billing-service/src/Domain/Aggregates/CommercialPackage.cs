@@ -1,4 +1,5 @@
 using BillingService.Domain.Common;
+using BillingService.Domain.Exceptions;
 
 namespace BillingService.Domain.Aggregates;
 
@@ -8,14 +9,25 @@ public sealed class CommercialPackage : AggregateRoot
 
     private CommercialPackage(string code, string name, string category, string billingModel, string description, bool isActive, string? metadataJson)
     {
+        if (string.IsNullOrWhiteSpace(code))
+            throw new DomainException("Code is required.");
+        if (string.IsNullOrWhiteSpace(name))
+            throw new DomainException("Name is required.");
+        if (string.IsNullOrWhiteSpace(category))
+            throw new DomainException("Category is required.");
+        if (string.IsNullOrWhiteSpace(billingModel))
+            throw new DomainException("Billing model is required.");
+        if (string.IsNullOrWhiteSpace(description))
+            throw new DomainException("Description is required.");
+
         Id = Guid.NewGuid();
-        Code = code;
-        Name = name;
-        Category = category;
-        BillingModel = billingModel;
-        Description = description;
+        Code = code.Trim();
+        Name = name.Trim();
+        Category = category.Trim();
+        BillingModel = billingModel.Trim();
+        Description = description.Trim();
         IsActive = isActive;
-        MetadataJson = metadataJson;
+        MetadataJson = string.IsNullOrWhiteSpace(metadataJson) ? null : metadataJson;
         CreatedAt = DateTimeOffset.UtcNow;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
@@ -33,5 +45,20 @@ public sealed class CommercialPackage : AggregateRoot
     public DateTimeOffset? DeletedAt { get; private set; }
 
     public static CommercialPackage Create(string code, string name, string category, string billingModel, string description, bool isActive = true, string? metadataJson = null)
-        => new(code.Trim(), name.Trim(), category.Trim(), billingModel.Trim(), description.Trim(), isActive, metadataJson);
+        => new(code, name, category, billingModel, description, isActive, metadataJson);
+
+    public void Update(string code, string name, string category, string billingModel, string description, bool isActive, string? metadataJson)
+    {
+        if (DeletedAt is not null)
+            throw new DomainException("Cannot update a deleted commercial package.");
+
+        Code = code.Trim();
+        Name = name.Trim();
+        Category = category.Trim();
+        BillingModel = billingModel.Trim();
+        Description = description.Trim();
+        IsActive = isActive;
+        MetadataJson = string.IsNullOrWhiteSpace(metadataJson) ? null : metadataJson;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
 }

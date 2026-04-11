@@ -1,4 +1,5 @@
 using BillingService.Domain.Common;
+using BillingService.Domain.Exceptions;
 
 namespace BillingService.Domain.Aggregates;
 
@@ -8,15 +9,26 @@ public sealed class FeatureCatalogEntry : AggregateRoot
 
     private FeatureCatalogEntry(string featureKey, string service, string category, string displayName, string description, bool isQuota, string? unit, string? metadataJson)
     {
+        if (string.IsNullOrWhiteSpace(featureKey))
+            throw new DomainException("Feature key is required.");
+        if (string.IsNullOrWhiteSpace(service))
+            throw new DomainException("Service is required.");
+        if (string.IsNullOrWhiteSpace(category))
+            throw new DomainException("Category is required.");
+        if (string.IsNullOrWhiteSpace(displayName))
+            throw new DomainException("Display name is required.");
+        if (string.IsNullOrWhiteSpace(description))
+            throw new DomainException("Description is required.");
+
         Id = Guid.NewGuid();
-        FeatureKey = featureKey;
-        Service = service;
-        Category = category;
-        DisplayName = displayName;
-        Description = description;
+        FeatureKey = featureKey.Trim();
+        Service = service.Trim();
+        Category = category.Trim();
+        DisplayName = displayName.Trim();
+        Description = description.Trim();
         IsQuota = isQuota;
-        Unit = unit;
-        MetadataJson = metadataJson;
+        Unit = string.IsNullOrWhiteSpace(unit) ? null : unit.Trim();
+        MetadataJson = string.IsNullOrWhiteSpace(metadataJson) ? null : metadataJson;
         CreatedAt = DateTimeOffset.UtcNow;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
@@ -35,5 +47,20 @@ public sealed class FeatureCatalogEntry : AggregateRoot
     public DateTimeOffset? DeletedAt { get; private set; }
 
     public static FeatureCatalogEntry Create(string featureKey, string service, string category, string displayName, string description, bool isQuota = false, string? unit = null, string? metadataJson = null)
-        => new(featureKey.Trim(), service.Trim(), category.Trim(), displayName.Trim(), description.Trim(), isQuota, unit, metadataJson);
+        => new(featureKey, service, category, displayName, description, isQuota, unit, metadataJson);
+
+    public void Update(string service, string category, string displayName, string description, bool isQuota, string? unit, string? metadataJson)
+    {
+        if (DeletedAt is not null)
+            throw new DomainException("Cannot update a deleted feature catalog entry.");
+
+        Service = service.Trim();
+        Category = category.Trim();
+        DisplayName = displayName.Trim();
+        Description = description.Trim();
+        IsQuota = isQuota;
+        Unit = string.IsNullOrWhiteSpace(unit) ? null : unit.Trim();
+        MetadataJson = string.IsNullOrWhiteSpace(metadataJson) ? null : metadataJson;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
 }

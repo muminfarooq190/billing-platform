@@ -24,6 +24,7 @@ public sealed class Program
         builder.Services.AddScoped<ITenantContext, HeaderTenantContext>();
         builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
         builder.Services.AddScoped<IFeatureEntitlementRepository, FeatureEntitlementRepository>();
+        builder.Services.AddScoped<IFeatureCatalogRepository, FeatureCatalogRepository>();
         builder.Services.AddScoped<ICommercialPackageRepository, CommercialPackageRepository>();
         builder.Services.AddScoped<ITenantSubscriptionPackageRepository, TenantSubscriptionPackageRepository>();
         builder.Services.AddScoped<ITenantFeatureOverrideRepository, TenantFeatureOverrideRepository>();

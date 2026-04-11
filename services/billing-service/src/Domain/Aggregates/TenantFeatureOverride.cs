@@ -82,10 +82,38 @@ public sealed class TenantFeatureOverride : AggregateRoot
             createdBy,
             effectiveFrom ?? DateTimeOffset.UtcNow,
             effectiveTo,
-            metadata is null ? null : JsonSerializer.Serialize(metadata));
+            metadata is null ? null : metadata is string rawJson ? rawJson : JsonSerializer.Serialize(metadata));
 
     public bool IsEffectiveAt(DateTimeOffset when)
         => EffectiveFrom <= when
            && (EffectiveTo is null || EffectiveTo >= when)
            && DeletedAt is null;
+
+    public void Update(string featureKey, bool granted, int? limitValue, string reason, string source, string? createdBy, DateTimeOffset effectiveFrom, DateTimeOffset? effectiveTo, string? metadataJson)
+    {
+        if (DeletedAt is not null)
+            throw new DomainException("Cannot update a deleted tenant feature override.");
+        if (effectiveTo.HasValue && effectiveTo.Value < effectiveFrom)
+            throw new DomainException("EffectiveTo cannot be earlier than EffectiveFrom.");
+
+        FeatureKey = featureKey.Trim();
+        Granted = granted;
+        LimitValue = limitValue;
+        Reason = reason.Trim();
+        Source = source.Trim();
+        CreatedBy = string.IsNullOrWhiteSpace(createdBy) ? null : createdBy.Trim();
+        EffectiveFrom = effectiveFrom;
+        EffectiveTo = effectiveTo;
+        MetadataJson = string.IsNullOrWhiteSpace(metadataJson) ? null : metadataJson;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void Delete()
+    {
+        if (DeletedAt is not null)
+            return;
+
+        DeletedAt = DateTimeOffset.UtcNow;
+        UpdatedAt = DeletedAt.Value;
+    }
 }
