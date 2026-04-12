@@ -12,7 +12,6 @@ public sealed class TenantConfiguration : IEntityTypeConfiguration<Tenant>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Name).HasMaxLength(255).IsRequired();
         builder.Property(x => x.Email).HasMaxLength(255).IsRequired();
-        builder.Property(x => x.Plan).HasConversion<string>().HasMaxLength(50).IsRequired();
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(50).IsRequired();
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");

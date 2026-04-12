@@ -21,7 +21,7 @@ public sealed class RegisterTenantCommandHandler(
             throw new ConflictException("A tenant with this email already exists.");
         }
 
-        var tenant = Tenant.Register(request.TenantName, new Email(request.Email), TenantPlan.Free);
+        var tenant = Tenant.Register(request.TenantName, new Email(request.Email));
         var owner = User.Create(new TenantId(tenant.Id), new Email(request.Email), BCrypt.Net.BCrypt.HashPassword(request.Password), UserRole.Owner);
 
         await tenantRepository.AddAsync(tenant, cancellationToken);
