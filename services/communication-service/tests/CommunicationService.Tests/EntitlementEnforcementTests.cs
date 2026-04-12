@@ -41,12 +41,12 @@ public sealed class EntitlementEnforcementTests
 
     private sealed class DenyFeatureGate : IFeatureGate
     {
-        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken)
-            => throw new DomainException($"Feature '{featureKey}' is not enabled for tenant '{tenantId}'.");
+        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, Guid? userId, CancellationToken cancellationToken)
+            => throw new DomainException($"Feature '{featureKey}' is not enabled for tenant '{tenantId}' and user '{userId}'.");
 
-        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(false);
+        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, Guid? userId, CancellationToken cancellationToken) => Task.FromResult(false);
 
-        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
+        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, Guid? userId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
     }
 
     private sealed class ThrowingReadDbConnectionFactory : IReadDbConnectionFactory

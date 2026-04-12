@@ -13,11 +13,12 @@ public sealed class CreateBookingFromQuotationCommandHandler(
     IBookingStatusHistoryRepository bookingStatusHistoryRepository,
     IFeatureGate featureGate,
     IActivityWriter activityWriter,
-    IUnitOfWork unitOfWork) : IRequestHandler<CreateBookingFromQuotationCommand, CreateBookingFromQuotationResult>
+    IUnitOfWork unitOfWork,
+    Api.ITenantContext tenantContext) : IRequestHandler<CreateBookingFromQuotationCommand, CreateBookingFromQuotationResult>
 {
     public async Task<CreateBookingFromQuotationResult> Handle(CreateBookingFromQuotationCommand request, CancellationToken cancellationToken)
     {
-        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelBookingCreate, request.TenantId, cancellationToken);
+        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelBookingCreate, request.TenantId, tenantContext.UserId, cancellationToken);
 
         var quotation = await quotationRepository.GetByIdAsync(request.QuotationId, cancellationToken)
             ?? throw new DomainException($"Quotation {request.QuotationId} not found.");

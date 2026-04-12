@@ -11,11 +11,12 @@ public sealed class CreateEntityNoteCommandHandler(
     IFeatureGate featureGate,
     IActorContext actorContext,
     IActivityWriter activityWriter,
-    IUnitOfWork unitOfWork) : IRequestHandler<CreateEntityNoteCommand, Guid>
+    IUnitOfWork unitOfWork,
+    Api.ITenantContext tenantContext) : IRequestHandler<CreateEntityNoteCommand, Guid>
 {
     public async Task<Guid> Handle(CreateEntityNoteCommand request, CancellationToken cancellationToken)
     {
-        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelNotesWrite, request.TenantId, cancellationToken);
+        await featureGate.EnsureEnabledAsync(FeatureKeys.TravelNotesWrite, request.TenantId, tenantContext.UserId, cancellationToken);
         EnsureSupportedEntityType(request.EntityType);
 
         var note = EntityNote.Create(request.TenantId, request.EntityType, request.EntityId, request.Visibility, request.Content, actorContext.UserId);

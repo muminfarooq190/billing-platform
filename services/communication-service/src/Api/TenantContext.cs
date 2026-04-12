@@ -1,6 +1,6 @@
 using System.Security.Claims;
 
-namespace TravelService.Api;
+namespace CommunicationService.Api;
 
 public interface ITenantContext
 {
