@@ -1,6 +1,7 @@
 using BillingService.Api.Contracts;
 using BillingService.Application.Abstractions;
 using BillingService.Domain.Aggregates;
+using BillingService.Domain.Enums;
 using BillingService.Domain.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,7 +25,7 @@ public sealed class FeaturesController(IFeatureCatalogRepository featureCatalogR
         if (existing is not null)
             return Conflict(new ProblemDetails { Status = 409, Detail = $"Feature '{request.FeatureKey}' already exists." });
 
-        var entry = FeatureCatalogEntry.Create(request.FeatureKey, request.Service, request.Category, request.DisplayName, request.Description, request.IsQuota, request.Unit, request.MetadataJson);
+        var entry = FeatureCatalogEntry.Create(request.FeatureKey, request.Service, request.Category, request.DisplayName, request.Description, request.IsQuota, request.Unit, request.MetadataJson, ParseAssignmentMode(request.AssignmentMode), request.DefaultAssignmentLimit);
         await featureCatalogRepository.AddAsync(entry, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return CreatedAtAction(nameof(List), new { featureKey = entry.FeatureKey }, Map(entry));
@@ -37,7 +38,7 @@ public sealed class FeaturesController(IFeatureCatalogRepository featureCatalogR
         if (entry is null)
             return NotFound();
 
-        entry.Update(request.Service, request.Category, request.DisplayName, request.Description, request.IsQuota, request.Unit, request.MetadataJson);
+        entry.Update(request.Service, request.Category, request.DisplayName, request.Description, request.IsQuota, request.Unit, request.MetadataJson, ParseAssignmentMode(request.AssignmentMode), request.DefaultAssignmentLimit);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Ok(Map(entry));
     }
@@ -51,9 +52,16 @@ public sealed class FeaturesController(IFeatureCatalogRepository featureCatalogR
         x.DisplayName,
         x.Description,
         x.IsQuota,
+        AssignmentMode = x.AssignmentMode.ToString(),
+        x.DefaultAssignmentLimit,
         x.Unit,
         x.MetadataJson,
         x.CreatedAt,
         x.UpdatedAt
     };
+
+    private static FeatureAssignmentMode ParseAssignmentMode(string? assignmentMode)
+        => Enum.TryParse<FeatureAssignmentMode>(assignmentMode, true, out var parsed)
+            ? parsed
+            : FeatureAssignmentMode.TenantWide;
 }

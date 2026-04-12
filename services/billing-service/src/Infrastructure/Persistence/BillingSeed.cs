@@ -24,15 +24,15 @@ public static class BillingSeed
         var existing = existingKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var entries = new[]
         {
-            FeatureCatalogEntry.Create("travel.quotation.create", "travel-service", "travel", "Create quotation", "Allows tenant to create quotations."),
-            FeatureCatalogEntry.Create("travel.quotation.send", "travel-service", "travel", "Send quotation", "Allows tenant to send quotations."),
-            FeatureCatalogEntry.Create("travel.booking.create", "travel-service", "travel", "Create booking", "Allows tenant to create bookings."),
-            FeatureCatalogEntry.Create("travel.timeline.read", "travel-service", "travel", "Read timeline", "Allows tenant to read travel timeline and work queue."),
-            FeatureCatalogEntry.Create("travel.notes.write", "travel-service", "travel", "Write notes", "Allows tenant to create and update travel notes."),
-            FeatureCatalogEntry.Create("travel.audit.read", "travel-service", "travel", "Read audit/reporting", "Allows tenant to access travel audit/reporting."),
-            FeatureCatalogEntry.Create("communication.notification.send", "communication-service", "communication", "Send notifications", "Allows tenant to send notifications.", true, "messages"),
-            FeatureCatalogEntry.Create("branding.theme.manage", "identity-service", "branding", "Manage theme", "Allows tenant to manage branding theme."),
-            FeatureCatalogEntry.Create("branding.assets.manage", "identity-service", "branding", "Manage brand assets", "Allows tenant to manage branding assets.", true, "assets")
+            FeatureCatalogEntry.Create("travel.quotation.create", "travel-service", "travel", "Create quotation", "Allows tenant to create quotations.", assignmentMode: FeatureAssignmentMode.ExplicitUserAssignment),
+            FeatureCatalogEntry.Create("travel.quotation.send", "travel-service", "travel", "Send quotation", "Allows tenant to send quotations.", assignmentMode: FeatureAssignmentMode.ExplicitUserAssignment),
+            FeatureCatalogEntry.Create("travel.booking.create", "travel-service", "travel", "Create booking", "Allows tenant to create bookings.", assignmentMode: FeatureAssignmentMode.ExplicitUserAssignment),
+            FeatureCatalogEntry.Create("travel.timeline.read", "travel-service", "travel", "Read timeline", "Allows tenant to read travel timeline and work queue.", assignmentMode: FeatureAssignmentMode.TenantWide),
+            FeatureCatalogEntry.Create("travel.notes.write", "travel-service", "travel", "Write notes", "Allows tenant to create and update travel notes.", assignmentMode: FeatureAssignmentMode.ExplicitUserAssignment),
+            FeatureCatalogEntry.Create("travel.audit.read", "travel-service", "travel", "Read audit/reporting", "Allows tenant to access travel audit/reporting.", assignmentMode: FeatureAssignmentMode.ExplicitUserAssignment),
+            FeatureCatalogEntry.Create("communication.notification.send", "communication-service", "communication", "Send notifications", "Allows tenant to send notifications.", true, "messages", assignmentMode: FeatureAssignmentMode.SeatLimitedAssignment, defaultAssignmentLimit: 2),
+            FeatureCatalogEntry.Create("branding.theme.manage", "identity-service", "branding", "Manage theme", "Allows tenant to manage branding theme.", assignmentMode: FeatureAssignmentMode.ExplicitUserAssignment),
+            FeatureCatalogEntry.Create("branding.assets.manage", "identity-service", "branding", "Manage brand assets", "Allows tenant to manage branding assets.", true, "assets", assignmentMode: FeatureAssignmentMode.SeatLimitedAssignment, defaultAssignmentLimit: 3)
         };
 
         var missingEntries = entries.Where(x => !existing.Contains(x.FeatureKey)).ToList();
