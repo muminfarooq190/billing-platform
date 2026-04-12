@@ -26,7 +26,7 @@ public sealed class AdditionalEntitlementEnforcementTests
             new DenyFeatureGate(),
             new NoOpAuditWriter(),
             new FakeActorContext(quotation.TenantId),
-            new NoOpUnitOfWork());
+            new NoOpUnitOfWork(), new FakeTenantContext());
 
         var act = async () => await handler.Handle(new AcceptQuotationCommand(quotation.TenantId, quotation.Id, revision.Id, "customer accepted"), CancellationToken.None);
 
@@ -43,7 +43,7 @@ public sealed class AdditionalEntitlementEnforcementTests
             new DenyFeatureGate(),
             new NoOpAuditWriter(),
             new FakeActorContext(quotation.TenantId),
-            new NoOpUnitOfWork());
+            new NoOpUnitOfWork(), new FakeTenantContext());
 
         var act = async () => await handler.Handle(new RejectQuotationCommand(quotation.TenantId, quotation.Id, "customer rejected"), CancellationToken.None);
 
@@ -54,7 +54,7 @@ public sealed class AdditionalEntitlementEnforcementTests
     public async Task CompleteFollowUp_ShouldFail_WhenFeatureDisabled()
     {
         var followUp = FollowUp.Create(Guid.NewGuid(), Guid.NewGuid(), "Jane Doe", "Call customer", "Check payment", FollowUpPriority.High, DateTimeOffset.UtcNow.AddDays(1), null);
-        var handler = new CompleteFollowUpCommandHandler(new SingleFollowUpRepository(followUp), new DenyFeatureGate(), new NoOpActivityWriter(), new FakeActorContext(followUp.TenantId), new NoOpUnitOfWork());
+        var handler = new CompleteFollowUpCommandHandler(new SingleFollowUpRepository(followUp), new DenyFeatureGate(), new NoOpActivityWriter(), new FakeActorContext(followUp.TenantId), new NoOpUnitOfWork(), new FakeTenantContext());
 
         var act = async () => await handler.Handle(new CompleteFollowUpCommand(followUp.Id), CancellationToken.None);
 
@@ -65,7 +65,7 @@ public sealed class AdditionalEntitlementEnforcementTests
     public async Task ReassignFollowUp_ShouldFail_WhenFeatureDisabled()
     {
         var followUp = FollowUp.Create(Guid.NewGuid(), Guid.NewGuid(), "Jane Doe", "Call customer", "Check payment", FollowUpPriority.High, DateTimeOffset.UtcNow.AddDays(1), null);
-        var handler = new ReassignFollowUpCommandHandler(new SingleFollowUpRepository(followUp), new DenyFeatureGate(), new NoOpActivityWriter(), new FakeActorContext(followUp.TenantId), new NoOpUnitOfWork());
+        var handler = new ReassignFollowUpCommandHandler(new SingleFollowUpRepository(followUp), new DenyFeatureGate(), new NoOpActivityWriter(), new FakeActorContext(followUp.TenantId), new NoOpUnitOfWork(), new FakeTenantContext());
 
         var act = async () => await handler.Handle(new ReassignFollowUpCommand(followUp.Id, Guid.NewGuid()), CancellationToken.None);
 
@@ -100,8 +100,12 @@ public sealed class AdditionalEntitlementEnforcementTests
     {
         public Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken)
             => throw new TravelService.Domain.Exceptions.DomainException($"Feature '{featureKey}' is not enabled for tenant '{tenantId}'.");
+        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, Guid? userId, CancellationToken cancellationToken)
+            => throw new TravelService.Domain.Exceptions.DomainException($"Feature '{featureKey}' is not enabled for tenant '{tenantId}' and user '{userId}'.");
         public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(false);
+        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, Guid? userId, CancellationToken cancellationToken) => Task.FromResult(false);
         public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
+        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, Guid? userId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
     }
 
     private sealed class FakeActorContext(Guid tenantId) : IActorContext
@@ -177,5 +181,12 @@ public sealed class AdditionalEntitlementEnforcementTests
     {
         public Task<IReadOnlyList<BookingInvoiceDto>> GetInvoicesAsync(Guid tenantId, CancellationToken cancellationToken)
             => Task.FromResult(invoices.Where(x => x.TenantId == tenantId).ToList() as IReadOnlyList<BookingInvoiceDto>);
+    }
+
+
+    private sealed class FakeTenantContext : TravelService.Api.ITenantContext
+    {
+        public Guid TenantId { get; } = Guid.NewGuid();
+        public Guid? UserId { get; } = Guid.NewGuid();
     }
 }

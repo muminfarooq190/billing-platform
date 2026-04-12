@@ -10,12 +10,11 @@ public sealed class Tenant : AggregateRoot
 {
     private Tenant() { }
 
-    private Tenant(TenantId id, string name, Email email, TenantPlan plan)
+    private Tenant(TenantId id, string name, Email email)
     {
         Id = id.Value;
         Name = name;
         Email = email.Value;
-        Plan = plan;
         Status = TenantStatus.Active;
         CreatedAt = DateTimeOffset.UtcNow;
         UpdatedAt = DateTimeOffset.UtcNow;
@@ -25,31 +24,19 @@ public sealed class Tenant : AggregateRoot
     public Guid Id { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public string Email { get; private set; } = string.Empty;
-    public TenantPlan Plan { get; private set; }
     public TenantStatus Status { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
 
-    public static Tenant Register(string name, Email email, TenantPlan plan = TenantPlan.Free)
+    public static Tenant Register(string name, Email email)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
             throw new DomainException("Tenant name is required.");
         }
 
-        return new Tenant(TenantId.New(), name.Trim(), email, plan);
-    }
-
-    public void ChangePlan(TenantPlan plan)
-    {
-        if (Status is TenantStatus.Suspended or TenantStatus.Deleted)
-        {
-            throw new DomainException("Cannot change plan for inactive tenant.");
-        }
-
-        Plan = plan;
-        UpdatedAt = DateTimeOffset.UtcNow;
+        return new Tenant(TenantId.New(), name.Trim(), email);
     }
 
     public void Suspend()

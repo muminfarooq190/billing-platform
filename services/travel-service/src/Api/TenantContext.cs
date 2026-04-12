@@ -5,6 +5,7 @@ namespace TravelService.Api;
 public interface ITenantContext
 {
     Guid TenantId { get; }
+    Guid? UserId { get; }
 }
 
 public sealed class HeaderTenantContext(IHttpContextAccessor httpContextAccessor) : ITenantContext
@@ -24,6 +25,19 @@ public sealed class HeaderTenantContext(IHttpContextAccessor httpContextAccessor
                 throw new InvalidOperationException("Tenant header does not match authenticated tenant.");
 
             return tenantId;
+        }
+    }
+
+    public Guid? UserId
+    {
+        get
+        {
+            var httpContext = httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HTTP context is not available.");
+            var raw = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? httpContext.User.FindFirstValue("sub")
+                ?? httpContext.Request.Headers["x-user-id"].FirstOrDefault();
+
+            return Guid.TryParse(raw, out var userId) ? userId : null;
         }
     }
 }

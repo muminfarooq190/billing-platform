@@ -12,6 +12,7 @@ public sealed class BillingDbContext(DbContextOptions<BillingDbContext> options)
     public DbSet<CommercialPackageFeature> CommercialPackageFeatures => Set<CommercialPackageFeature>();
     public DbSet<TenantSubscriptionPackage> TenantSubscriptionPackages => Set<TenantSubscriptionPackage>();
     public DbSet<TenantFeatureOverride> TenantFeatureOverrides => Set<TenantFeatureOverride>();
+    public DbSet<TenantUserFeatureAssignment> TenantUserFeatureAssignments => Set<TenantUserFeatureAssignment>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
     public DbSet<OutboxMessage> DomainEvents => Set<OutboxMessage>();
 

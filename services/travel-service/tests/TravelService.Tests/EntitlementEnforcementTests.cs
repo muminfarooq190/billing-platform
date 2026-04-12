@@ -13,7 +13,7 @@ public sealed class EntitlementEnforcementTests
     [Fact]
     public async Task CreateQuotation_ShouldFail_WhenFeatureDisabled()
     {
-        var handler = new CreateQuotationCommandHandler(new InMemoryQuotationRepository(), new DenyFeatureGate(), new NoOpUnitOfWork());
+        var handler = new CreateQuotationCommandHandler(new InMemoryQuotationRepository(), new DenyFeatureGate(), new NoOpUnitOfWork(), new FakeTenantContext());
         var command = new CreateQuotationCommand(Guid.NewGuid(), Guid.NewGuid(), "Ava", "Trip", "Istanbul", DateTimeOffset.UtcNow.AddDays(10), DateTimeOffset.UtcNow.AddDays(15), 2, "USD", "notes", []);
 
         var act = async () => await handler.Handle(command, CancellationToken.None);
@@ -36,7 +36,8 @@ public sealed class EntitlementEnforcementTests
             new DenyFeatureGate(),
             new NoOpActivityWriter(),
             new FakeActorContext(quotation.TenantId),
-            new NoOpUnitOfWork());
+            new NoOpUnitOfWork(),
+            new FakeTenantContext());
 
         var act = async () => await handler.Handle(new SendQuotationCommand(quotation.TenantId, quotation.Id, revision.Id, "Email", "test@example.com", null, DateTimeOffset.UtcNow.AddDays(2)), CancellationToken.None);
 
@@ -46,7 +47,7 @@ public sealed class EntitlementEnforcementTests
     [Fact]
     public async Task CreateEntityNote_ShouldFail_WhenFeatureDisabled()
     {
-        var handler = new CreateEntityNoteCommandHandler(new InMemoryEntityNoteRepository(), new DenyFeatureGate(), new FakeActorContext(Guid.NewGuid()), new NoOpActivityWriter(), new NoOpUnitOfWork());
+        var handler = new CreateEntityNoteCommandHandler(new InMemoryEntityNoteRepository(), new DenyFeatureGate(), new FakeActorContext(Guid.NewGuid()), new NoOpActivityWriter(), new NoOpUnitOfWork(), new FakeTenantContext());
 
         var act = async () => await handler.Handle(new CreateEntityNoteCommand(Guid.NewGuid(), "Quotation", Guid.NewGuid(), "Internal", "blocked"), CancellationToken.None);
 
@@ -57,8 +58,18 @@ public sealed class EntitlementEnforcementTests
     {
         public Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken)
             => throw new TravelService.Domain.Exceptions.DomainException($"Feature '{featureKey}' is not enabled for tenant '{tenantId}'.");
+        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, Guid? userId, CancellationToken cancellationToken)
+            => throw new TravelService.Domain.Exceptions.DomainException($"Feature '{featureKey}' is not enabled for tenant '{tenantId}' and user '{userId}'.");
         public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(false);
+        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, Guid? userId, CancellationToken cancellationToken) => Task.FromResult(false);
         public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
+        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, Guid? userId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
+    }
+
+    private sealed class FakeTenantContext : TravelService.Api.ITenantContext
+    {
+        public Guid TenantId { get; } = Guid.NewGuid();
+        public Guid? UserId { get; } = Guid.NewGuid();
     }
 
     private sealed class FakeActorContext(Guid tenantId) : IActorContext

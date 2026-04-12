@@ -3,6 +3,9 @@ namespace IdentityService.Application.Abstractions;
 public interface IFeatureGate
 {
     Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken);
+    Task EnsureEnabledAsync(string featureKey, Guid tenantId, Guid? userId, CancellationToken cancellationToken);
     Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken);
+    Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, Guid? userId, CancellationToken cancellationToken);
     Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken);
+    Task<int?> GetLimitAsync(string featureKey, Guid tenantId, Guid? userId, CancellationToken cancellationToken);
 }

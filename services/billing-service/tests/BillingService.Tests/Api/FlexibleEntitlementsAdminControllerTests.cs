@@ -22,13 +22,13 @@ public sealed class FlexibleEntitlementsAdminControllerTests
         var controller = new FeaturesController(repo, new FakeUnitOfWork());
 
         var createResult = await controller.Create(new CreateFeatureCatalogEntryRequest(
-            "travel.audit.read", "travel-service", "travel", "Audit Read", "Allows audit access", false, null, "{}"), CancellationToken.None);
+            "travel.audit.read", "travel-service", "travel", "Audit Read", "Allows audit access", false, null, "{}", "ExplicitUserAssignment", null), CancellationToken.None);
 
         createResult.Should().BeOfType<CreatedAtActionResult>();
         repo.Items.Should().ContainSingle(x => x.FeatureKey == "travel.audit.read");
 
         var updateResult = await controller.Update("travel.audit.read", new UpdateFeatureCatalogEntryRequest(
-            "travel-service", "reporting", "Audit & Reporting", "Updated", false, null, "{\"v\":2}"), CancellationToken.None);
+            "travel-service", "reporting", "Audit & Reporting", "Updated", false, null, "{\"v\":2}", "SeatLimitedAssignment", 5), CancellationToken.None);
 
         updateResult.Should().BeOfType<OkObjectResult>();
         repo.Items.Single().Category.Should().Be("reporting");

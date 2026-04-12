@@ -8,7 +8,9 @@ public sealed record CreateFeatureCatalogEntryRequest(
     string Description,
     bool IsQuota,
     string? Unit,
-    string? MetadataJson);
+    string? MetadataJson,
+    string? AssignmentMode,
+    int? DefaultAssignmentLimit);
 
 public sealed record UpdateFeatureCatalogEntryRequest(
     string Service,
@@ -17,4 +19,6 @@ public sealed record UpdateFeatureCatalogEntryRequest(
     string Description,
     bool IsQuota,
     string? Unit,
-    string? MetadataJson);
+    string? MetadataJson,
+    string? AssignmentMode,
+    int? DefaultAssignmentLimit);

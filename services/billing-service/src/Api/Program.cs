@@ -28,6 +28,7 @@ public sealed class Program
         builder.Services.AddScoped<ICommercialPackageRepository, CommercialPackageRepository>();
         builder.Services.AddScoped<ITenantSubscriptionPackageRepository, TenantSubscriptionPackageRepository>();
         builder.Services.AddScoped<ITenantFeatureOverrideRepository, TenantFeatureOverrideRepository>();
+        builder.Services.AddScoped<ITenantUserFeatureAssignmentRepository, TenantUserFeatureAssignmentRepository>();
         builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
         builder.Services.AddScoped<IReadDbConnectionFactory, ReadDbConnectionFactory>();

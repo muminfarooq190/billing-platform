@@ -21,6 +21,8 @@ public sealed class Program
         var databaseUrl = builder.Configuration["DATABASE_URL"] ?? "Host=postgres;Port=5432;Database=billing_communication;Username=billing_user;Password=changeme";
 
         builder.Services.AddDbContext<CommunicationDbContext>(options => options.UseNpgsql(databaseUrl));
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddScoped<ITenantContext, HeaderTenantContext>();
         builder.Services.AddOptions<EmailChannelOptions>()
             .Configure<IConfiguration>((options, configuration) =>
             {

@@ -16,6 +16,8 @@ public sealed class FeatureCatalogEntryConfiguration : IEntityTypeConfiguration<
         builder.Property(x => x.DisplayName).HasColumnName("display_name").HasMaxLength(200).IsRequired();
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(1000).IsRequired();
         builder.Property(x => x.IsQuota).HasColumnName("is_quota");
+        builder.Property(x => x.AssignmentMode).HasColumnName("assignment_mode").HasConversion<string>().HasMaxLength(50).IsRequired();
+        builder.Property(x => x.DefaultAssignmentLimit).HasColumnName("default_assignment_limit");
         builder.Property(x => x.Unit).HasColumnName("unit").HasMaxLength(100);
         builder.Property(x => x.MetadataJson).HasColumnName("metadata_json").HasColumnType("jsonb");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");

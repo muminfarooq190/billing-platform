@@ -12,7 +12,7 @@ public sealed class EntitlementEnforcementTests
     [Fact]
     public async Task ListTemplatesByTenant_ShouldFail_WhenTemplatesFeatureDisabled()
     {
-        var handler = new ListTemplatesByTenantQueryHandler(new ThrowingReadDbConnectionFactory(), new DenyFeatureGate());
+        var handler = new ListTemplatesByTenantQueryHandler(new ThrowingReadDbConnectionFactory(), new DenyFeatureGate(), new FakeTenantContext());
 
         var act = async () => await handler.Handle(new ListTemplatesByTenantQuery(Guid.NewGuid()), CancellationToken.None);
 
@@ -22,7 +22,7 @@ public sealed class EntitlementEnforcementTests
     [Fact]
     public async Task ListNotificationsByRecipient_ShouldFail_WhenLogsFeatureDisabled()
     {
-        var handler = new ListNotificationsByRecipientQueryHandler(new ThrowingReadDbConnectionFactory(), new DenyFeatureGate());
+        var handler = new ListNotificationsByRecipientQueryHandler(new ThrowingReadDbConnectionFactory(), new DenyFeatureGate(), new FakeTenantContext());
 
         var act = async () => await handler.Handle(new ListNotificationsByRecipientQuery(Guid.NewGuid(), Guid.NewGuid()), CancellationToken.None);
 
@@ -32,21 +32,29 @@ public sealed class EntitlementEnforcementTests
     [Fact]
     public async Task GetUnreadNotificationCount_ShouldFail_WhenLogsFeatureDisabled()
     {
-        var handler = new GetUnreadNotificationCountQueryHandler(new ThrowingReadDbConnectionFactory(), new DenyFeatureGate());
+        var handler = new GetUnreadNotificationCountQueryHandler(new ThrowingReadDbConnectionFactory(), new DenyFeatureGate(), new FakeTenantContext());
 
         var act = async () => await handler.Handle(new GetUnreadNotificationCountQuery(Guid.NewGuid(), Guid.NewGuid()), CancellationToken.None);
 
         await act.Should().ThrowAsync<DomainException>().WithMessage("*not enabled*");
     }
 
+    private sealed class FakeTenantContext : CommunicationService.Api.ITenantContext
+    {
+        public Guid TenantId { get; } = Guid.NewGuid();
+        public Guid? UserId { get; } = Guid.NewGuid();
+    }
+
     private sealed class DenyFeatureGate : IFeatureGate
     {
         public Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken)
             => throw new DomainException($"Feature '{featureKey}' is not enabled for tenant '{tenantId}'.");
-
+        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, Guid? userId, CancellationToken cancellationToken)
+            => throw new DomainException($"Feature '{featureKey}' is not enabled for tenant '{tenantId}' and user '{userId}'.");
         public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(false);
-
+        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, Guid? userId, CancellationToken cancellationToken) => Task.FromResult(false);
         public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
+        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, Guid? userId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
     }
 
     private sealed class ThrowingReadDbConnectionFactory : IReadDbConnectionFactory

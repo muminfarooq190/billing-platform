@@ -19,13 +19,55 @@
     {
       "name": "Health",
       "item": [
-        { "name": "Gateway Health", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/health" } },
-        { "name": "Gateway Ready", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/health/ready" } },
-        { "name": "Identity Health", "request": { "method": "GET", "url": "{{identityBaseUrl}}/health" } },
-        { "name": "Billing Health", "request": { "method": "GET", "url": "{{billingBaseUrl}}/health" } },
-        { "name": "Travel Health", "request": { "method": "GET", "url": "{{travelBaseUrl}}/health" } },
-        { "name": "Communication Health", "request": { "method": "GET", "url": "{{communicationBaseUrl}}/health" } },
-        { "name": "Webhook Health", "request": { "method": "GET", "url": "{{webhookBaseUrl}}/health" } }
+        {
+          "name": "Gateway Health",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayBaseUrl}}/health"
+          }
+        },
+        {
+          "name": "Gateway Ready",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayBaseUrl}}/health/ready"
+          }
+        },
+        {
+          "name": "Identity Health",
+          "request": {
+            "method": "GET",
+            "url": "{{identityBaseUrl}}/health"
+          }
+        },
+        {
+          "name": "Billing Health",
+          "request": {
+            "method": "GET",
+            "url": "{{billingBaseUrl}}/health"
+          }
+        },
+        {
+          "name": "Travel Health",
+          "request": {
+            "method": "GET",
+            "url": "{{travelBaseUrl}}/health"
+          }
+        },
+        {
+          "name": "Communication Health",
+          "request": {
+            "method": "GET",
+            "url": "{{communicationBaseUrl}}/health"
+          }
+        },
+        {
+          "name": "Webhook Health",
+          "request": {
+            "method": "GET",
+            "url": "{{webhookBaseUrl}}/health"
+          }
+        }
       ]
     },
     {
@@ -35,43 +77,116 @@
         {
           "name": "Register Tenant Admin",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"tenantName\": \"Acme Travel\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" },
-            "url": "{{gatewayBaseUrl}}/api/auth/register"
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantName\": \"Acme Travel\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": "{{identityBaseUrl}}/auth/register"
           }
         },
         {
           "name": "Login",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" },
-            "url": "{{gatewayBaseUrl}}/api/auth/login"
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": "{{identityBaseUrl}}/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.accessToken) pm.environment.set(\"accessToken\", json.accessToken);",
+                  "if (json.refreshToken) pm.environment.set(\"refreshToken\", json.refreshToken);",
+                  "if (json.tenantId) pm.environment.set(\"tenantId\", json.tenantId);",
+                  "if (json.userId) { pm.environment.set(\"currentUserId\", json.userId); pm.environment.set(\"adminUserId\", json.userId); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{identityBaseUrl}}/identity/users"
           }
         },
-        { "name": "JWKS", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{identityBaseUrl}}/.well-known/jwks.json" } },
-        { "name": "List Users", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/api/identity/users?tenantId={{tenantId}}" } },
         {
           "name": "Create User",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"email\": \"agent@voyara.local\",\n  \"password\": \"{{password}}\",\n  \"role\": \"Admin\"\n}" },
-            "url": "{{gatewayBaseUrl}}/api/identity/users"
-          }
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"agent@voyara.local\",\n  \"password\": \"{{password}}\",\n  \"role\": \"Admin\"\n}"
+            },
+            "url": "{{identityBaseUrl}}/identity/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.id) pm.environment.set(\"agentUserId\", json.id);",
+                  "if (json && json.userId) pm.environment.set(\"agentUserId\", json.userId);"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Get Tenant Branding",
           "request": {
             "method": "GET",
-            "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }],
-            "url": "{{identityBaseUrl}}/tenant-branding"
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{identityBaseUrl}}/identity/tenant-branding"
           }
         },
         {
@@ -79,31 +194,67 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"displayName\": \"Voyara Holidays\",\n  \"legalName\": \"Voyara Holidays Private Limited\",\n  \"primaryColor\": \"#0F172A\",\n  \"secondaryColor\": \"#1D4ED8\",\n  \"accentColor\": \"#F59E0B\",\n  \"textColor\": \"#111827\",\n  \"backgroundColor\": \"#FFFFFF\",\n  \"themeMode\": \"Light\",\n  \"defaultFontFamily\": \"Inter\",\n  \"supportEmail\": \"support@voyara.example\",\n  \"supportPhone\": \"+971500000000\",\n  \"websiteUrl\": \"https://voyara.example\",\n  \"tagline\": \"Personalized premium travel\"\n}"
             },
-            "url": "{{identityBaseUrl}}/tenant-branding"
+            "url": "{{identityBaseUrl}}/identity/tenant-branding"
           }
         },
-        { "name": "List Branding Assets", "request": { "method": "GET", "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }], "url": "{{identityBaseUrl}}/tenant-branding/assets" } },
-        { "name": "Get Template Theme By Scope", "request": { "method": "GET", "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }], "url": "{{identityBaseUrl}}/tenant-branding/templates/{{templateScope}}" } },
+        {
+          "name": "List Branding Assets",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{identityBaseUrl}}/identity/tenant-branding/assets"
+          }
+        },
+        {
+          "name": "Get Template Theme By Scope",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{identityBaseUrl}}/identity/tenant-template-themes/{{templateScope}}"
+          }
+        },
         {
           "name": "Upsert Template Theme By Scope",
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"headerHtml\": \"<div style='font-weight:700'>Voyara Premium</div>\",\n  \"footerHtml\": \"<div>Thanks for travelling with us</div>\",\n  \"customCss\": \".hero{background:#0F172A;color:white;}\",\n  \"logoAssetId\": null,\n  \"backgroundAssetId\": null,\n  \"settingsJson\": \"{\\\"variant\\\":\\\"luxury\\\"}\"\n}"
             },
-            "url": "{{identityBaseUrl}}/tenant-branding/templates/{{templateScope}}"
+            "url": "{{identityBaseUrl}}/identity/tenant-template-themes/{{templateScope}}"
           }
         }
       ]
@@ -112,14 +263,137 @@
       "name": "Billing / Entitlements",
       "description": "Subscription entitlement resolution and admin grants.",
       "item": [
-        { "name": "Get My Effective Entitlements", "request": { "method": "GET", "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }], "url": "{{billingBaseUrl}}/billing/entitlements/me" } },
-        { "name": "Get Tenant Effective Entitlements", "request": { "method": "GET", "url": "{{billingBaseUrl}}/billing/entitlements/{{tenantId}}" } },
+        {
+          "name": "Get My Effective Entitlements",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{billingBaseUrl}}/billing/entitlements/me"
+          }
+        },
+        {
+          "name": "Get Tenant Effective Entitlements",
+          "request": {
+            "method": "GET",
+            "url": "{{billingBaseUrl}}/billing/entitlements/{{tenantId}}"
+          }
+        },
+        {
+          "name": "Get Tenant Feature Allocations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{billingBaseUrl}}/billing/tenants/{{tenantId}}/feature-allocations"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (Array.isArray(json) && json.length > 0 && json[0].featureKey) pm.environment.set(\"assignedFeatureKey\", json[0].featureKey);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get User Effective Features",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{billingBaseUrl}}/billing/tenants/{{tenantId}}/users/{{agentUserId}}/features"
+          }
+        },
+        {
+          "name": "Assign Features To User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"featureKeys\": [\n    \"{{assignedFeatureKey}}\"\n  ],\n  \"effectiveFrom\": \"2026-04-12T00:00:00Z\"\n}"
+            },
+            "url": "{{billingBaseUrl}}/billing/tenants/{{tenantId}}/users/{{agentUserId}}/feature-assignments"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.assignedFeatures && json.assignedFeatures[0]) pm.environment.set(\"assignedFeatureKey\", json.assignedFeatures[0]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Revoke User Feature Assignment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{billingBaseUrl}}/billing/tenants/{{tenantId}}/users/{{agentUserId}}/feature-assignments/{{assignedFeatureKey}}"
+          }
+        },
+        {
+          "name": "Get My Feature Access",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{billingBaseUrl}}/billing/feature-access/me"
+          }
+        },
         {
           "name": "Grant Feature Entitlement Override",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"featureKey\": \"communication.notification.send\",\n  \"granted\": true,\n  \"limitValue\": 10000,\n  \"effectiveFrom\": \"2026-04-09T00:00:00Z\",\n  \"effectiveTo\": null,\n  \"reason\": \"Sales-approved uplift\"\n}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"featureKey\": \"communication.notification.send\",\n  \"granted\": true,\n  \"limitValue\": 10000,\n  \"effectiveFrom\": \"2026-04-09T00:00:00Z\",\n  \"effectiveTo\": null,\n  \"reason\": \"Sales-approved uplift\"\n}"
+            },
             "url": "{{billingBaseUrl}}/billing/entitlements/{{tenantId}}/grants"
           }
         }
@@ -129,69 +403,691 @@
       "name": "Travel Service",
       "description": "Travel CRM endpoints exposed through the gateway and direct public quote APIs.",
       "item": [
-        { "name": "Create Contact", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "raw", "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"email\": \"traveler@example.com\",\n  \"phone\": \"+15555550123\",\n  \"company\": \"Voyara Demo\",\n  \"notes\": \"High-value traveler\",\n  \"tags\": [\"vip\", \"europe\"]\n}" }, "url": "{{gatewayBaseUrl}}/api/travel/contacts" } },
-        { "name": "List Contacts", "request": { "method": "GET", "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }], "url": "{{gatewayBaseUrl}}/api/travel/contacts/tenant/{{tenantId}}?page=1&pageSize=20" } },
-        { "name": "Create Quotation", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerContactId\": \"{{customerContactId}}\",\n  \"customerName\": \"Jane Doe\",\n  \"title\": \"Summer Europe Trip\",\n  \"destination\": \"Italy\",\n  \"travelDate\": \"2026-06-10T09:00:00Z\",\n  \"returnDate\": \"2026-06-20T18:00:00Z\",\n  \"travellers\": 2,\n  \"currency\": \"USD\",\n  \"notes\": \"VIP customer\",\n  \"lineItems\": [\n    {\n      \"description\": \"Flight + Hotel\",\n      \"unitPrice\": 2500,\n      \"quantity\": 1,\n      \"currency\": \"USD\"\n    }\n  ]\n}" }, "url": "{{gatewayBaseUrl}}/api/travel/quotations" } },
-        { "name": "Create Quotation Revision", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "raw", "raw": "{\n  \"title\": \"Summer Europe Trip - Premium\",\n  \"destination\": \"Italy\",\n  \"travelDate\": \"2026-06-10T09:00:00Z\",\n  \"returnDate\": \"2026-06-20T18:00:00Z\",\n  \"travellers\": 2,\n  \"currency\": \"USD\",\n  \"visibleNotes\": \"Breakfast included\",\n  \"internalNotes\": \"Target 22% margin\",\n  \"validUntil\": \"2026-05-01T00:00:00Z\",\n  \"lineItems\": [\n    {\n      \"description\": \"Flight + Hotel\",\n      \"quantity\": 1,\n      \"unitPrice\": 2500,\n      \"currency\": \"USD\"\n    }\n  ]\n}" }, "url": "{{gatewayBaseUrl}}/api/travel/quotations/{{quotationId}}/revisions" } },
-        { "name": "Create Quotation Approval Request", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "raw", "raw": "{\n  \"revisionId\": \"{{revisionId}}\",\n  \"reason\": \"Discount exceeds threshold\",\n  \"marginPercent\": 9.5,\n  \"discountPercent\": 12\n}" }, "url": "{{gatewayBaseUrl}}/api/travel/quotations/{{quotationId}}/approval-requests" } },
-        { "name": "Approve Quotation Approval Request", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Approved by commercial lead\"\n}" }, "url": "{{gatewayBaseUrl}}/api/travel/quotations/{{quotationId}}/approval-requests/{{approvalRequestId}}/approve" } },
-        { "name": "Reject Quotation Approval Request", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Margin too low\"\n}" }, "url": "{{gatewayBaseUrl}}/api/travel/quotations/{{quotationId}}/approval-requests/{{approvalRequestId}}/reject" } },
-        { "name": "Send Quotation", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "raw", "raw": "{\n  \"revisionId\": \"{{revisionId}}\",\n  \"channel\": \"Email\",\n  \"recipientEmail\": \"traveler@example.com\",\n  \"message\": \"Please review your updated proposal.\",\n  \"expiresAt\": \"2026-05-01T00:00:00Z\"\n}" }, "url": "{{gatewayBaseUrl}}/api/travel/quotations/{{quotationId}}/send" } },
-        { "name": "Upload Quotation Attachment", "request": { "method": "POST", "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "formdata", "formdata": [{ "key": "revisionId", "value": "{{revisionId}}", "type": "text" }, { "key": "attachmentType", "value": "Brochure", "type": "text" }, { "key": "caption", "value": "Hotel brochure", "type": "text" }, { "key": "isCustomerVisible", "value": "true", "type": "text" }, { "key": "file", "type": "file", "src": "" }] }, "url": "{{gatewayBaseUrl}}/api/travel/quotations/{{quotationId}}/attachments" } },
-        { "name": "Delete Quotation Attachment", "request": { "method": "DELETE", "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }], "url": "{{gatewayBaseUrl}}/api/travel/quotations/{{quotationId}}/attachments/{{attachmentId}}" } },
-        { "name": "Get Public Quotation", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{travelBaseUrl}}/travel/quotations/public/{{shareToken}}" } },
-        { "name": "Mark Public Quotation Viewed", "request": { "auth": { "type": "noauth" }, "method": "POST", "url": "{{travelBaseUrl}}/travel/quotations/public/{{shareToken}}/viewed" } },
-        { "name": "Accept Public Quotation", "description": "Public token route still enforces tenant subscription via service-layer quotation decision handler. Denied tenants receive 403 with code `entitlement_denied`.", "request": { "auth": { "type": "noauth" }, "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Accepted by customer\"\n}" }, "url": "{{travelBaseUrl}}/travel/quotations/public/{{shareToken}}/accept" } },
-        { "name": "Reject Public Quotation", "description": "Public token route still enforces tenant subscription via service-layer quotation decision handler. Denied tenants receive 403 with code `entitlement_denied`.", "request": { "auth": { "type": "noauth" }, "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Not proceeding\"\n}" }, "url": "{{travelBaseUrl}}/travel/quotations/public/{{shareToken}}/reject" } },
-        { "name": "Create Booking From Quotation", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "raw", "raw": "{\n  \"assignedToUserId\": null,\n  \"internalNotes\": \"Priority booking\"\n}" }, "url": "{{gatewayBaseUrl}}/api/travel/bookings/from-quotation/{{quotationId}}" } },
-        { "name": "Get Booking By Id", "request": { "method": "GET", "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }], "url": "{{gatewayBaseUrl}}/api/travel/bookings/{{bookingId}}" } },
-        { "name": "Get Booking Financial Summary", "description": "Requires subscription entitlement. Denied tenants now receive 403 with code `entitlement_denied`.", "request": { "method": "GET", "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }], "url": "{{gatewayBaseUrl}}/api/travel/bookings/{{bookingId}}/financial-summary" } },
-        { "name": "Add Traveler", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"dateOfBirth\": \"1992-05-01\",\n  \"email\": \"jane@example.com\",\n  \"phone\": \"+15555550123\",\n  \"passportNumber\": \"A1234567\",\n  \"passportExpiry\": \"2031-05-01\",\n  \"nationality\": \"Indian\",\n  \"leadTraveler\": true\n}" }, "url": "{{gatewayBaseUrl}}/api/travel/bookings/{{bookingId}}/travelers" } },
-        { "name": "Add Booking Item", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "raw", "raw": "{\n  \"type\": \"Hotel\",\n  \"title\": \"Rome hotel stay\",\n  \"description\": \"4 nights in central Rome\",\n  \"supplierName\": \"Example Hotels\",\n  \"supplierReference\": \"EH-7782\",\n  \"location\": \"Rome\",\n  \"startAt\": \"2026-06-10T14:00:00Z\",\n  \"endAt\": \"2026-06-14T11:00:00Z\",\n  \"sellAmount\": 1200,\n  \"costAmount\": 900,\n  \"currency\": \"USD\",\n  \"notes\": \"Late check-in confirmed\",\n  \"sortOrder\": 1\n}" }, "url": "{{gatewayBaseUrl}}/api/travel/bookings/{{bookingId}}/items" } },
-        { "name": "Request Booking Item Confirmation", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "raw", "raw": "{\n  \"confirmationDeadline\": \"2026-06-01T00:00:00Z\",\n  \"notes\": \"Awaiting supplier reply\"\n}" }, "url": "{{gatewayBaseUrl}}/api/travel/bookings/{{bookingId}}/items/{{itemId}}/request-confirmation" } },
-        { "name": "Confirm Booking Item", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "raw", "raw": "{\n  \"confirmationNumber\": \"CNF-7788\",\n  \"confirmedAt\": \"2026-06-01T10:00:00Z\",\n  \"notes\": \"Confirmed by supplier\"\n}" }, "url": "{{gatewayBaseUrl}}/api/travel/bookings/{{bookingId}}/items/{{itemId}}/confirm" } },
-        { "name": "Issue Booking Item", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "raw", "raw": "{\n  \"voucherNumber\": \"VCH-1001\",\n  \"issuedAt\": \"2026-06-02T10:00:00Z\",\n  \"notes\": \"Voucher issued\"\n}" }, "url": "{{gatewayBaseUrl}}/api/travel/bookings/{{bookingId}}/items/{{itemId}}/issue" } },
-        { "name": "Upload Booking Document", "request": { "method": "POST", "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "formdata", "formdata": [{ "key": "travelerId", "value": "{{travelerId}}", "type": "text" }, { "key": "documentType", "value": "Passport", "type": "text" }, { "key": "isCustomerVisible", "value": "true", "type": "text" }, { "key": "file", "type": "file", "src": "" }] }, "url": "{{gatewayBaseUrl}}/api/travel/bookings/{{bookingId}}/documents" } },
-        { "name": "Create Booking Change Request", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "raw", "raw": "{\n  \"changeType\": \"DateChange\",\n  \"reason\": \"Customer wants to shift by two days\"\n}" }, "url": "{{gatewayBaseUrl}}/api/travel/bookings/{{bookingId}}/change-requests" } },
-        { "name": "Approve Booking Change Request", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Approved by ops\"\n}" }, "url": "{{gatewayBaseUrl}}/api/travel/bookings/{{bookingId}}/change-requests/{{changeRequestId}}/approve" } },
-        { "name": "Reject Booking Change Request", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Supplier cannot support requested dates\"\n}" }, "url": "{{gatewayBaseUrl}}/api/travel/bookings/{{bookingId}}/change-requests/{{changeRequestId}}/reject" } },
-        { "name": "Cancel Booking", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Customer cancelled\"\n}" }, "url": "{{gatewayBaseUrl}}/api/travel/bookings/{{bookingId}}/cancel" } },
-        { "name": "Get Generic Timeline", "request": { "method": "GET", "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }], "url": "{{gatewayBaseUrl}}/api/travel/timeline/Quotation/{{quotationId}}?page=1&pageSize=20" } },
-        { "name": "Get Audit Log", "request": { "method": "GET", "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }], "url": "{{gatewayBaseUrl}}/api/travel/admin/audit/Quotation/{{quotationId}}?page=1&pageSize=20" } },
-        { "name": "Create Entity Note", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "raw", "raw": "{\n  \"visibility\": \"Internal\",\n  \"content\": \"Customer prefers evening departures.\"\n}" }, "url": "{{gatewayBaseUrl}}/api/travel/Quotation/{{quotationId}}/notes" } },
-        { "name": "Get Work Queue", "description": "Requires timeline/work-management entitlement. Denied tenants receive 403 with code `entitlement_denied`.", "request": { "method": "GET", "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }], "url": "{{gatewayBaseUrl}}/api/travel/follow-ups/work-queue?page=1&pageSize=20" } },
-        { "name": "Complete Follow Up", "description": "Requires timeline/work-management entitlement. Denied tenants receive 403 with code `entitlement_denied`.", "request": { "method": "POST", "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }], "url": "{{gatewayBaseUrl}}/api/travel/follow-ups/{{followUpId}}/complete" } },
-        { "name": "Reassign Follow Up", "description": "Requires timeline/work-management entitlement. Denied tenants receive 403 with code `entitlement_denied`.", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-tenant-id", "value": "{{tenantId}}" }], "body": { "mode": "raw", "raw": "{\n  \"assignedToUserId\": \"{{assignedToUserId}}\"\n}" }, "url": "{{gatewayBaseUrl}}/api/travel/follow-ups/{{followUpId}}/reassign" } },
-        { "name": "Search Travel", "description": "Requires timeline/search entitlement. Denied tenants receive 403 with code `entitlement_denied`.", "request": { "method": "GET", "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }], "url": "{{gatewayBaseUrl}}/api/travel/search?q=Italy&page=1&pageSize=20" } },
-        { "name": "Report Bookings", "description": "Requires reporting/audit entitlement. Denied tenants receive 403 with code `entitlement_denied`.", "request": { "method": "GET", "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }], "url": "{{gatewayBaseUrl}}/api/travel/reports/bookings?status=Pending&destination=Italy" } },
-        { "name": "Export Bookings CSV", "description": "Requires reporting/audit entitlement. Denied tenants receive 403 with code `entitlement_denied`.", "request": { "method": "GET", "header": [{ "key": "x-tenant-id", "value": "{{tenantId}}" }], "url": "{{gatewayBaseUrl}}/api/travel/export/bookings.csv?status=Pending&destination=Italy" } }
+        {
+          "name": "Create Contact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"email\": \"traveler@example.com\",\n  \"phone\": \"+15555550123\",\n  \"company\": \"Voyara Demo\",\n  \"notes\": \"High-value traveler\",\n  \"tags\": [\n    \"vip\",\n    \"europe\"\n  ]\n}"
+            },
+            "url": "{{travelBaseUrl}}/travel/contacts"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.id) pm.environment.set(\"customerContactId\", json.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Contacts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{travelBaseUrl}}/travel/contacts?page=1&pageSize=20"
+          }
+        },
+        {
+          "name": "Create Quotation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerContactId\": \"{{customerContactId}}\",\n  \"customerName\": \"Jane Doe\",\n  \"title\": \"Summer Europe Trip\",\n  \"destination\": \"Italy\",\n  \"travelDate\": \"2026-06-10T09:00:00Z\",\n  \"returnDate\": \"2026-06-20T18:00:00Z\",\n  \"travellers\": 2,\n  \"currency\": \"USD\",\n  \"notes\": \"VIP customer\",\n  \"lineItems\": [\n    {\n      \"description\": \"Flight + Hotel\",\n      \"unitPrice\": 2500,\n      \"quantity\": 1,\n      \"currency\": \"USD\"\n    }\n  ]\n}"
+            },
+            "url": "{{travelBaseUrl}}/travel/quotations"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.id) pm.environment.set(\"quotationId\", json.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Quotation Revision",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Summer Europe Trip - Premium\",\n  \"destination\": \"Italy\",\n  \"travelDate\": \"2026-06-10T09:00:00Z\",\n  \"returnDate\": \"2026-06-20T18:00:00Z\",\n  \"travellers\": 2,\n  \"currency\": \"USD\",\n  \"visibleNotes\": \"Breakfast included\",\n  \"internalNotes\": \"Target 22% margin\",\n  \"validUntil\": \"2026-05-01T00:00:00Z\",\n  \"lineItems\": [\n    {\n      \"description\": \"Flight + Hotel\",\n      \"unitPrice\": 2500,\n      \"quantity\": 1,\n      \"currency\": \"USD\"\n    }\n  ]\n}"
+            },
+            "url": "{{travelBaseUrl}}/travel/quotations/{{quotationId}}/revisions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.revisionId) pm.environment.set(\"revisionId\", json.revisionId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Send Quotation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"revisionId\": \"{{revisionId}}\",\n  \"channel\": \"Email\",\n  \"recipientEmail\": \"traveler@example.com\",\n  \"message\": \"Please review your updated proposal.\",\n  \"expiresAt\": \"2026-05-01T00:00:00Z\"\n}"
+            },
+            "url": "{{travelBaseUrl}}/travel/quotations/{{quotationId}}/send"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.shareToken) pm.environment.set(\"shareToken\", json.shareToken);",
+                  "if (json && json.approvalRequestId) pm.environment.set(\"approvalRequestId\", json.approvalRequestId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Booking From Quotation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignedToUserId\": null,\n  \"internalNotes\": \"Priority booking\"\n}"
+            },
+            "url": "{{travelBaseUrl}}/travel/bookings/from-quotation/{{quotationId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.bookingId) pm.environment.set(\"bookingId\", json.bookingId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add Traveler",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"dateOfBirth\": \"1992-05-01\",\n  \"gender\": \"Female\",\n  \"email\": \"jane@example.com\",\n  \"phone\": \"+15555550123\",\n  \"passportNumber\": \"A1234567\",\n  \"passportExpiry\": \"2031-05-01\",\n  \"nationality\": \"Indian\",\n  \"leadTraveler\": true\n}"
+            },
+            "url": "{{travelBaseUrl}}/travel/bookings/{{bookingId}}/travelers"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.travelerId) pm.environment.set(\"travelerId\", json.travelerId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add Booking Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"Hotel\",\n  \"title\": \"Rome hotel stay\",\n  \"description\": \"4 nights in central Rome\",\n  \"supplierName\": \"Example Hotels\",\n  \"supplierReference\": \"EH-7782\",\n  \"location\": \"Rome\",\n  \"startAt\": \"2026-06-10T14:00:00Z\",\n  \"endAt\": \"2026-06-14T11:00:00Z\",\n  \"sellAmount\": 1200,\n  \"costAmount\": 900,\n  \"currency\": \"USD\",\n  \"notes\": \"Late check-in confirmed\",\n  \"sortOrder\": 1\n}"
+            },
+            "url": "{{travelBaseUrl}}/travel/bookings/{{bookingId}}/items"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.itemId) pm.environment.set(\"itemId\", json.itemId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload Quotation Attachment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "quotationRevisionId",
+                  "value": "{{revisionId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "attachmentType",
+                  "value": "Brochure",
+                  "type": "text"
+                },
+                {
+                  "key": "caption",
+                  "value": "Hotel brochure",
+                  "type": "text"
+                },
+                {
+                  "key": "isCustomerVisible",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": "{{travelBaseUrl}}/travel/quotations/{{quotationId}}/attachments"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.attachmentId) pm.environment.set(\"attachmentId\", json.attachmentId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload Booking Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "travelerId",
+                  "value": "{{travelerId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "documentType",
+                  "value": "Passport",
+                  "type": "text"
+                },
+                {
+                  "key": "isCustomerVisible",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Primary passport",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": "{{travelBaseUrl}}/travel/bookings/{{bookingId}}/documents"
+          }
+        },
+        {
+          "name": "Get Work Queue",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{travelBaseUrl}}/travel/follow-ups/work-queue?page=1&pageSize=20"
+          }
+        },
+        {
+          "name": "Report Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{travelBaseUrl}}/travel/reports/bookings?status=Pending&destination=Italy"
+          }
+        },
+        {
+          "name": "Get Audit Log",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{travelBaseUrl}}/travel/admin/audit/Quotation/{{quotationId}}?page=1&pageSize=20"
+          }
+        }
       ]
     },
     {
       "name": "Communication Service",
       "description": "Communication endpoints are available directly and through gateway route /api/communication.",
       "item": [
-        { "name": "Send Notification", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"recipientId\": \"{{recipientId}}\",\n  \"recipientType\": \"Customer\",\n  \"channel\": \"Email\",\n  \"templateName\": \"trip_update\",\n  \"subject\": \"Your itinerary update\",\n  \"body\": \"Your itinerary has been updated.\",\n  \"priority\": \"Normal\",\n  \"referenceId\": \"TRIP-1001\",\n  \"placeholders\": {\n    \"customerName\": \"Jane\"\n  }\n}" }, "url": "{{gatewayBaseUrl}}/api/communication/notifications" } },
-        { "name": "Create Template", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"name\": \"trip_update\",\n  \"subject\": \"Trip update\",\n  \"bodyTemplate\": \"{{BrandHeaderHtml}} Hello {{customerName}}, your trip has been updated. {{BrandFooterHtml}}\",\n  \"channel\": \"Email\",\n  \"description\": \"Travel update template\"\n}" }, "url": "{{gatewayBaseUrl}}/api/communication/templates" } },
-        { "name": "List Templates By Tenant", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/api/communication/templates/tenant/{{tenantId}}?page=1&pageSize=20" } },
-        { "name": "Get Template By Id", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/api/communication/templates/{{resourceId}}" } },
-        { "name": "Update Template", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"trip_update\",\n  \"subject\": \"Trip update - refreshed\",\n  \"bodyTemplate\": \"{{BrandHeaderHtml}} Hello {{customerName}}, your trip has been refreshed. {{BrandFooterHtml}}\",\n  \"description\": \"Updated travel update template\",\n  \"action\": null\n}" }, "url": "{{gatewayBaseUrl}}/api/communication/templates/{{resourceId}}" } }
+        {
+          "name": "Send Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"recipientId\": \"{{recipientId}}\",\n  \"recipientType\": \"Customer\",\n  \"channel\": \"Email\",\n  \"templateName\": \"trip_update\",\n  \"subject\": \"Your itinerary update\",\n  \"body\": \"Your itinerary has been updated.\",\n  \"priority\": \"Normal\",\n  \"referenceId\": \"TRIP-1001\",\n  \"placeholders\": {\n    \"customerName\": \"Jane\"\n  }\n}"
+            },
+            "url": "{{communicationBaseUrl}}/communication/notifications"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.id) pm.environment.set(\"resourceId\", json.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Notifications By Recipient",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{communicationBaseUrl}}/communication/notifications/recipient/{{recipientId}}?tenantId={{tenantId}}&page=1&pageSize=20"
+          }
+        },
+        {
+          "name": "Get Unread Notification Count",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{communicationBaseUrl}}/communication/notifications/recipient/{{recipientId}}/unread-count?tenantId={{tenantId}}"
+          }
+        },
+        {
+          "name": "Create Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"name\": \"trip_update\",\n  \"subject\": \"Trip update\",\n  \"bodyTemplate\": \"{{BrandHeaderHtml}} Hello {{customerName}}, your trip has been updated. {{BrandFooterHtml}}\",\n  \"channel\": \"Email\",\n  \"description\": \"Travel update template\"\n}"
+            },
+            "url": "{{communicationBaseUrl}}/communication/templates"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.id) pm.environment.set(\"resourceId\", json.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Templates By Tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{communicationBaseUrl}}/communication/templates/tenant/{{tenantId}}?page=1&pageSize=20"
+          }
+        },
+        {
+          "name": "Get Template By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{communicationBaseUrl}}/communication/templates/{{resourceId}}"
+          }
+        },
+        {
+          "name": "Update Template",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"trip_update\",\n  \"subject\": \"Trip update - refreshed\",\n  \"bodyTemplate\": \"{{BrandHeaderHtml}} Hello {{customerName}}, your trip has been refreshed. {{BrandFooterHtml}}\",\n  \"description\": \"Updated travel update template\",\n  \"action\": null\n}"
+            },
+            "url": "{{communicationBaseUrl}}/communication/templates/{{resourceId}}"
+          }
+        }
       ]
     },
     {
-      "name": "Webhook Service",
-      "description": "Webhook service routes currently implemented in source. Kept intentionally aligned to real code, not guessed endpoints.",
+      "name": "User Feature Assignment",
+      "description": "Tenant-owned feature allocation and user/agent assignment workflow coverage.",
       "item": [
-        { "name": "List Deliveries", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/api/webhooks/deliveries?page=1&page_size=20" } },
-        { "name": "Get Delivery", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/api/webhooks/deliveries/{{resourceId}}" } },
-        { "name": "Replay Delivery", "request": { "method": "POST", "url": "{{gatewayBaseUrl}}/api/webhooks/deliveries/{{resourceId}}/replay" } },
-        { "name": "List Subscriptions", "request": { "method": "GET", "url": "{{gatewayBaseUrl}}/api/webhooks/subscriptions" } },
-        { "name": "Create Subscription", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"targetUrl\": \"https://example.com/webhooks/voyara\",\n  \"events\": [\"travel.quotation.created\", \"travel.itinerary.confirmed\"],\n  \"signingSecret\": \"replace-me\",\n  \"isActive\": true\n}" }, "url": "{{gatewayBaseUrl}}/api/webhooks/subscriptions" } },
-        { "name": "Delete Subscription", "request": { "method": "DELETE", "url": "{{gatewayBaseUrl}}/api/webhooks/subscriptions/{{resourceId}}" } }
+        {
+          "name": "Get Tenant Feature Allocations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{billingBaseUrl}}/billing/tenants/{{tenantId}}/feature-allocations"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (Array.isArray(json) && json.length > 0 && json[0].featureKey) {",
+                  "  pm.environment.set(\"assignedFeatureKey\", json[0].featureKey);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get User Effective Features",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{billingBaseUrl}}/billing/tenants/{{tenantId}}/users/{{agentUserId}}/features"
+          },
+          "response": []
+        },
+        {
+          "name": "Assign Features To User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"featureKeys\": [\n    \"{{assignedFeatureKey}}\"\n  ],\n  \"effectiveFrom\": \"2026-04-12T00:00:00Z\"\n}"
+            },
+            "url": "{{billingBaseUrl}}/billing/tenants/{{tenantId}}/users/{{agentUserId}}/feature-assignments"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.featureKey) pm.environment.set(\"assignedFeatureKey\", json.featureKey);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bulk Assign Feature",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"Assign\",\n  \"featureKey\": \"{{assignedFeatureKey}}\",\n  \"userIds\": [\n    \"{{agentUserId}}\",\n    \"{{secondaryUserId}}\"\n  ]\n}"
+            },
+            "url": "{{billingBaseUrl}}/billing/tenants/{{tenantId}}/feature-assignments/bulk"
+          },
+          "response": []
+        },
+        {
+          "name": "Revoke User Feature Assignment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{billingBaseUrl}}/billing/tenants/{{tenantId}}/users/{{agentUserId}}/feature-assignments/{{assignedFeatureKey}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Feature Access",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "url": "{{billingBaseUrl}}/billing/feature-access/me"
+          },
+          "response": []
+        }
       ]
     }
   ],
   "variable": [
-    { "key": "resourceId", "value": "{{resourceId}}" }
+    {
+      "key": "resourceId",
+      "value": "{{resourceId}}"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const token = pm.environment.get(\"accessToken\");",
+          "if (token) {",
+          "  pm.request.headers.upsert({ key: \"Authorization\", value: `Bearer ${token}` });",
+          "}"
+        ]
+      }
+    }
   ]
 }

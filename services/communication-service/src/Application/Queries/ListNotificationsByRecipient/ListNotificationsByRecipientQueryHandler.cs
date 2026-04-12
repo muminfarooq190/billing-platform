@@ -1,14 +1,15 @@
 using Dapper;
+using CommunicationService.Api;
 using CommunicationService.Application.Abstractions;
 using MediatR;
 
 namespace CommunicationService.Application.Queries.ListNotificationsByRecipient;
 
-public sealed class ListNotificationsByRecipientQueryHandler(IReadDbConnectionFactory connectionFactory, IFeatureGate featureGate) : IRequestHandler<ListNotificationsByRecipientQuery, IReadOnlyList<NotificationReadModel>>
+public sealed class ListNotificationsByRecipientQueryHandler(IReadDbConnectionFactory connectionFactory, IFeatureGate featureGate, ITenantContext tenantContext) : IRequestHandler<ListNotificationsByRecipientQuery, IReadOnlyList<NotificationReadModel>>
 {
     public async Task<IReadOnlyList<NotificationReadModel>> Handle(ListNotificationsByRecipientQuery request, CancellationToken cancellationToken)
     {
-        await featureGate.EnsureEnabledAsync(FeatureKeys.CommunicationLogsRead, request.TenantId, cancellationToken);
+        await featureGate.EnsureEnabledAsync(FeatureKeys.CommunicationLogsRead, request.TenantId, tenantContext.UserId, cancellationToken);
 
         var page = Math.Max(1, request.Page);
         var pageSize = Math.Clamp(request.PageSize, 1, 100);

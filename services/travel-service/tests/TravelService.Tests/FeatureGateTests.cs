@@ -11,23 +11,28 @@ public sealed class FeatureGateTests
     {
         var tenantId = Guid.NewGuid();
         var cache = new InMemoryCacheService();
-        var client = new StubBillingEntitlementsClient([
-            new FeatureEntitlementDto(FeatureKeys.TravelQuotationCreate, true, "Plan", "Pro", null, DateTimeOffset.UtcNow, null, null)
-        ]);
+        var client = new StubBillingEntitlementsClient(
+            [new FeatureEntitlementDto(FeatureKeys.TravelQuotationCreate, true, "Plan", "Pro", null, DateTimeOffset.UtcNow, null, null)],
+            []);
         var gate = new CachedFeatureGate(cache, client);
 
-        var result = await gate.IsEnabledAsync(FeatureKeys.TravelQuotationCreate, tenantId, CancellationToken.None);
+        var result = await gate.IsEnabledAsync(FeatureKeys.TravelQuotationCreate, tenantId, null, CancellationToken.None);
 
         result.Should().BeTrue();
     }
 
     [Fact]
-    public async Task EnsureEnabledAsync_ShouldThrow_WhenEntitlementMissing()
+    public async Task EnsureEnabledAsync_ShouldThrow_WhenUserAccessMissing()
     {
         var tenantId = Guid.NewGuid();
-        var gate = new CachedFeatureGate(new InMemoryCacheService(), new StubBillingEntitlementsClient([]));
+        var userId = Guid.NewGuid();
+        var gate = new CachedFeatureGate(
+            new InMemoryCacheService(),
+            new StubBillingEntitlementsClient(
+                [],
+                [new UserFeatureAccessDto(tenantId, userId, FeatureKeys.TravelAuditRead, true, false, true, false, null, "ExplicitUserAssignment")]));
 
-        var act = async () => await gate.EnsureEnabledAsync(FeatureKeys.TravelAuditRead, tenantId, CancellationToken.None);
+        var act = async () => await gate.EnsureEnabledAsync(FeatureKeys.TravelAuditRead, tenantId, userId, CancellationToken.None);
 
         await act.Should().ThrowAsync<TravelService.Domain.Exceptions.DomainException>().WithMessage("*not enabled*");
     }
@@ -37,26 +42,34 @@ public sealed class FeatureGateTests
     {
         var tenantId = Guid.NewGuid();
         var cache = new InMemoryCacheService();
-        var client = new StubBillingEntitlementsClient([
-            new FeatureEntitlementDto(FeatureKeys.TravelBookingDocumentsUpload, true, "Plan", "Pro", 25, DateTimeOffset.UtcNow, null, null)
-        ]);
+        var client = new StubBillingEntitlementsClient(
+            [new FeatureEntitlementDto(FeatureKeys.TravelBookingDocumentsUpload, true, "Plan", "Pro", 25, DateTimeOffset.UtcNow, null, null)],
+            []);
         var gate = new CachedFeatureGate(cache, client);
 
-        var first = await gate.GetLimitAsync(FeatureKeys.TravelBookingDocumentsUpload, tenantId, CancellationToken.None);
-        var second = await gate.GetLimitAsync(FeatureKeys.TravelBookingDocumentsUpload, tenantId, CancellationToken.None);
+        var first = await gate.GetLimitAsync(FeatureKeys.TravelBookingDocumentsUpload, tenantId, null, CancellationToken.None);
+        var second = await gate.GetLimitAsync(FeatureKeys.TravelBookingDocumentsUpload, tenantId, null, CancellationToken.None);
 
         first.Should().Be(25);
         second.Should().Be(25);
-        client.CallCount.Should().Be(1);
+        client.EntitlementCallCount.Should().Be(1);
     }
 
-    private sealed class StubBillingEntitlementsClient(IReadOnlyList<FeatureEntitlementDto> items) : IBillingEntitlementsClient
+    private sealed class StubBillingEntitlementsClient(IReadOnlyList<FeatureEntitlementDto> entitlements, IReadOnlyList<UserFeatureAccessDto> userAccess) : IBillingEntitlementsClient
     {
-        public int CallCount { get; private set; }
+        public int EntitlementCallCount { get; private set; }
+        public int UserAccessCallCount { get; private set; }
+
         public Task<IReadOnlyList<FeatureEntitlementDto>> GetEffectiveEntitlementsAsync(Guid tenantId, CancellationToken cancellationToken)
         {
-            CallCount++;
-            return Task.FromResult(items);
+            EntitlementCallCount++;
+            return Task.FromResult(entitlements);
+        }
+
+        public Task<IReadOnlyList<UserFeatureAccessDto>> GetUserFeatureAccessAsync(Guid tenantId, Guid userId, CancellationToken cancellationToken)
+        {
+            UserAccessCallCount++;
+            return Task.FromResult(userAccess);
         }
     }
 
