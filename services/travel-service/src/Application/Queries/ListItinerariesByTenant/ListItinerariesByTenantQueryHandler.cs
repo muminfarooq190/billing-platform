@@ -16,7 +16,7 @@ public sealed class ListItinerariesByTenantQueryHandler(IReadDbConnectionFactory
         await using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken) as IAsyncDisposable;
         var dbConnection = (System.Data.IDbConnection)connection!;
 
-        var sql = new StringBuilder("SELECT id, tenant_id AS TenantId, customer_contact_id AS CustomerContactId, customer_name AS CustomerName, title, destination, start_date AS StartDate, end_date AS EndDate, travellers, currency, quotation_id AS QuotationId, status, COALESCE((SELECT SUM(cost) FROM itinerary_items WHERE itinerary_id = itineraries.id), 0) AS TotalCost, created_at AS CreatedAt, updated_at AS UpdatedAt FROM itineraries WHERE tenant_id = @TenantId AND deleted_at IS NULL");
+        var sql = new StringBuilder("SELECT id, tenant_id AS TenantId, customer_contact_id AS CustomerContactId, customer_name AS CustomerName, title, destination, start_date AS StartDate, end_date AS EndDate, travellers, currency, quotation_id AS QuotationId, booking_id AS BookingId, CASE WHEN booking_id IS NOT NULL THEN TRUE ELSE FALSE END AS IsBookingOwned, CASE WHEN booking_id IS NOT NULL THEN 'Booking' WHEN quotation_id IS NOT NULL THEN 'QuotationLegacy' ELSE 'StandaloneLegacy' END AS OwnershipType, status, COALESCE((SELECT SUM(cost) FROM itinerary_items WHERE itinerary_id = itineraries.id), 0) AS TotalCost, created_at AS CreatedAt, updated_at AS UpdatedAt FROM itineraries WHERE tenant_id = @TenantId AND deleted_at IS NULL");
 
         if (!string.IsNullOrWhiteSpace(request.Status))
             sql.Append(" AND status = @Status");
@@ -26,8 +26,21 @@ public sealed class ListItinerariesByTenantQueryHandler(IReadDbConnectionFactory
             sql.Append(" AND start_date >= @StartDateFrom");
         if (request.StartDateTo.HasValue)
             sql.Append(" AND start_date <= @StartDateTo");
+        if (request.BookingId.HasValue)
+            sql.Append(" AND booking_id = @BookingId");
+        if (request.QuotationId.HasValue)
+            sql.Append(" AND quotation_id = @QuotationId");
+        if (!string.IsNullOrWhiteSpace(request.OwnershipType))
+        {
+            if (string.Equals(request.OwnershipType, "Booking", StringComparison.OrdinalIgnoreCase))
+                sql.Append(" AND booking_id IS NOT NULL");
+            else if (string.Equals(request.OwnershipType, "QuotationLegacy", StringComparison.OrdinalIgnoreCase))
+                sql.Append(" AND booking_id IS NULL AND quotation_id IS NOT NULL");
+            else if (string.Equals(request.OwnershipType, "StandaloneLegacy", StringComparison.OrdinalIgnoreCase))
+                sql.Append(" AND booking_id IS NULL AND quotation_id IS NULL");
+        }
 
-        sql.Append(" ORDER BY start_date OFFSET @Offset LIMIT @Limit");
+        sql.Append(" ORDER BY CASE WHEN booking_id IS NOT NULL THEN 0 ELSE 1 END, start_date OFFSET @Offset LIMIT @Limit");
 
         var results = await dbConnection.QueryAsync<ItineraryReadModel>(sql.ToString(), new
         {
@@ -36,6 +49,9 @@ public sealed class ListItinerariesByTenantQueryHandler(IReadDbConnectionFactory
             CustomerName = string.IsNullOrWhiteSpace(request.CustomerName) ? null : $"%{request.CustomerName.Trim()}%",
             request.StartDateFrom,
             request.StartDateTo,
+            request.BookingId,
+            request.QuotationId,
+            request.OwnershipType,
             Offset = (page - 1) * pageSize,
             Limit = pageSize
         });

@@ -10,6 +10,8 @@ public sealed class TravelDbContext(DbContextOptions<TravelDbContext> options) :
     public DbSet<EntityNote> EntityNotes => Set<EntityNote>();
     public DbSet<Contact> Contacts => Set<Contact>();
     public DbSet<FollowUp> FollowUps => Set<FollowUp>();
+    public DbSet<TravelInquiry> TravelInquiries => Set<TravelInquiry>();
+    public DbSet<TravelInquiryStatusHistory> TravelInquiryStatusHistory => Set<TravelInquiryStatusHistory>();
     public DbSet<Quotation> Quotations => Set<Quotation>();
     public DbSet<QuotationRevision> QuotationRevisions => Set<QuotationRevision>();
     public DbSet<QuotationRevisionLineItem> QuotationRevisionLineItems => Set<QuotationRevisionLineItem>();
@@ -24,6 +26,7 @@ public sealed class TravelDbContext(DbContextOptions<TravelDbContext> options) :
     public DbSet<BookingItem> BookingItems => Set<BookingItem>();
     public DbSet<BookingDocument> BookingDocuments => Set<BookingDocument>();
     public DbSet<Itinerary> Itineraries => Set<Itinerary>();
+    public DbSet<DraftTripConcept> DraftTripConcepts => Set<DraftTripConcept>();
     public DbSet<OutboxMessage> DomainEvents => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

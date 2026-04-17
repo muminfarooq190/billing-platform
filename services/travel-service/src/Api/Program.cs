@@ -22,6 +22,7 @@ public sealed class Program
         builder.Services.AddDbContext<TravelDbContext>(options => options.UseNpgsql(databaseUrl));
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<ITenantContext, HeaderTenantContext>();
+        builder.Services.AddScoped<IPublicTenantResolver, HeaderPublicTenantResolver>();
         builder.Services.AddScoped<IActorContext, HttpActorContext>();
         builder.Services.AddScoped<IActivityEntryRepository, ActivityEntryRepository>();
         builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
@@ -30,6 +31,8 @@ public sealed class Program
         builder.Services.AddScoped<IAuditWriter, AuditWriter>();
         builder.Services.AddScoped<IContactRepository, ContactRepository>();
         builder.Services.AddScoped<IFollowUpRepository, FollowUpRepository>();
+        builder.Services.AddScoped<ITravelInquiryRepository, TravelInquiryRepository>();
+        builder.Services.AddScoped<ITravelInquiryStatusHistoryRepository, TravelInquiryStatusHistoryRepository>();
         builder.Services.AddScoped<IQuotationRepository, QuotationRepository>();
         builder.Services.AddScoped<IQuotationRevisionRepository, QuotationRevisionRepository>();
         builder.Services.AddScoped<IQuotationAttachmentRepository, QuotationAttachmentRepository>();
@@ -43,6 +46,7 @@ public sealed class Program
         builder.Services.AddScoped<IBookingItemRepository, BookingItemRepository>();
         builder.Services.AddScoped<IBookingDocumentRepository, BookingDocumentRepository>();
         builder.Services.AddScoped<IItineraryRepository, ItineraryRepository>();
+        builder.Services.AddScoped<IDraftTripConceptRepository, DraftTripConceptRepository>();
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
         builder.Services.AddScoped<IReadDbConnectionFactory, ReadDbConnectionFactory>();
         builder.Services.AddScoped<IFileStorage, LocalFileStorage>();

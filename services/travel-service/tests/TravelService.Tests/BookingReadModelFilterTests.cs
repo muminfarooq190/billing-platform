@@ -36,6 +36,7 @@ public sealed class BookingReadModelFilterTests
         var bookingId = Guid.NewGuid();
         var tenantId = Guid.NewGuid();
         var contactId = Guid.NewGuid();
+        var itineraryId = Guid.NewGuid();
         var model = new BookingReadModel(
             bookingId,
             tenantId,
@@ -56,6 +57,10 @@ public sealed class BookingReadModelFilterTests
             null,
             null,
             "Priority booking",
+            itineraryId,
+            true,
+            "Draft",
+            DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow,
             null);
@@ -65,5 +70,8 @@ public sealed class BookingReadModelFilterTests
         model.PrimaryContactId.Should().Be(contactId);
         model.TotalSellAmount.Should().Be(2500m);
         model.MarginAmount.Should().Be(700m);
+        model.ItineraryId.Should().Be(itineraryId);
+        model.HasItinerary.Should().BeTrue();
+        model.ItineraryStatus.Should().Be("Draft");
     }
 }

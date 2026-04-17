@@ -5,6 +5,8 @@ using TravelService.Application.Commands.AddBookingItem;
 using TravelService.Application.Commands.AddTraveler;
 using TravelService.Application.Commands.BookingFulfillment;
 using TravelService.Application.Commands.CreateBookingFromQuotation;
+using TravelService.Application.Commands.CreateBookingItinerary;
+using TravelService.Application.Commands.CreateItinerary;
 using TravelService.Application.Commands.DeleteBookingDocument;
 using TravelService.Application.Commands.DeleteBookingItem;
 using TravelService.Application.Commands.DeleteTraveler;
@@ -14,6 +16,7 @@ using TravelService.Application.Commands.UpdateTraveler;
 using TravelService.Application.Commands.UploadBookingDocument;
 using TravelService.Application.Queries.GetBookingById;
 using TravelService.Application.Queries.GetBookingFinancialSummary;
+using TravelService.Application.Queries.GetBookingItinerary;
 using TravelService.Application.Queries.ListBookingDocuments;
 using TravelService.Application.Queries.ListBookingItems;
 using TravelService.Application.Queries.ListBookings;
@@ -60,6 +63,31 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     {
         var summary = await mediator.Send(new GetBookingFinancialSummaryQuery(tenantContext.TenantId, id), cancellationToken);
         return summary is null ? NotFound() : Ok(summary);
+    }
+
+    [HttpGet("{id:guid}/itinerary")]
+    public async Task<IActionResult> GetItinerary(Guid id, CancellationToken cancellationToken)
+    {
+        var itinerary = await mediator.Send(new GetBookingItineraryQuery(tenantContext.TenantId, id), cancellationToken);
+        return itinerary is null ? NotFound() : Ok(itinerary);
+    }
+
+    [HttpPost("{id:guid}/itinerary")]
+    public async Task<IActionResult> CreateItinerary(Guid id, [FromBody] CreateBookingItineraryRequest request, CancellationToken cancellationToken)
+    {
+        var items = request.Items.Select(x => new ItineraryItemDto(x.DayNumber, x.ItemType, x.Title, x.Description, x.Location, x.StartTime, x.EndTime, x.Cost, x.Currency)).ToList();
+        var itineraryId = await mediator.Send(new CreateBookingItineraryCommand(
+            tenantContext.TenantId,
+            id,
+            request.Title,
+            request.Destination,
+            request.StartDate,
+            request.EndDate,
+            request.Travellers,
+            request.Currency,
+            items), cancellationToken);
+
+        return Created($"/travel/itineraries/{itineraryId}", new { itineraryId });
     }
 
     [HttpPost("{id:guid}/travelers")]

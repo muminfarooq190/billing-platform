@@ -21,6 +21,7 @@ public sealed class ItineraryConfiguration : IEntityTypeConfiguration<Itinerary>
         builder.Property(x => x.Travellers).HasColumnName("travellers");
         builder.Property(x => x.Currency).HasColumnName("currency").HasMaxLength(3);
         builder.Property(x => x.QuotationId).HasColumnName("quotation_id");
+        builder.Property(x => x.BookingId).HasColumnName("booking_id");
         builder.Property(x => x.Status).HasConversion<string>().HasColumnName("status");
         builder.Ignore(x => x.TotalCost);
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
@@ -28,6 +29,7 @@ public sealed class ItineraryConfiguration : IEntityTypeConfiguration<Itinerary>
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.HasIndex(x => x.TenantId);
         builder.HasIndex(x => x.QuotationId);
+        builder.HasIndex(x => x.BookingId);
 
         builder.Navigation(x => x.Items).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.OwnsMany(x => x.Items, items =>

@@ -11,7 +11,7 @@ public sealed class Itinerary : AggregateRoot
     private readonly List<ItineraryItem> _items = [];
     private Itinerary() { }
 
-    private Itinerary(Guid tenantId, Guid customerContactId, string customerName, string title, string destination, DateTimeOffset startDate, DateTimeOffset endDate, int travellers, string currency, Guid? quotationId)
+    private Itinerary(Guid tenantId, Guid customerContactId, string customerName, string title, string destination, DateTimeOffset startDate, DateTimeOffset endDate, int travellers, string currency, Guid? quotationId, Guid? bookingId)
     {
         ValidateIdentity(tenantId, customerContactId);
         ValidateDetails(customerName, title, destination, startDate, endDate, travellers, currency);
@@ -27,6 +27,7 @@ public sealed class Itinerary : AggregateRoot
         Travellers = travellers;
         Currency = NormalizeCurrency(currency);
         QuotationId = quotationId;
+        BookingId = bookingId;
         Status = ItineraryStatus.Draft;
         CreatedAt = DateTimeOffset.UtcNow;
         UpdatedAt = DateTimeOffset.UtcNow;
@@ -44,6 +45,7 @@ public sealed class Itinerary : AggregateRoot
     public int Travellers { get; private set; }
     public string Currency { get; private set; } = "USD";
     public Guid? QuotationId { get; private set; }
+    public Guid? BookingId { get; private set; }
     public ItineraryStatus Status { get; private set; }
     public IReadOnlyList<ItineraryItem> Items => _items.AsReadOnly();
     public decimal TotalCost => _items.Sum(x => x.Cost);
@@ -51,8 +53,8 @@ public sealed class Itinerary : AggregateRoot
     public DateTimeOffset UpdatedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
 
-    public static Itinerary Create(Guid tenantId, Guid customerContactId, string customerName, string title, string destination, DateTimeOffset startDate, DateTimeOffset endDate, int travellers, string currency, Guid? quotationId)
-        => new(tenantId, customerContactId, customerName, title, destination, startDate, endDate, travellers, currency, quotationId);
+    public static Itinerary Create(Guid tenantId, Guid customerContactId, string customerName, string title, string destination, DateTimeOffset startDate, DateTimeOffset endDate, int travellers, string currency, Guid? quotationId, Guid? bookingId = null)
+        => new(tenantId, customerContactId, customerName, title, destination, startDate, endDate, travellers, currency, quotationId, bookingId);
 
     public void AddItem(int dayNumber, ItineraryItemType itemType, string title, string description, string location, DateTimeOffset? startTime, DateTimeOffset? endTime, decimal cost, string currency)
     {

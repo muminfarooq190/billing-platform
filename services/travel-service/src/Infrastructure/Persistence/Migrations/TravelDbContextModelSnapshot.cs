@@ -252,6 +252,66 @@ namespace TravelService.Infrastructure.Persistence.Migrations
                     b.ToTable("bookings", (string)null);
                 });
 
+            modelBuilder.Entity("TravelService.Domain.Aggregates.BookingChangeRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BookingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("booking_id");
+
+                    b.Property<string>("ChangeType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("change_type");
+
+                    b.Property<string>("DecisionReason")
+                        .HasColumnType("text")
+                        .HasColumnName("decision_reason");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTimeOffset>("RequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_at");
+
+                    b.Property<Guid?>("RequestedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_by_user_id");
+
+                    b.Property<DateTimeOffset?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reviewed_at");
+
+                    b.Property<Guid?>("ReviewedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reviewed_by_user_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingId", "Status", "RequestedAt");
+
+                    b.ToTable("booking_change_requests", (string)null);
+                });
+
             modelBuilder.Entity("TravelService.Domain.Aggregates.BookingDocument", b =>
                 {
                     b.Property<Guid>("Id")
@@ -337,9 +397,15 @@ namespace TravelService.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("booking_id");
 
+                    b.Property<DateTimeOffset?>("ConfirmationDeadline")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("ConfirmationNumber")
                         .HasColumnType("text")
                         .HasColumnName("confirmation_number");
+
+                    b.Property<DateTimeOffset?>("ConfirmedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal?>("CostAmount")
                         .HasColumnType("decimal(18,2)")
@@ -365,6 +431,9 @@ namespace TravelService.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("EndAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("end_at");
+
+                    b.Property<DateTimeOffset?>("IssuedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Location")
                         .HasColumnType("text")
@@ -544,6 +613,102 @@ namespace TravelService.Infrastructure.Persistence.Migrations
                     b.ToTable("contacts", (string)null);
                 });
 
+            modelBuilder.Entity("TravelService.Domain.Aggregates.DraftTripConcept", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal?>("BudgetAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("budget_amount");
+
+                    b.Property<string>("ConceptStatus")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("concept_status");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<string>("Currency")
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("Destination")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("destination");
+
+                    b.Property<DateTimeOffset?>("EndDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("end_date");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_primary");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text")
+                        .HasColumnName("notes");
+
+                    b.Property<string>("OptionLabel")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("option_label");
+
+                    b.Property<DateTimeOffset?>("StartDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("start_date");
+
+                    b.Property<string>("Summary")
+                        .HasColumnType("text")
+                        .HasColumnName("summary");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("title");
+
+                    b.Property<Guid>("TravelInquiryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("travel_inquiry_id");
+
+                    b.Property<int?>("Travellers")
+                        .HasColumnType("integer")
+                        .HasColumnName("travellers");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "ConceptStatus", "UpdatedAt");
+
+                    b.HasIndex("TenantId", "TravelInquiryId", "IsPrimary");
+
+                    b.ToTable("draft_trip_concepts", (string)null);
+                });
+
             modelBuilder.Entity("TravelService.Domain.Aggregates.EntityNote", b =>
                 {
                     b.Property<Guid>("Id")
@@ -679,6 +844,10 @@ namespace TravelService.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("BookingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("booking_id");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -745,6 +914,8 @@ namespace TravelService.Infrastructure.Persistence.Migrations
                         .HasColumnName("updated_at");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BookingId");
 
                     b.HasIndex("QuotationId");
 
@@ -1277,6 +1448,188 @@ namespace TravelService.Infrastructure.Persistence.Migrations
                     b.ToTable("quotation_status_history", (string)null);
                 });
 
+            modelBuilder.Entity("TravelService.Domain.Aggregates.TravelInquiry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("AssignedToUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assigned_to_user_id");
+
+                    b.Property<decimal?>("BudgetAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("budget_amount");
+
+                    b.Property<string>("BudgetCurrency")
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("budget_currency");
+
+                    b.Property<DateTimeOffset?>("ContactedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("contacted_at");
+
+                    b.Property<DateTimeOffset?>("ConvertedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("converted_at");
+
+                    b.Property<Guid?>("ConvertedContactId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("converted_contact_id");
+
+                    b.Property<Guid?>("ConvertedQuotationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("converted_quotation_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CustomerMessage")
+                        .HasColumnType("text")
+                        .HasColumnName("customer_message");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DepartureCity")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("departure_city");
+
+                    b.Property<string>("Destination")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("destination");
+
+                    b.Property<DateTimeOffset?>("DisqualifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("disqualified_at");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("email");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("full_name");
+
+                    b.Property<bool>("IsDateFlexible")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_date_flexible");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("phone");
+
+                    b.Property<DateTimeOffset?>("QualifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("qualified_at");
+
+                    b.Property<DateTimeOffset?>("ReturnDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("return_date");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("source");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTimeOffset?>("TravelDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("travel_date");
+
+                    b.Property<int?>("Travellers")
+                        .HasColumnType("integer")
+                        .HasColumnName("travellers");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("WhatsappNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("whatsapp_number");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "AssignedToUserId", "Status");
+
+                    b.HasIndex("TenantId", "Source", "CreatedAt");
+
+                    b.HasIndex("TenantId", "Status", "CreatedAt");
+
+                    b.ToTable("travel_inquiries", (string)null);
+                });
+
+            modelBuilder.Entity("TravelService.Domain.Aggregates.TravelInquiryStatusHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("ChangedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("changed_by_user_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("FromStatus")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("from_status");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("ToStatus")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("to_status");
+
+                    b.Property<Guid>("TravelInquiryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("travel_inquiry_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TravelInquiryId");
+
+                    b.HasIndex("TenantId", "TravelInquiryId", "CreatedAt");
+
+                    b.ToTable("travel_inquiry_status_history", (string)null);
+                });
+
             modelBuilder.Entity("TravelService.Domain.Aggregates.Traveler", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1412,6 +1765,59 @@ namespace TravelService.Infrastructure.Persistence.Migrations
                     b.HasIndex("PublishedAt");
 
                     b.ToTable("outbox_messages", (string)null);
+                });
+
+            modelBuilder.Entity("TravelService.Domain.Aggregates.DraftTripConcept", b =>
+                {
+                    b.OwnsMany("TravelService.Domain.Aggregates.DraftTripConceptDay", "Days", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<DateTimeOffset>("CreatedAt")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("created_at");
+
+                            b1.Property<int>("DayNumber")
+                                .HasColumnType("integer")
+                                .HasColumnName("day_number");
+
+                            b1.Property<string>("Description")
+                                .HasColumnType("text")
+                                .HasColumnName("description");
+
+                            b1.Property<string>("Location")
+                                .HasMaxLength(256)
+                                .HasColumnType("character varying(256)")
+                                .HasColumnName("location");
+
+                            b1.Property<string>("OvernightLocation")
+                                .HasMaxLength(256)
+                                .HasColumnType("character varying(256)")
+                                .HasColumnName("overnight_location");
+
+                            b1.Property<string>("Title")
+                                .IsRequired()
+                                .HasMaxLength(256)
+                                .HasColumnType("character varying(256)")
+                                .HasColumnName("title");
+
+                            b1.Property<Guid>("draft_trip_concept_id")
+                                .HasColumnType("uuid");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("draft_trip_concept_id");
+
+                            b1.ToTable("draft_trip_concept_days", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("draft_trip_concept_id");
+                        });
+
+                    b.Navigation("Days");
                 });
 
             modelBuilder.Entity("TravelService.Domain.Aggregates.Itinerary", b =>
@@ -1566,6 +1972,15 @@ namespace TravelService.Infrastructure.Persistence.Migrations
                     b.HasOne("TravelService.Domain.Aggregates.Quotation", null)
                         .WithMany()
                         .HasForeignKey("QuotationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TravelService.Domain.Aggregates.TravelInquiryStatusHistory", b =>
+                {
+                    b.HasOne("TravelService.Domain.Aggregates.TravelInquiry", null)
+                        .WithMany()
+                        .HasForeignKey("TravelInquiryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

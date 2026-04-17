@@ -10,5 +10,8 @@ public sealed record ListItinerariesByTenantQuery(
     string? Status = null,
     string? CustomerName = null,
     DateTimeOffset? StartDateFrom = null,
-    DateTimeOffset? StartDateTo = null)
+    DateTimeOffset? StartDateTo = null,
+    Guid? BookingId = null,
+    Guid? QuotationId = null,
+    string? OwnershipType = null)
     : IRequest<IReadOnlyList<ItineraryReadModel>>;

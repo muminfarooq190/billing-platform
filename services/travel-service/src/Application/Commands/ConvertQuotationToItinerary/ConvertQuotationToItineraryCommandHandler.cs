@@ -7,6 +7,8 @@ using MediatR;
 
 namespace TravelService.Application.Commands.ConvertQuotationToItinerary;
 
+// Legacy compatibility flow only.
+// Preferred lifecycle is: accepted quotation -> booking -> booking-owned confirmed itinerary.
 public sealed class ConvertQuotationToItineraryCommandHandler(
     IQuotationRepository quotationRepository,
     IItineraryRepository itineraryRepository,

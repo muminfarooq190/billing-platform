@@ -13,7 +13,7 @@ Voyara is a travel CRM platform built on independent microservices, event-driven
 
 - **API Gateway** for routing, JWT validation, rate limiting, metrics, CORS, and readiness checks
 - **Identity Service** for tenant registration, auth, JWT/refresh flows, and user management
-- **Travel Service** for contacts, quotations, itineraries, and follow-ups
+- **Travel Service** for inquiries, contacts, quotations, booking-owned itineraries, and follow-ups
 - **Billing Service** for subscriptions, invoices, payments, and dashboards
 - **Communication Service** for templates, recipient preferences, notifications, unread counts, and mark-as-read flows
 - **Webhook Service** for signed outbound event delivery, replay, subscriptions, and delivery logs
@@ -117,7 +117,7 @@ Updated collection:
 It now includes:
 - gateway health + readiness
 - identity auth + user management
-- travel contacts/quotations/itineraries/follow-ups
+- travel public inquiries + internal inquiry workflow + contacts/quotations/booking-itineraries/follow-ups
 - communication notifications/templates/preferences
 - webhook subscriptions/deliveries/replay
 
@@ -126,12 +126,39 @@ It now includes:
 - `api-gateway`: auth validation, routing, rate limiting, readiness, metrics
 - `identity-service`: tenants, users, JWT/refresh flows, JWKS, outbox
 - `billing-service`: subscriptions, invoices, payments, dashboard, outbox
-- `travel-service`: contacts, quotations, itineraries, follow-ups, outbox
+- `travel-service`: inquiries, contacts, quotations, booking-owned itineraries, follow-ups, outbox
+
+## Inquiry intake workflow status
+
+Public + internal inquiry flow is now partially implemented across the travel service, including:
+- `POST /travel/public/inquiries` for website/public lead capture
+- internal inquiry list/detail/history endpoints
+- inquiry assignment / qualify / disqualify / mark-contacted actions
+- inquiry -> contact + quotation conversion
+
+Current public intake safety notes:
+- tenant is resolved through a public resolver path, not request body
+- current implementation uses `x-public-tenant-id` header for controlled intake wiring
+- branded host / signed site token resolution should replace that later for production-grade public intake
+- basic honeypot validation is implemented; stronger rate-limiting/CAPTCHA can be layered later
+
+Useful inquiry endpoints:
+- `POST /travel/public/inquiries`
+- `GET /api/travel/inquiries?page=1&pageSize=20&status=New`
+- `GET /api/travel/inquiries/{id}`
+- `GET /api/travel/inquiries/{id}/history`
+- `POST /api/travel/inquiries/{id}/assign`
+- `POST /api/travel/inquiries/{id}/qualify`
+- `POST /api/travel/inquiries/{id}/disqualify?status=Lost`
+- `POST /api/travel/inquiries/{id}/mark-contacted`
+- `POST /api/travel/inquiries/{id}/archive`
+- `POST /api/travel/inquiries/{id}/convert-to-quotation`
 
 ## Phase 7 booking workflow status
 
 Phase 7 booking and fulfillment foundation is now implemented across the travel service, including:
 - accepted quotation -> booking handoff
+- booking-owned itinerary creation path for confirmed trip plans
 - booking operational statuses + booking list/detail reads
 - traveler CRUD for multi-passenger trips
 - operational booking item CRUD + status updates
@@ -141,6 +168,7 @@ Useful booking endpoints:
 - `POST /api/travel/bookings/from-quotation/{quotationId}`
 - `GET /api/travel/bookings?page=1&pageSize=20&status=Pending&destination=Rome`
 - `GET /api/travel/bookings/{id}`
+- `POST /api/travel/bookings/{id}/itinerary`
 - `POST /api/travel/bookings/{id}/travelers`
 - `GET /api/travel/bookings/{id}/travelers`
 - `PUT /api/travel/bookings/{id}/travelers/{travelerId}`
