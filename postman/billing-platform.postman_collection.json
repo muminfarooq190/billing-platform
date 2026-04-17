@@ -401,8 +401,44 @@
     },
     {
       "name": "Travel Service",
-      "description": "Travel CRM endpoints exposed through the gateway and direct public quote APIs. Confirmed itineraries should be created in booking context; quote-side itinerary paths are legacy compatibility flows.",
+      "description": "Travel CRM endpoints exposed through the gateway and direct public quote APIs. Includes public inquiry intake plus internal inquiry workflow. Confirmed itineraries should be created in booking context; quote-side itinerary paths are legacy compatibility flows.",
       "item": [
+        {
+          "name": "Create Public Inquiry",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-public-tenant-id",
+                "value": "{{tenantId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Jane Doe\",\n  \"email\": \"traveler@example.com\",\n  \"phone\": \"+15555550123\",\n  \"whatsappNumber\": \"+15555550123\",\n  \"departureCity\": \"Mumbai\",\n  \"destination\": \"Bali\",\n  \"travelDate\": \"2026-06-10T09:00:00Z\",\n  \"returnDate\": \"2026-06-16T18:00:00Z\",\n  \"isDateFlexible\": true,\n  \"travellers\": 2,\n  \"budgetAmount\": 150000,\n  \"budgetCurrency\": \"INR\",\n  \"message\": \"We want a honeymoon package with private transfers.\",\n  \"source\": \"Website\",\n  \"honeypot\": null\n}"
+            },
+            "url": "{{travelBaseUrl}}/travel/public/inquiries"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.inquiryId) pm.environment.set('inquiryId', json.inquiryId);"
+                ]
+              }
+            }
+          ]
+        },
         {
           "name": "Create Contact",
           "request": {

@@ -117,7 +117,7 @@ Updated collection:
 It now includes:
 - gateway health + readiness
 - identity auth + user management
-- travel inquiries/contacts/quotations/booking-itineraries/follow-ups
+- travel public inquiries + internal inquiry workflow + contacts/quotations/booking-itineraries/follow-ups
 - communication notifications/templates/preferences
 - webhook subscriptions/deliveries/replay
 
@@ -127,6 +127,32 @@ It now includes:
 - `identity-service`: tenants, users, JWT/refresh flows, JWKS, outbox
 - `billing-service`: subscriptions, invoices, payments, dashboard, outbox
 - `travel-service`: inquiries, contacts, quotations, booking-owned itineraries, follow-ups, outbox
+
+## Inquiry intake workflow status
+
+Public + internal inquiry flow is now partially implemented across the travel service, including:
+- `POST /travel/public/inquiries` for website/public lead capture
+- internal inquiry list/detail/history endpoints
+- inquiry assignment / qualify / disqualify / mark-contacted actions
+- inquiry -> contact + quotation conversion
+
+Current public intake safety notes:
+- tenant is resolved through a public resolver path, not request body
+- current implementation uses `x-public-tenant-id` header for controlled intake wiring
+- branded host / signed site token resolution should replace that later for production-grade public intake
+- basic honeypot validation is implemented; stronger rate-limiting/CAPTCHA can be layered later
+
+Useful inquiry endpoints:
+- `POST /travel/public/inquiries`
+- `GET /api/travel/inquiries?page=1&pageSize=20&status=New`
+- `GET /api/travel/inquiries/{id}`
+- `GET /api/travel/inquiries/{id}/history`
+- `POST /api/travel/inquiries/{id}/assign`
+- `POST /api/travel/inquiries/{id}/qualify`
+- `POST /api/travel/inquiries/{id}/disqualify?status=Lost`
+- `POST /api/travel/inquiries/{id}/mark-contacted`
+- `POST /api/travel/inquiries/{id}/archive`
+- `POST /api/travel/inquiries/{id}/convert-to-quotation`
 
 ## Phase 7 booking workflow status
 
