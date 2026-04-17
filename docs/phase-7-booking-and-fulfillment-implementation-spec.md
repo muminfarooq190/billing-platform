@@ -48,6 +48,7 @@ At the end of Phase 7, Voyara should support this path:
 - quote revised
 - quote accepted
 - booking created from accepted revision
+- confirmed itinerary created in booking context
 - travelers added
 - operational booking items tracked
 - trip documents/vouchers attached
@@ -331,6 +332,39 @@ Update booking status.
 Cancel booking.
 
 ---
+
+## 5.1.1 Booking itinerary API
+
+### POST `/travel/bookings/{id}/itinerary`
+Create the confirmed itinerary in booking context.
+
+#### Request body
+```json
+{
+  "title": "Rome & Amalfi Confirmed Plan",
+  "destination": "Italy",
+  "startDate": "2026-06-10T09:00:00Z",
+  "endDate": "2026-06-20T18:00:00Z",
+  "travellers": 2,
+  "currency": "USD",
+  "items": [
+    {
+      "dayNumber": 1,
+      "itemType": "Other",
+      "title": "Arrival and transfer",
+      "description": "Airport pickup and hotel check-in",
+      "location": "Rome",
+      "startTime": null,
+      "endTime": null,
+      "cost": 0,
+      "currency": "USD"
+    }
+  ]
+}
+```
+
+This is the preferred path for confirmed itinerary ownership.
+Direct quote-side itinerary creation/conversion should be treated as legacy compatibility behavior, not the primary operational model.
 
 ## 5.2 Traveler APIs
 
