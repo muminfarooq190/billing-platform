@@ -26,6 +26,7 @@ public sealed class TravelDbContext(DbContextOptions<TravelDbContext> options) :
     public DbSet<BookingItem> BookingItems => Set<BookingItem>();
     public DbSet<BookingDocument> BookingDocuments => Set<BookingDocument>();
     public DbSet<Itinerary> Itineraries => Set<Itinerary>();
+    public DbSet<DraftTripConcept> DraftTripConcepts => Set<DraftTripConcept>();
     public DbSet<OutboxMessage> DomainEvents => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
