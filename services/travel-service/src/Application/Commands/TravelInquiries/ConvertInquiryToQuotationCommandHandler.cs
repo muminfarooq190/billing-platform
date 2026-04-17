@@ -11,6 +11,7 @@ public sealed class ConvertInquiryToQuotationCommandHandler(
     ITravelInquiryStatusHistoryRepository historyRepository,
     IContactRepository contactRepository,
     IQuotationRepository quotationRepository,
+    IDraftTripConceptRepository conceptRepository,
     IActivityWriter activityWriter,
     IAuditWriter auditWriter,
     IActorContext actorContext,
@@ -22,6 +23,16 @@ public sealed class ConvertInquiryToQuotationCommandHandler(
 
         if (inquiry.ConvertedAt.HasValue)
             throw new DomainException("Inquiry has already been converted.");
+
+        DraftTripConcept? concept = null;
+        if (request.ConceptId.HasValue)
+        {
+            concept = await conceptRepository.GetByIdAsync(request.ConceptId.Value, cancellationToken)
+                ?? throw new DomainException($"Draft trip concept {request.ConceptId.Value} not found.");
+
+            if (concept.TenantId != request.TenantId || concept.TravelInquiryId != request.InquiryId)
+                throw new DomainException("Draft trip concept does not belong to the inquiry context.");
+        }
 
         Contact contact;
         if (request.ContactId.HasValue)
@@ -48,29 +59,40 @@ public sealed class ConvertInquiryToQuotationCommandHandler(
             await contactRepository.AddAsync(contact, cancellationToken);
         }
 
-        var travelDate = inquiry.TravelDate ?? DateTimeOffset.UtcNow.AddDays(30);
-        var returnDate = inquiry.ReturnDate ?? travelDate.AddDays(5);
+        var quotationTitle = string.IsNullOrWhiteSpace(request.QuotationTitle)
+            ? concept?.Title ?? inquiry.Destination
+            : request.QuotationTitle.Trim();
+        var destination = concept?.Destination ?? inquiry.Destination;
+        var travelDate = concept?.StartDate ?? inquiry.TravelDate ?? DateTimeOffset.UtcNow.AddDays(30);
+        var returnDate = concept?.EndDate ?? inquiry.ReturnDate ?? travelDate.AddDays(5);
+        var travellers = concept?.Travellers ?? inquiry.Travellers ?? 1;
+        var currency = !string.IsNullOrWhiteSpace(request.Currency)
+            ? request.Currency
+            : concept?.Currency ?? inquiry.BudgetCurrency ?? "USD";
         var quotationNotes = string.Join(Environment.NewLine, new[]
         {
             string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes?.Trim(),
             $"Created from inquiry {inquiry.Id} ({inquiry.Source}).",
+            concept is null ? null : $"Seeded from draft concept {concept.Id} ({concept.Title}).",
+            string.IsNullOrWhiteSpace(concept?.Summary) ? null : $"Concept summary: {concept!.Summary}",
+            string.IsNullOrWhiteSpace(concept?.Notes) ? null : $"Concept notes: {concept!.Notes}",
             string.IsNullOrWhiteSpace(inquiry.CustomerMessage) ? null : $"Customer message: {inquiry.CustomerMessage}",
-            inquiry.BudgetAmount.HasValue ? $"Indicative budget: {inquiry.BudgetAmount.Value} {inquiry.BudgetCurrency}" : null
+            (concept?.BudgetAmount ?? inquiry.BudgetAmount).HasValue ? $"Indicative budget: {(concept?.BudgetAmount ?? inquiry.BudgetAmount)!.Value} {concept?.Currency ?? inquiry.BudgetCurrency}" : null
         }.Where(x => !string.IsNullOrWhiteSpace(x)));
 
         var quotation = Quotation.Create(
             request.TenantId,
             contact.Id,
             inquiry.FullName,
-            request.QuotationTitle,
-            inquiry.Destination,
+            quotationTitle,
+            destination,
             travelDate,
             returnDate,
-            inquiry.Travellers ?? 1,
-            request.Currency,
+            travellers,
+            currency,
             quotationNotes);
 
-        quotation.AddLineItem("Trip proposal to be finalized", 0m, 1, request.Currency);
+        quotation.AddLineItem("Trip proposal to be finalized", 0m, 1, currency);
 
         await quotationRepository.AddAsync(quotation, cancellationToken);
 
@@ -89,7 +111,7 @@ public sealed class ConvertInquiryToQuotationCommandHandler(
                 inquiry.Id,
                 "Converted",
                 $"Inquiry converted to quotation {quotation.Id}",
-                new { ContactId = contact.Id, QuotationId = quotation.Id, inquiry.AssignedToUserId },
+                new { ContactId = contact.Id, QuotationId = quotation.Id, ConceptId = concept?.Id, inquiry.AssignedToUserId },
                 actorContext.UserId),
             cancellationToken);
         await activityWriter.WriteAsync(
@@ -99,7 +121,7 @@ public sealed class ConvertInquiryToQuotationCommandHandler(
                 quotation.Id,
                 "Created",
                 $"Quotation created from inquiry {inquiry.Id}",
-                new { InquiryId = inquiry.Id, ContactId = contact.Id },
+                new { InquiryId = inquiry.Id, ContactId = contact.Id, ConceptId = concept?.Id },
                 actorContext.UserId),
             cancellationToken);
         await auditWriter.WriteAsync(
@@ -112,8 +134,8 @@ public sealed class ConvertInquiryToQuotationCommandHandler(
                 actorContext.IpAddress,
                 actorContext.UserAgent,
                 new { Status = previousStatus },
-                new { Status = inquiry.Status.ToString(), ContactId = contact.Id, QuotationId = quotation.Id },
-                new { request.QuotationTitle, request.Currency }),
+                new { Status = inquiry.Status.ToString(), ContactId = contact.Id, QuotationId = quotation.Id, ConceptId = concept?.Id },
+                new { QuotationTitle = quotationTitle, Currency = currency }),
             cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);

@@ -16,9 +16,9 @@ public sealed class TravelInquiryConversionTests
         var historyRepository = new InMemoryInquiryHistoryRepository();
         var contactRepository = new InMemoryContactRepository();
         var quotationRepository = new InMemoryQuotationRepository();
-        var handler = new ConvertInquiryToQuotationCommandHandler(inquiryRepository, historyRepository, contactRepository, quotationRepository, new NoOpActivityWriter(), new NoOpAuditWriter(), new FakeActorContext(inquiry.TenantId), new NoOpUnitOfWork());
+        var handler = new ConvertInquiryToQuotationCommandHandler(inquiryRepository, historyRepository, contactRepository, quotationRepository, new InMemoryConceptRepository(), new NoOpActivityWriter(), new NoOpAuditWriter(), new FakeActorContext(inquiry.TenantId), new NoOpUnitOfWork());
 
-        var result = await handler.Handle(new ConvertInquiryToQuotationCommand(inquiry.TenantId, inquiry.Id, null, "Bali Honeymoon", "INR", "Sales qualified", null, true), CancellationToken.None);
+        var result = await handler.Handle(new ConvertInquiryToQuotationCommand(inquiry.TenantId, inquiry.Id, null, "Bali Honeymoon", "INR", "Sales qualified", null, null, true), CancellationToken.None);
 
         result.InquiryId.Should().Be(inquiry.Id);
         result.ContactId.Should().NotBeEmpty();
@@ -58,6 +58,36 @@ public sealed class TravelInquiryConversionTests
         }
         public Task<Contact?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(Items.SingleOrDefault(x => x.Id == id));
         public Task UpdateAsync(Contact contact, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task ConvertInquiryToQuotation_ShouldSeedFromConcept_WhenConceptProvided()
+    {
+        var inquiry = TravelInquiry.Create(Guid.NewGuid(), "Website", "Jane Doe", "jane@example.com", "+911234567890", null, "Mumbai", "Bali", DateTimeOffset.UtcNow.AddDays(20), DateTimeOffset.UtcNow.AddDays(25), false, 2, 150000m, "INR", "Need honeymoon package");
+        var concept = DraftTripConcept.Create(inquiry.TenantId, inquiry.Id, "Bali Honeymoon Option A", "Bali + Ubud", "Beach and jungle split", DateTimeOffset.UtcNow.AddDays(30), DateTimeOffset.UtcNow.AddDays(37), 2, "USD", 2000m, "Option A", "Lead with premium resorts", null);
+        var quotationRepository = new InMemoryQuotationRepository();
+        var handler = new ConvertInquiryToQuotationCommandHandler(new InMemoryInquiryRepository(inquiry), new InMemoryInquiryHistoryRepository(), new InMemoryContactRepository(), quotationRepository, new InMemoryConceptRepository(concept), new NoOpActivityWriter(), new NoOpAuditWriter(), new FakeActorContext(inquiry.TenantId), new NoOpUnitOfWork());
+
+        var result = await handler.Handle(new ConvertInquiryToQuotationCommand(inquiry.TenantId, inquiry.Id, null, "", "", "Sales qualified", null, concept.Id, true), CancellationToken.None);
+
+        result.QuotationId.Should().NotBeEmpty();
+        quotationRepository.Items.Should().ContainSingle();
+        quotationRepository.Items[0].Title.Should().Be("Bali Honeymoon Option A");
+        quotationRepository.Items[0].Destination.Should().Be("Bali + Ubud");
+        quotationRepository.Items[0].Currency.Should().Be("USD");
+    }
+
+    private sealed class InMemoryConceptRepository(params DraftTripConcept[] concepts) : IDraftTripConceptRepository
+    {
+        public List<DraftTripConcept> Items { get; } = concepts.ToList();
+        public Task AddAsync(DraftTripConcept concept, CancellationToken cancellationToken)
+        {
+            Items.Add(concept);
+            return Task.CompletedTask;
+        }
+        public Task<DraftTripConcept?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(Items.SingleOrDefault(x => x.Id == id));
+        public Task<IReadOnlyList<DraftTripConcept>> ListByInquiryIdAsync(Guid inquiryId, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<DraftTripConcept>>(Items.Where(x => x.TravelInquiryId == inquiryId).ToList());
+        public Task UpdateAsync(DraftTripConcept concept, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class InMemoryQuotationRepository : IQuotationRepository

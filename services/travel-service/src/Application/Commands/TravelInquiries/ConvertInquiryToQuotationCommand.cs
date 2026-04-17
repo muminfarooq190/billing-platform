@@ -10,6 +10,7 @@ public sealed record ConvertInquiryToQuotationCommand(
     string Currency,
     string? Notes,
     Guid? AssignedToUserId,
+    Guid? ConceptId = null,
     bool CreateContactIfMissing = true) : IRequest<ConvertInquiryToQuotationResult>;
 
 public sealed record ConvertInquiryToQuotationResult(Guid InquiryId, Guid ContactId, Guid QuotationId);

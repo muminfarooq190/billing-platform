@@ -87,6 +87,7 @@ public sealed class InquiriesController(IMediator mediator, ITenantContext tenan
             request.Currency,
             request.Notes,
             request.AssignedToUserId,
+            request.ConceptId,
             request.CreateContactIfMissing), cancellationToken);
         return Ok(result);
     }

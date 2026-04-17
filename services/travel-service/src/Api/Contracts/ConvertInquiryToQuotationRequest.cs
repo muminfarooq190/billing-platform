@@ -6,4 +6,5 @@ public sealed record ConvertInquiryToQuotationRequest(
     string Currency,
     string? Notes,
     Guid? AssignedToUserId,
+    Guid? ConceptId = null,
     bool CreateContactIfMissing = true);
