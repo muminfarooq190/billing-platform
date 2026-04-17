@@ -1,7 +1,9 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using TravelService.Api.Contracts;
+using TravelService.Application.Commands.DraftTripConcepts;
 using TravelService.Application.Commands.TravelInquiries;
+using TravelService.Application.Queries.DraftTripConcepts;
 using TravelService.Application.Queries.TravelInquiries;
 
 namespace TravelService.Api.Controllers;
@@ -87,5 +89,56 @@ public sealed class InquiriesController(IMediator mediator, ITenantContext tenan
             request.AssignedToUserId,
             request.CreateContactIfMissing), cancellationToken);
         return Ok(result);
+    }
+
+    [HttpGet("{id:guid}/concepts")]
+    public async Task<IActionResult> ListConcepts(Guid id, CancellationToken cancellationToken)
+    {
+        var concepts = await mediator.Send(new ListDraftTripConceptsByInquiryQuery(tenantContext.TenantId, id), cancellationToken);
+        return Ok(concepts);
+    }
+
+    [HttpGet("{id:guid}/concepts/{conceptId:guid}")]
+    public async Task<IActionResult> GetConcept(Guid id, Guid conceptId, CancellationToken cancellationToken)
+    {
+        var concept = await mediator.Send(new GetDraftTripConceptByIdQuery(tenantContext.TenantId, id, conceptId), cancellationToken);
+        return concept is null ? NotFound() : Ok(concept);
+    }
+
+    [HttpPost("{id:guid}/concepts")]
+    public async Task<IActionResult> CreateConcept(Guid id, [FromBody] CreateDraftTripConceptRequest request, CancellationToken cancellationToken)
+    {
+        var days = request.Days?.Select(x => new CreateDraftTripConceptDayDto(x.DayNumber, x.Title, x.Description, x.Location, x.OvernightLocation)).ToList()
+                   ?? [];
+        var conceptId = await mediator.Send(new CreateDraftTripConceptCommand(
+            tenantContext.TenantId,
+            id,
+            request.Title,
+            request.Destination,
+            request.Summary,
+            request.StartDate,
+            request.EndDate,
+            request.Travellers,
+            request.Currency,
+            request.BudgetAmount,
+            request.OptionLabel,
+            request.Notes,
+            tenantContext.UserId,
+            days), cancellationToken);
+        return Created($"/travel/inquiries/{id}/concepts/{conceptId}", new { conceptId });
+    }
+
+    [HttpPost("{id:guid}/concepts/{conceptId:guid}/mark-primary")]
+    public async Task<IActionResult> MarkPrimaryConcept(Guid id, Guid conceptId, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new MarkPrimaryDraftTripConceptCommand(tenantContext.TenantId, id, conceptId), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/concepts/{conceptId:guid}/archive")]
+    public async Task<IActionResult> ArchiveConcept(Guid id, Guid conceptId, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new ArchiveDraftTripConceptCommand(tenantContext.TenantId, id, conceptId), cancellationToken);
+        return NoContent();
     }
 }
