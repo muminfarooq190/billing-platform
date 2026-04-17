@@ -30,6 +30,8 @@ public sealed class Program
         builder.Services.AddScoped<IAuditWriter, AuditWriter>();
         builder.Services.AddScoped<IContactRepository, ContactRepository>();
         builder.Services.AddScoped<IFollowUpRepository, FollowUpRepository>();
+        builder.Services.AddScoped<ITravelInquiryRepository, TravelInquiryRepository>();
+        builder.Services.AddScoped<ITravelInquiryStatusHistoryRepository, TravelInquiryStatusHistoryRepository>();
         builder.Services.AddScoped<IQuotationRepository, QuotationRepository>();
         builder.Services.AddScoped<IQuotationRevisionRepository, QuotationRevisionRepository>();
         builder.Services.AddScoped<IQuotationAttachmentRepository, QuotationAttachmentRepository>();
