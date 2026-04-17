@@ -17,6 +17,8 @@ public sealed record ItineraryReadModel(
     string Currency,
     Guid? QuotationId,
     Guid? BookingId,
+    bool IsBookingOwned,
+    string OwnershipType,
     string Status,
     decimal TotalCost,
     DateTimeOffset CreatedAt,

@@ -39,9 +39,12 @@ public sealed class ItinerariesController(IMediator mediator, ITenantContext ten
         [FromQuery] string? customerName = null,
         [FromQuery] DateTimeOffset? startDateFrom = null,
         [FromQuery] DateTimeOffset? startDateTo = null,
+        [FromQuery] Guid? bookingId = null,
+        [FromQuery] Guid? quotationId = null,
+        [FromQuery] string? ownershipType = null,
         CancellationToken cancellationToken = default)
     {
-        var models = await mediator.Send(new ListItinerariesByTenantQuery(tenantContext.TenantId, page, pageSize, status, customerName, startDateFrom, startDateTo), cancellationToken);
+        var models = await mediator.Send(new ListItinerariesByTenantQuery(tenantContext.TenantId, page, pageSize, status, customerName, startDateFrom, startDateTo, bookingId, quotationId, ownershipType), cancellationToken);
         return Ok(models);
     }
 

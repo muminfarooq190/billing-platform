@@ -24,6 +24,9 @@ public sealed record BookingReadModel(
     Guid? AssignedToUserId,
     string? CustomerReference,
     string? InternalNotes,
+    Guid? ItineraryId,
+    string? ItineraryStatus,
+    DateTimeOffset? ItineraryUpdatedAt,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
     DateTimeOffset? CancelledAt);
