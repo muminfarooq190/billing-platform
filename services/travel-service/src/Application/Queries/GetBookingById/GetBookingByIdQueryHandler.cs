@@ -31,6 +31,7 @@ public sealed class GetBookingByIdQueryHandler(IReadDbConnectionFactory connecti
                       b.customer_reference AS CustomerReference,
                       b.internal_notes AS InternalNotes,
                       i.id AS ItineraryId,
+                      CASE WHEN i.id IS NOT NULL THEN TRUE ELSE FALSE END AS HasItinerary,
                       i.status AS ItineraryStatus,
                       i.updated_at AS ItineraryUpdatedAt,
                       b.created_at AS CreatedAt,

@@ -25,6 +25,7 @@ public sealed record BookingReadModel(
     string? CustomerReference,
     string? InternalNotes,
     Guid? ItineraryId,
+    bool HasItinerary,
     string? ItineraryStatus,
     DateTimeOffset? ItineraryUpdatedAt,
     DateTimeOffset CreatedAt,

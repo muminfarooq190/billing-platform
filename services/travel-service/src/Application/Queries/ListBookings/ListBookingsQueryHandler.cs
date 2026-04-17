@@ -16,38 +16,49 @@ public sealed class ListBookingsQueryHandler(IReadDbConnectionFactory connection
         var offset = (page - 1) * pageSize;
 
         var items = await dbConnection.QueryAsync<BookingReadModel>(
-            @"SELECT id,
-                      tenant_id AS TenantId,
-                      quotation_id AS QuotationId,
-                      accepted_revision_id AS AcceptedRevisionId,
-                      primary_contact_id AS PrimaryContactId,
-                      booking_number AS BookingNumber,
-                      status,
-                      trip_name AS TripName,
-                      destination,
-                      start_date AS StartDate,
-                      end_date AS EndDate,
-                      travellers_count AS TravellersCount,
-                      currency,
-                      total_sell_amount AS TotalSellAmount,
-                      total_cost_amount AS TotalCostAmount,
-                      margin_amount AS MarginAmount,
-                      assigned_to_user_id AS AssignedToUserId,
-                      customer_reference AS CustomerReference,
-                      internal_notes AS InternalNotes,
-                      created_at AS CreatedAt,
-                      updated_at AS UpdatedAt,
-                      cancelled_at AS CancelledAt
-               FROM bookings
-               WHERE tenant_id = @TenantId
-                 AND deleted_at IS NULL
-                 AND (@Status IS NULL OR status = @Status)
-                 AND (@Destination IS NULL OR destination ILIKE '%' || @Destination || '%')
-                 AND (@StartDateFrom IS NULL OR start_date >= @StartDateFrom)
-                 AND (@StartDateTo IS NULL OR start_date <= @StartDateTo)
-                 AND (@AssignedToUserId IS NULL OR assigned_to_user_id = @AssignedToUserId)
-                 AND (@PrimaryContactId IS NULL OR primary_contact_id = @PrimaryContactId)
-               ORDER BY created_at DESC
+            @"SELECT b.id,
+                      b.tenant_id AS TenantId,
+                      b.quotation_id AS QuotationId,
+                      b.accepted_revision_id AS AcceptedRevisionId,
+                      b.primary_contact_id AS PrimaryContactId,
+                      b.booking_number AS BookingNumber,
+                      b.status,
+                      b.trip_name AS TripName,
+                      b.destination,
+                      b.start_date AS StartDate,
+                      b.end_date AS EndDate,
+                      b.travellers_count AS TravellersCount,
+                      b.currency,
+                      b.total_sell_amount AS TotalSellAmount,
+                      b.total_cost_amount AS TotalCostAmount,
+                      b.margin_amount AS MarginAmount,
+                      b.assigned_to_user_id AS AssignedToUserId,
+                      b.customer_reference AS CustomerReference,
+                      b.internal_notes AS InternalNotes,
+                      i.id AS ItineraryId,
+                      CASE WHEN i.id IS NOT NULL THEN TRUE ELSE FALSE END AS HasItinerary,
+                      i.status AS ItineraryStatus,
+                      i.updated_at AS ItineraryUpdatedAt,
+                      b.created_at AS CreatedAt,
+                      b.updated_at AS UpdatedAt,
+                      b.cancelled_at AS CancelledAt
+               FROM bookings b
+               LEFT JOIN LATERAL (
+                    SELECT id, status, updated_at
+                    FROM itineraries
+                    WHERE booking_id = b.id AND deleted_at IS NULL
+                    ORDER BY updated_at DESC NULLS LAST
+                    LIMIT 1
+               ) i ON TRUE
+               WHERE b.tenant_id = @TenantId
+                 AND b.deleted_at IS NULL
+                 AND (@Status IS NULL OR b.status = @Status)
+                 AND (@Destination IS NULL OR b.destination ILIKE '%' || @Destination || '%')
+                 AND (@StartDateFrom IS NULL OR b.start_date >= @StartDateFrom)
+                 AND (@StartDateTo IS NULL OR b.start_date <= @StartDateTo)
+                 AND (@AssignedToUserId IS NULL OR b.assigned_to_user_id = @AssignedToUserId)
+                 AND (@PrimaryContactId IS NULL OR b.primary_contact_id = @PrimaryContactId)
+               ORDER BY b.created_at DESC
                LIMIT @PageSize OFFSET @Offset",
             new { request.TenantId, request.Status, request.Destination, request.StartDateFrom, request.StartDateTo, request.AssignedToUserId, request.PrimaryContactId, PageSize = pageSize, Offset = offset });
         return items.ToList();

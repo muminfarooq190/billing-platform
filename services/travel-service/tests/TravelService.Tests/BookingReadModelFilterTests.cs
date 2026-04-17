@@ -58,6 +58,7 @@ public sealed class BookingReadModelFilterTests
             null,
             "Priority booking",
             itineraryId,
+            true,
             "Draft",
             DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow,
@@ -70,6 +71,7 @@ public sealed class BookingReadModelFilterTests
         model.TotalSellAmount.Should().Be(2500m);
         model.MarginAmount.Should().Be(700m);
         model.ItineraryId.Should().Be(itineraryId);
+        model.HasItinerary.Should().BeTrue();
         model.ItineraryStatus.Should().Be("Draft");
     }
 }
