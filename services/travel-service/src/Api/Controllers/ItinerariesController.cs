@@ -12,6 +12,7 @@ namespace TravelService.Api.Controllers;
 [Route("travel/itineraries")]
 public sealed class ItinerariesController(IMediator mediator, ITenantContext tenantContext) : ControllerBase
 {
+    [Obsolete("Direct itinerary creation is legacy. Prefer POST /travel/bookings/{id}/itinerary so confirmed itinerary belongs to booking lifecycle.")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateItineraryRequest request, CancellationToken cancellationToken)
     {
