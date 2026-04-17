@@ -16,6 +16,7 @@ public sealed record ItineraryReadModel(
     int Travellers,
     string Currency,
     Guid? QuotationId,
+    Guid? BookingId,
     string Status,
     decimal TotalCost,
     DateTimeOffset CreatedAt,

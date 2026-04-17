@@ -73,4 +73,19 @@ public sealed class InquiriesController(IMediator mediator, ITenantContext tenan
         await mediator.Send(new ArchiveInquiryCommand(tenantContext.TenantId, id, request.Reason), cancellationToken);
         return NoContent();
     }
+
+    [HttpPost("{id:guid}/convert-to-quotation")]
+    public async Task<IActionResult> ConvertToQuotation(Guid id, [FromBody] ConvertInquiryToQuotationRequest request, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new ConvertInquiryToQuotationCommand(
+            tenantContext.TenantId,
+            id,
+            request.ContactId,
+            request.QuotationTitle,
+            request.Currency,
+            request.Notes,
+            request.AssignedToUserId,
+            request.CreateContactIfMissing), cancellationToken);
+        return Ok(result);
+    }
 }

@@ -234,6 +234,7 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
         return NoContent();
     }
 
+    [Obsolete("Quotation-to-itinerary conversion is legacy. Prefer booking itinerary creation after accepted quote becomes booking.")]
     [HttpPost("{id:guid}/convert")]
     public async Task<IActionResult> ConvertToItinerary(Guid id, CancellationToken cancellationToken)
     {
