@@ -76,6 +76,7 @@ public sealed class SendQuotationCommandHandler(
         var publicPath = $"/travel/quotations/public/{token}";
         var publicBaseUrl = Environment.GetEnvironmentVariable("TRAVEL_PUBLIC_BASE_URL")?.TrimEnd('/') ?? "http://localhost:5060";
         var publicUrl = $"{publicBaseUrl}{publicPath}";
+        var quotationPdfUrl = $"{publicBaseUrl}/travel/documents/quotations/{quotation.Id:D}/revisions/{revision.Id:D}/pdf";
 
         await communicationWorkflowClient.SendQuotationAsync(request.TenantId, new QuotationCommunicationRequest(
             quotation.CustomerContactId,
@@ -91,7 +92,7 @@ public sealed class SendQuotationCommandHandler(
                 new CommunicationDocumentReference(
                     $"quotation-{revision.RevisionNumber}.pdf",
                     revision.Id.ToString("D"),
-                    publicUrl,
+                    quotationPdfUrl,
                     "application/pdf",
                     null,
                     new Dictionary<string, string> { ["quotationId"] = quotation.Id.ToString("D"), ["revisionId"] = revision.Id.ToString("D") })

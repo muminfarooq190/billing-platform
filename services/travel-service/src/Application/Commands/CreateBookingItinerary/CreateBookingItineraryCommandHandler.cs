@@ -62,7 +62,7 @@ public sealed class CreateBookingItineraryCommandHandler(
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         var publicBaseUrl = Environment.GetEnvironmentVariable("TRAVEL_PUBLIC_BASE_URL")?.TrimEnd('/') ?? "http://localhost:5060";
-        var itineraryUrl = $"{publicBaseUrl}/travel/bookings/{booking.Id:D}/itinerary";
+        var itineraryUrl = $"{publicBaseUrl}/travel/documents/bookings/{booking.Id:D}/itinerary/pdf";
         await communicationWorkflowClient.SendItineraryAsync(request.TenantId, new ItineraryCommunicationRequest(
             booking.PrimaryContactId,
             "Email",
