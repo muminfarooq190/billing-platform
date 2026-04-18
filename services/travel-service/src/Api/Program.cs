@@ -1,3 +1,5 @@
+using QuestPDF.Infrastructure;
+using TravelService.Api.Documents;
 using TravelService.Api.Filters;
 using TravelService.Application.Abstractions;
 using TravelService.Domain.Repositories;
@@ -17,6 +19,8 @@ public sealed class Program
 {
     public static void Main(string[] args)
     {
+        QuestPDF.Settings.License = LicenseType.Community;
+
         var builder = WebApplication.CreateBuilder(args);
         var databaseUrl = builder.Configuration["DATABASE_URL"] ?? "Host=postgres;Port=5432;Database=billing_travel;Username=billing_user;Password=changeme";
 
@@ -67,6 +71,7 @@ public sealed class Program
         builder.Services.AddScoped<IFeatureGate, CachedFeatureGate>();
 
         builder.Services.AddStackExchangeRedisCache(options => options.Configuration = builder.Configuration["REDIS_URL"] ?? "redis:6379");
+        builder.Services.AddScoped<IPdfDocumentRenderer, QuestPdfDocumentRenderer>();
         builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 
         builder.Services.AddHostedService<OutboxPublisherService>();
