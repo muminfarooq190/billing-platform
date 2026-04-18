@@ -45,6 +45,12 @@ export class WebhookDeliveryProcessor {
     } catch (error) {
       const statusCode = axios.isAxiosError(error) ? (error.response?.status ?? null) : null;
       const responseBody = axios.isAxiosError(error) ? JSON.stringify(error.response?.data ?? null) : String(error);
+      const retryAfterHeader = axios.isAxiosError(error) ? error.response?.headers?.['retry-after'] : undefined;
+
+      if (this.shouldMarkDeadImmediately(statusCode)) {
+        await this.deliveryLogService.markResult(payload.deliveryLogId, 'Dead', payload.attemptNumber, statusCode, responseBody);
+        return;
+      }
 
       if (payload.attemptNumber >= 5) {
         await this.deliveryLogService.markResult(payload.deliveryLogId, 'Dead', payload.attemptNumber, statusCode, responseBody);
@@ -53,17 +59,37 @@ export class WebhookDeliveryProcessor {
 
       await this.deliveryLogService.markResult(payload.deliveryLogId, 'Failed', payload.attemptNumber, statusCode, responseBody);
       const nextAttempt = payload.attemptNumber + 1;
+      const delay = this.getRetryDelayMs(nextAttempt, statusCode, retryAfterHeader);
       await this.deliveryQueue.enqueue(
         {
           ...payload,
           attemptNumber: nextAttempt,
         },
-        this.getRetryDelayMs(nextAttempt),
+        delay,
       );
     }
   }
 
-  private getRetryDelayMs(attempt: number): number {
+  private shouldMarkDeadImmediately(statusCode: number | null): boolean {
+    if (statusCode === null) {
+      return false;
+    }
+
+    if (statusCode === 408 || statusCode === 409 || statusCode === 425 || statusCode === 429) {
+      return false;
+    }
+
+    return statusCode >= 400 && statusCode < 500;
+  }
+
+  private getRetryDelayMs(attempt: number, statusCode: number | null, retryAfterHeader?: string | string[]): number {
+    if (statusCode === 429) {
+      const retryAfterMs = this.parseRetryAfterMs(retryAfterHeader);
+      if (retryAfterMs !== null) {
+        return retryAfterMs;
+      }
+    }
+
     return (
       {
         1: 0,
@@ -73,5 +99,24 @@ export class WebhookDeliveryProcessor {
         5: 2 * 60 * 60_000,
       }[attempt] ?? 0
     );
+  }
+
+  private parseRetryAfterMs(value?: string | string[]): number | null {
+    const header = Array.isArray(value) ? value[0] : value;
+    if (!header) {
+      return null;
+    }
+
+    const seconds = Number.parseInt(header, 10);
+    if (!Number.isNaN(seconds) && seconds >= 0) {
+      return seconds * 1000;
+    }
+
+    const when = Date.parse(header);
+    if (!Number.isNaN(when)) {
+      return Math.max(0, when - Date.now());
+    }
+
+    return null;
   }
 }
