@@ -39,6 +39,12 @@ namespace CommunicationService.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("channel");
 
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("correlation_id");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -47,9 +53,24 @@ namespace CommunicationService.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("delivered_at");
 
+                    b.Property<string>("DocumentReferencesJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("document_references_json");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("idempotency_key");
+
                     b.Property<string>("LastError")
                         .HasColumnType("text")
                         .HasColumnName("last_error");
+
+                    b.Property<string>("MetadataJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("metadata_json");
 
                     b.Property<string>("Priority")
                         .IsRequired()
@@ -111,6 +132,12 @@ namespace CommunicationService.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
+                    b.Property<string>("WorkflowType")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("workflow_type");
+
                     b.HasKey("Id");
 
                     b.HasIndex("RecipientId");
@@ -118,6 +145,10 @@ namespace CommunicationService.Infrastructure.Persistence.Migrations
                     b.HasIndex("Status");
 
                     b.HasIndex("TenantId");
+
+                    b.HasIndex("TenantId", "IdempotencyKey")
+                        .IsUnique()
+                        .HasFilter("idempotency_key IS NOT NULL");
 
                     b.ToTable("notifications", (string)null);
                 });

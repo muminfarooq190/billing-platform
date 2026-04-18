@@ -28,7 +28,17 @@ public sealed class SendGridEmailProvider(HttpClient httpClient, IOptions<EmailC
             content = new[]
             {
                 new { type = "text/plain", value = message.Body }
-            }
+            },
+            attachments = (message.Attachments ?? [])
+                .Where(x => x.Content is { Length: > 0 })
+                .Select(x => new
+                {
+                    content = Convert.ToBase64String(x.Content!),
+                    type = x.ContentType ?? "application/octet-stream",
+                    filename = x.Name,
+                    disposition = "attachment"
+                })
+                .ToArray()
         }), Encoding.UTF8, "application/json");
 
         using var response = await httpClient.SendAsync(request, cancellationToken);

@@ -21,6 +21,11 @@ public sealed class NotificationConfiguration : IEntityTypeConfiguration<Notific
         builder.Property(x => x.Status).HasConversion<string>().HasColumnName("status");
         builder.Property(x => x.TemplateId).HasColumnName("template_id");
         builder.Property(x => x.ReferenceId).HasColumnName("reference_id").HasMaxLength(256);
+        builder.Property(x => x.CorrelationId).HasColumnName("correlation_id").HasMaxLength(256);
+        builder.Property(x => x.WorkflowType).HasColumnName("workflow_type").HasMaxLength(128);
+        builder.Property(x => x.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(256);
+        builder.Property(x => x.DocumentReferencesJson).HasColumnName("document_references_json");
+        builder.Property(x => x.MetadataJson).HasColumnName("metadata_json");
         builder.Property(x => x.RetryCount).HasColumnName("retry_count");
         builder.Property(x => x.LastError).HasColumnName("last_error");
         builder.Property(x => x.ProviderMessageId).HasColumnName("provider_message_id").HasMaxLength(256);
@@ -32,5 +37,6 @@ public sealed class NotificationConfiguration : IEntityTypeConfiguration<Notific
         builder.HasIndex(x => x.RecipientId);
         builder.HasIndex(x => x.TenantId);
         builder.HasIndex(x => x.Status);
+        builder.HasIndex(x => new { x.TenantId, x.IdempotencyKey }).IsUnique().HasFilter("idempotency_key IS NOT NULL");
     }
 }

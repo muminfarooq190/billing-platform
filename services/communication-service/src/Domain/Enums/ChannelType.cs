@@ -4,6 +4,7 @@ public enum ChannelType
 {
     Email,
     Sms,
+    WhatsApp,
     PushNotification,
     InApp,
     Webhook

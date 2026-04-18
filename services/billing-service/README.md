@@ -1,0 +1,67 @@
+# Billing Service MVP notes
+
+This service now has a pragmatic MVP pass focused on not faking money flows.
+
+## Payment behavior
+
+- `StripePaymentGateway` no longer returns unconditional success.
+- If Stripe is configured, invoice payment requests now create a real Stripe Checkout Session via Stripe's API and return an **action-required** result with the hosted checkout URL.
+- Checkout session metadata includes `invoiceId` and `tenantId` for webhook reconciliation.
+- If Stripe is selected but not configured, the payment attempt fails explicitly.
+- Mock gateway remains available for local/dev flows and returns a deterministic mock success.
+
+## Invoice generation
+
+Invoice generation is now package/subscription-aware:
+- pricing resolves from the tenant's active commercial package metadata
+- package metadata is now the primary source of truth for monthly/annual price and tax rate
+- legacy compatibility packages are seeded with explicit pricing metadata so migrated tenants still work
+- invoices now carry billing period start/end and pricing reference metadata
+- duplicate invoice generation for the same subscription + billing period is prevented by lookup and DB uniqueness
+
+If no active package assignment exists, or if a package does not contain valid pricing metadata, invoice generation now fails loudly instead of silently falling back to deprecated plan pricing.
+
+## Internal finance reads
+
+Added internal invoice read API expected by downstream services:
+- `GET /billing/invoices/tenant/{tenantId}`
+
+## Next non-MVP work
+
+Still intentionally deferred:
+- live Stripe SDK checkout session creation
+- dedicated payment transaction table/entity
+- refunds / partial refunds
+- invoice PDF generation
+
+## Stripe webhook / reconciliation
+
+Added pragmatic webhook endpoint:
+- `POST /billing/webhooks/stripe`
+
+Current MVP behavior:
+- validates `Stripe-Signature` using HMAC SHA-256 when `STRIPE_WEBHOOK_SECRET` is configured
+- parses a Stripe-style raw event envelope from the request body
+- resolves invoice id from `data.object.metadata.invoiceId` (or nested invoice metadata)
+- marks invoice paid on `payment_intent.succeeded` / `checkout.session.completed`
+- marks invoice failed/overdue on `payment_intent.payment_failed`
+
+Expected webhook shape is now closer to real Stripe events, not the old flat DTO. The relevant invoice id should be present in metadata.
+
+## Billing to communication wiring
+
+Communication service now listens to billing invoice events and relays them into workflow sends for:
+- `invoice-issued`
+- `payment-receipt`
+
+Billing invoice events now include richer payload fields such as:
+- subscription id
+- status
+- totals and currency
+- due date / paid at
+- billing period
+- pricing reference
+- line items (invoice created)
+- payment gateway / provider payment id (invoice paid)
+
+This is intentionally lightweight MVP glue built on the existing RabbitMQ billing event exchange, but the payloads are now much more useful for downstream consumers.

@@ -7,6 +7,7 @@ public interface INotificationRepository
 {
     Task AddAsync(Notification notification, CancellationToken cancellationToken);
     Task<Notification?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+    Task<Notification?> GetByIdempotencyKeyAsync(Guid tenantId, string idempotencyKey, CancellationToken cancellationToken);
     Task<IReadOnlyList<Notification>> ListByRecipientIdAsync(Guid recipientId, CancellationToken cancellationToken);
     Task<IReadOnlyList<Notification>> ListPendingAsync(int batchSize, CancellationToken cancellationToken);
     Task<IReadOnlyList<Notification>> ListRetryableAsync(int maxRetries, int batchSize, CancellationToken cancellationToken);

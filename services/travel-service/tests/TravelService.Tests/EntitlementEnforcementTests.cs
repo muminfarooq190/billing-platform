@@ -5,6 +5,7 @@ using TravelService.Application.Commands.EntityNotes;
 using TravelService.Application.Commands.SendQuotation;
 using TravelService.Domain.Aggregates;
 using TravelService.Domain.Repositories;
+using TravelService.Tests.TestDoubles;
 
 namespace TravelService.Tests;
 
@@ -33,6 +34,7 @@ public sealed class EntitlementEnforcementTests
             new InMemoryShareLinkRepository(),
             new InMemoryStatusHistoryRepository(),
             new InMemoryApprovalRepository(),
+            new NoOpCommunicationWorkflowClient(),
             new DenyFeatureGate(),
             new NoOpActivityWriter(),
             new FakeActorContext(quotation.TenantId),

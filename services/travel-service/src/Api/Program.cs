@@ -3,6 +3,7 @@ using TravelService.Application.Abstractions;
 using TravelService.Domain.Repositories;
 using TravelService.Infrastructure.Billing;
 using TravelService.Infrastructure.Caching;
+using TravelService.Infrastructure.Communication;
 using TravelService.Infrastructure.Entitlements;
 using TravelService.Infrastructure.Files;
 using TravelService.Infrastructure.Persistence;
@@ -58,6 +59,10 @@ public sealed class Program
         builder.Services.AddHttpClient<IBillingEntitlementsClient, BillingEntitlementsClient>(client =>
         {
             client.BaseAddress = new Uri(builder.Configuration["BILLING_SERVICE_URL"] ?? "http://localhost:5080/");
+        });
+        builder.Services.AddHttpClient<ICommunicationWorkflowClient, CommunicationWorkflowClient>(client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["COMMUNICATION_SERVICE_URL"] ?? "http://localhost:8080/");
         });
         builder.Services.AddScoped<IFeatureGate, CachedFeatureGate>();
 

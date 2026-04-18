@@ -13,6 +13,7 @@ public sealed class SendQuotationCommandHandler(
     IQuotationShareLinkRepository quotationShareLinkRepository,
     IQuotationStatusHistoryRepository quotationStatusHistoryRepository,
     IQuotationApprovalRequestRepository approvalRequestRepository,
+    ICommunicationWorkflowClient communicationWorkflowClient,
     IFeatureGate featureGate,
     IActivityWriter activityWriter,
     IActorContext actorContext,
@@ -72,7 +73,32 @@ public sealed class SendQuotationCommandHandler(
             cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new SendQuotationResult(shareLink.Id, token, shareLink.ExpiresAt, $"/travel/quotations/public/{token}");
+        var publicPath = $"/travel/quotations/public/{token}";
+        var publicBaseUrl = Environment.GetEnvironmentVariable("TRAVEL_PUBLIC_BASE_URL")?.TrimEnd('/') ?? "http://localhost:5060";
+        var publicUrl = $"{publicBaseUrl}{publicPath}";
+        var quotationPdfUrl = $"{publicBaseUrl}/travel/documents/quotations/{quotation.Id:D}/revisions/{revision.Id:D}/pdf";
+
+        await communicationWorkflowClient.SendQuotationAsync(request.TenantId, new QuotationCommunicationRequest(
+            quotation.CustomerContactId,
+            string.IsNullOrWhiteSpace(request.Channel) ? "Email" : request.Channel!,
+            $"Your quotation is ready - {quotation.Title}",
+            string.IsNullOrWhiteSpace(request.Message)
+                ? $"Your quotation for {quotation.Destination} is ready. You can review it using the attached/shared document link."
+                : request.Message!,
+            quotation.Id.ToString("D"),
+            revision.Id.ToString("D"),
+            $"quotation-sent:{quotation.Id:D}:{revision.Id:D}",
+            [
+                new CommunicationDocumentReference(
+                    $"quotation-{revision.RevisionNumber}.pdf",
+                    revision.Id.ToString("D"),
+                    quotationPdfUrl,
+                    "application/pdf",
+                    null,
+                    new Dictionary<string, string> { ["quotationId"] = quotation.Id.ToString("D"), ["revisionId"] = revision.Id.ToString("D") })
+            ]), cancellationToken);
+
+        return new SendQuotationResult(shareLink.Id, token, shareLink.ExpiresAt, publicPath);
     }
 
     private static string GenerateToken()

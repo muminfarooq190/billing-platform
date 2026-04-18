@@ -12,4 +12,9 @@ public sealed record SendNotificationCommand(
     string? Body,
     string Priority,
     string? ReferenceId,
+    string? CorrelationId,
+    string? IdempotencyKey,
+    string? WorkflowType,
+    string DocumentReferencesJson,
+    string MetadataJson,
     Dictionary<string, string>? Placeholders) : IRequest<Guid>;

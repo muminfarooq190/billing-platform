@@ -20,9 +20,17 @@ public sealed class SendNotificationCommandHandler(
     {
         await featureGate.EnsureEnabledAsync(FeatureKeys.CommunicationNotificationSend, request.TenantId, tenantContext.UserId, cancellationToken);
 
+        if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
+        {
+            var existing = await notificationRepository.GetByIdempotencyKeyAsync(request.TenantId, request.IdempotencyKey, cancellationToken);
+            if (existing is not null)
+                return existing.Id;
+        }
+
         var recipientType = Enum.Parse<RecipientType>(request.RecipientType, true);
         var priority = Enum.Parse<NotificationPriority>(request.Priority, true);
-        var placeholders = await brandingTemplateRenderer.EnrichAsync(request.TenantId, "Email", request.Placeholders ?? [], cancellationToken);
+        var brandingChannel = string.IsNullOrWhiteSpace(request.Channel) ? "Email" : request.Channel!;
+        var placeholders = await brandingTemplateRenderer.EnrichAsync(request.TenantId, brandingChannel, request.Placeholders ?? [], cancellationToken);
 
         string subject;
         string body;
@@ -63,7 +71,12 @@ public sealed class SendNotificationCommandHandler(
             body,
             priority,
             templateId,
-            request.ReferenceId);
+            request.ReferenceId,
+            request.CorrelationId,
+            request.WorkflowType,
+            request.IdempotencyKey,
+            request.DocumentReferencesJson,
+            request.MetadataJson);
 
         notification.MarkQueued();
         await notificationRepository.AddAsync(notification, cancellationToken);

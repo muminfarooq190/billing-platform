@@ -1,3 +1,4 @@
+using System.Text.Json;
 using CommunicationService.Domain.Common;
 using CommunicationService.Domain.Enums;
 using CommunicationService.Domain.Events;
@@ -9,7 +10,21 @@ public sealed class Notification : AggregateRoot
 {
     private Notification() { }
 
-    private Notification(Guid tenantId, Guid recipientId, RecipientType recipientType, ChannelType channel, string subject, string body, NotificationPriority priority, Guid? templateId, string? referenceId)
+    private Notification(
+        Guid tenantId,
+        Guid recipientId,
+        RecipientType recipientType,
+        ChannelType channel,
+        string subject,
+        string body,
+        NotificationPriority priority,
+        Guid? templateId,
+        string? referenceId,
+        string? correlationId,
+        string? workflowType,
+        string? idempotencyKey,
+        string? documentReferencesJson,
+        string? metadataJson)
     {
         if (tenantId == Guid.Empty) throw new DomainException("Tenant id is required.");
         if (recipientId == Guid.Empty) throw new DomainException("Recipient id is required.");
@@ -26,6 +41,11 @@ public sealed class Notification : AggregateRoot
         Priority = priority;
         TemplateId = templateId;
         ReferenceId = referenceId?.Trim() ?? string.Empty;
+        CorrelationId = correlationId?.Trim() ?? string.Empty;
+        WorkflowType = workflowType?.Trim() ?? string.Empty;
+        IdempotencyKey = idempotencyKey?.Trim();
+        DocumentReferencesJson = NormalizeArrayJson(documentReferencesJson);
+        MetadataJson = NormalizeObjectJson(metadataJson);
         Status = NotificationStatus.Pending;
         RetryCount = 0;
         CreatedAt = DateTimeOffset.UtcNow;
@@ -43,6 +63,11 @@ public sealed class Notification : AggregateRoot
     public NotificationStatus Status { get; private set; }
     public Guid? TemplateId { get; private set; }
     public string ReferenceId { get; private set; } = string.Empty;
+    public string CorrelationId { get; private set; } = string.Empty;
+    public string WorkflowType { get; private set; } = string.Empty;
+    public string? IdempotencyKey { get; private set; }
+    public string DocumentReferencesJson { get; private set; } = "[]";
+    public string MetadataJson { get; private set; } = "{}";
     public int RetryCount { get; private set; }
     public string? LastError { get; private set; }
     public string? ProviderMessageId { get; private set; }
@@ -52,8 +77,8 @@ public sealed class Notification : AggregateRoot
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
-    public static Notification Create(Guid tenantId, Guid recipientId, RecipientType recipientType, ChannelType channel, string subject, string body, NotificationPriority priority, Guid? templateId, string? referenceId)
-        => new(tenantId, recipientId, recipientType, channel, subject, body, priority, templateId, referenceId);
+    public static Notification Create(Guid tenantId, Guid recipientId, RecipientType recipientType, ChannelType channel, string subject, string body, NotificationPriority priority, Guid? templateId, string? referenceId, string? correlationId = null, string? workflowType = null, string? idempotencyKey = null, string? documentReferencesJson = null, string? metadataJson = null)
+        => new(tenantId, recipientId, recipientType, channel, subject, body, priority, templateId, referenceId, correlationId, workflowType, idempotencyKey, documentReferencesJson, metadataJson);
 
     public void MarkQueued()
     {
@@ -127,5 +152,23 @@ public sealed class Notification : AggregateRoot
         ProviderMessageId = null;
         UpdatedAt = DateTimeOffset.UtcNow;
         AddDomainEvent(new NotificationQueuedEvent(Id, TenantId, Channel.ToString()));
+    }
+
+    private static string NormalizeArrayJson(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return "[]";
+
+        using var document = JsonDocument.Parse(raw);
+        return document.RootElement.ValueKind == JsonValueKind.Array ? document.RootElement.GetRawText() : throw new DomainException("Document references payload must be a JSON array.");
+    }
+
+    private static string NormalizeObjectJson(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return "{}";
+
+        using var document = JsonDocument.Parse(raw);
+        return document.RootElement.ValueKind == JsonValueKind.Object ? document.RootElement.GetRawText() : throw new DomainException("Metadata payload must be a JSON object.");
     }
 }

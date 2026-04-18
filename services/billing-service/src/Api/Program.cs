@@ -1,5 +1,6 @@
 using BillingService.Api.Filters;
 using BillingService.Application.Abstractions;
+using BillingService.Application.Commands.GenerateInvoice;
 using BillingService.Domain.Repositories;
 using BillingService.Infrastructure.Caching;
 using BillingService.Infrastructure.Entitlements;
@@ -30,6 +31,7 @@ public sealed class Program
         builder.Services.AddScoped<ITenantFeatureOverrideRepository, TenantFeatureOverrideRepository>();
         builder.Services.AddScoped<ITenantUserFeatureAssignmentRepository, TenantUserFeatureAssignmentRepository>();
         builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+        builder.Services.AddScoped<IBillingPricingResolver, BillingPricingResolver>();
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
         builder.Services.AddScoped<IReadDbConnectionFactory, ReadDbConnectionFactory>();
         builder.Services.AddScoped<ICacheService, RedisCacheService>();
@@ -39,12 +41,17 @@ public sealed class Program
 
         if (string.Equals(builder.Configuration["PAYMENT_GATEWAY"], "Stripe", StringComparison.OrdinalIgnoreCase))
         {
-            builder.Services.AddScoped<IPaymentGateway, StripePaymentGateway>();
+            builder.Services.AddHttpClient<StripePaymentGateway>(client =>
+            {
+                client.BaseAddress = new Uri(builder.Configuration["STRIPE_API_BASE_URL"] ?? "https://api.stripe.com/");
+            });
+            builder.Services.AddScoped<IPaymentGateway>(serviceProvider => serviceProvider.GetRequiredService<StripePaymentGateway>());
         }
         else
         {
             builder.Services.AddScoped<IPaymentGateway, MockPaymentGateway>();
         }
+        builder.Services.AddSingleton<IStripeWebhookVerifier, StripeWebhookVerifier>();
 
         builder.Services.AddHostedService<OutboxPublisherService>();
         builder.Services.AddHostedService<BillingSchedulerService>();

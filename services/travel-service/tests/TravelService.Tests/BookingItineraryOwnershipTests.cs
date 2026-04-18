@@ -4,6 +4,7 @@ using TravelService.Application.Commands.CreateBookingItinerary;
 using TravelService.Application.Commands.CreateItinerary;
 using TravelService.Domain.Aggregates;
 using TravelService.Domain.Repositories;
+using TravelService.Tests.TestDoubles;
 
 namespace TravelService.Tests;
 
@@ -15,7 +16,7 @@ public sealed class BookingItineraryOwnershipTests
         var booking = Booking.CreateFromAcceptedQuotation(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "VOY-BKG-2026-000001", "Bali Escape", "Bali", DateTimeOffset.UtcNow.AddDays(20), DateTimeOffset.UtcNow.AddDays(25), 2, "USD", 1200m);
         var bookingRepository = new InMemoryBookingRepository(booking);
         var itineraryRepository = new InMemoryItineraryRepository();
-        var handler = new CreateBookingItineraryCommandHandler(bookingRepository, itineraryRepository, new NoOpActivityWriter(), new NoOpUnitOfWork());
+        var handler = new CreateBookingItineraryCommandHandler(bookingRepository, itineraryRepository, new NoOpCommunicationWorkflowClient(), new NoOpActivityWriter(), new NoOpUnitOfWork());
 
         var itineraryId = await handler.Handle(new CreateBookingItineraryCommand(
             booking.TenantId,

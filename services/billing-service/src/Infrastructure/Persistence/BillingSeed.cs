@@ -1,3 +1,4 @@
+using System.Text.Json;
 using BillingService.Domain.Aggregates;
 using BillingService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -59,10 +60,22 @@ public static class BillingSeed
         {
             if (!existingPackages.TryGetValue(definition.Code, out var package))
             {
-                package = CommercialPackage.Create(definition.Code, definition.Name, "BasePlan", "Flat", definition.Description);
+                package = CommercialPackage.Create(
+                    definition.Code,
+                    definition.Name,
+                    "BasePlan",
+                    "Flat",
+                    definition.Description,
+                    true,
+                    BuildLegacyPricingMetadata(definition.Plan));
                 dbContext.CommercialPackages.Add(package);
                 await dbContext.SaveChangesAsync(cancellationToken);
                 existingPackages[definition.Code] = package;
+            }
+            else if (string.IsNullOrWhiteSpace(package.MetadataJson))
+            {
+                package.Update(package.Code, package.Name, package.Category, package.BillingModel, package.Description, package.IsActive, BuildLegacyPricingMetadata(definition.Plan));
+                await dbContext.SaveChangesAsync(cancellationToken);
             }
 
             var hasFeatures = await dbContext.CommercialPackageFeatures
@@ -141,6 +154,30 @@ public static class BillingSeed
             dbContext.TenantSubscriptionPackages.AddRange(newAssignments);
             await dbContext.SaveChangesAsync(cancellationToken);
         }
+    }
+
+    private static string BuildLegacyPricingMetadata(PlanType planType)
+    {
+        var (monthly, annual) = planType switch
+        {
+            PlanType.Free => (0m, 0m),
+            PlanType.Pro => (49m, 490m),
+            PlanType.Enterprise => (199m, 1990m),
+            _ => (49m, 490m)
+        };
+
+        var payload = new
+        {
+            pricing = new
+            {
+                monthly = new { amount = monthly, currency = "USD" },
+                annual = new { amount = annual, currency = "USD" }
+            },
+            taxRate = 0.10m,
+            source = "legacy-compatibility"
+        };
+
+        return JsonSerializer.Serialize(payload);
     }
 
     private static IReadOnlyList<CommercialPackageFeature> CreateLegacyFeatures(Guid packageId, PlanType planType)
