@@ -52,18 +52,18 @@ public sealed class GeoLeadsController(IMediator mediator, ITenantContext tenant
                 leadId = x.GeoLeadId,
                 rank = x.Rank,
                 score = x.Score,
-                name = x.Lead.CanonicalName,
-                leadType = x.Lead.LeadType,
-                email = x.Lead.PrimaryEmail,
-                phone = x.Lead.PrimaryPhone,
-                website = x.Lead.Website,
-                address = x.Lead.Address,
-                city = x.Lead.City,
-                region = x.Lead.Region,
-                country = x.Lead.Country,
-                location = new { lat = x.Lead.Latitude, lng = x.Lead.Longitude },
-                sources = x.Lead.Sources,
-                reason = x.Reasoning
+                name = x.CanonicalName,
+                leadType = x.LeadType,
+                email = x.PrimaryEmail,
+                phone = x.PrimaryPhone,
+                website = x.Website,
+                address = x.Address,
+                city = x.City,
+                region = x.Region,
+                country = x.Country,
+                location = new { lat = x.Latitude, lng = x.Longitude },
+                sources = System.Text.Json.JsonSerializer.Deserialize<List<string>>(x.SourcesJson) ?? new List<string>(),
+                reason = x.GetReasoning()
             })
         });
     }
@@ -79,7 +79,7 @@ public sealed class GeoLeadsController(IMediator mediator, ITenantContext tenant
             return NotFound();
 
         var lines = new List<string> { "Name,LeadType,Email,Phone,Website,Address,City,Region,Country,Score" };
-        lines.AddRange(query.Results.Select(x => string.Join(',', Escape(x.Lead.CanonicalName), Escape(x.Lead.LeadType), Escape(x.Lead.PrimaryEmail), Escape(x.Lead.PrimaryPhone), Escape(x.Lead.Website), Escape(x.Lead.Address), Escape(x.Lead.City), Escape(x.Lead.Region), Escape(x.Lead.Country), x.Score.ToString("0.####"))));
+        lines.AddRange(query.Results.Select(x => string.Join(',', Escape(x.CanonicalName), Escape(x.LeadType), Escape(x.PrimaryEmail), Escape(x.PrimaryPhone), Escape(x.Website), Escape(x.Address), Escape(x.City), Escape(x.Region), Escape(x.Country), x.Score.ToString("0.####"))));
         return File(System.Text.Encoding.UTF8.GetBytes(string.Join(Environment.NewLine, lines)), "text/csv", $"geo-leads-{queryId:D}.csv");
     }
 

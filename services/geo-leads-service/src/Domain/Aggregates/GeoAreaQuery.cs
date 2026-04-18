@@ -13,7 +13,7 @@ public sealed class GeoAreaQuery
         Id = Guid.NewGuid();
         TenantId = tenantId;
         GeometryJson = geometryJson;
-        RequestedLeadTypes = requestedLeadTypes;
+        RequestedLeadTypesJson = System.Text.Json.JsonSerializer.Serialize(requestedLeadTypes);
         RequestedLimit = requestedLimit;
         Status = GeoAreaQueryStatus.Pending;
         CreatedAt = DateTimeOffset.UtcNow;
@@ -22,7 +22,7 @@ public sealed class GeoAreaQuery
     public Guid Id { get; private set; }
     public Guid TenantId { get; private set; }
     public string GeometryJson { get; private set; } = string.Empty;
-    public IReadOnlyList<string> RequestedLeadTypes { get; private set; } = [];
+    public string RequestedLeadTypesJson { get; private set; } = "[]";
     public int RequestedLimit { get; private set; }
     public GeoAreaQueryStatus Status { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
@@ -38,9 +38,72 @@ public sealed class GeoAreaQuery
     }
 }
 
-public sealed record GeoAreaQueryResult(
-    Guid GeoLeadId,
-    int Rank,
-    decimal Score,
-    GeoLead Lead,
-    IReadOnlyList<string> Reasoning);
+public sealed class GeoAreaQueryResult
+{
+    private GeoAreaQueryResult() { }
+
+    public GeoAreaQueryResult(Guid geoAreaQueryId, int rank, decimal score, GeoLead lead, IReadOnlyList<string> reasoning)
+    {
+        Id = Guid.NewGuid();
+        GeoAreaQueryId = geoAreaQueryId;
+        GeoLeadId = lead.Id;
+        Rank = rank;
+        Score = score;
+        CanonicalName = lead.CanonicalName;
+        LeadType = lead.LeadType;
+        PrimaryEmail = lead.PrimaryEmail;
+        PrimaryPhone = lead.PrimaryPhone;
+        Website = lead.Website;
+        Address = lead.Address;
+        City = lead.City;
+        Region = lead.Region;
+        Country = lead.Country;
+        Latitude = lead.Latitude;
+        Longitude = lead.Longitude;
+        SourcesJson = System.Text.Json.JsonSerializer.Serialize(lead.Sources);
+        ReasoningJson = System.Text.Json.JsonSerializer.Serialize(reasoning);
+    }
+
+    public Guid Id { get; private set; }
+    public Guid GeoAreaQueryId { get; private set; }
+    public Guid GeoLeadId { get; private set; }
+    public int Rank { get; private set; }
+    public decimal Score { get; private set; }
+    public string CanonicalName { get; private set; } = string.Empty;
+    public string LeadType { get; private set; } = string.Empty;
+    public string? PrimaryEmail { get; private set; }
+    public string? PrimaryPhone { get; private set; }
+    public string? Website { get; private set; }
+    public string Address { get; private set; } = string.Empty;
+    public string City { get; private set; } = string.Empty;
+    public string Region { get; private set; } = string.Empty;
+    public string Country { get; private set; } = string.Empty;
+    public decimal Latitude { get; private set; }
+    public decimal Longitude { get; private set; }
+    public string SourcesJson { get; private set; } = "[]";
+    public string ReasoningJson { get; private set; } = "[]";
+
+    public GeoLead ToLead()
+        => new(
+            GeoLeadId,
+            CanonicalName,
+            LeadType,
+            PrimaryEmail,
+            PrimaryPhone,
+            Website,
+            Address,
+            Latitude,
+            Longitude,
+            City,
+            Region,
+            Country,
+            0m,
+            0m,
+            0m,
+            System.Text.Json.JsonSerializer.Deserialize<List<string>>(SourcesJson) ?? [],
+            System.Text.Json.JsonSerializer.Deserialize<List<string>>(ReasoningJson) ?? [],
+            DateTimeOffset.UtcNow);
+
+    public IReadOnlyList<string> GetReasoning()
+        => System.Text.Json.JsonSerializer.Deserialize<List<string>>(ReasoningJson) ?? [];
+}

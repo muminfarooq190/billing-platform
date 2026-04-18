@@ -8,7 +8,6 @@ namespace GeoLeadsService.Application.Commands.SubmitGeoAreaQuery;
 
 public sealed class SubmitGeoAreaQueryCommandHandler(
     IGeoAreaQueryRepository geoAreaQueryRepository,
-    IGeoAreaQueryResultStore geoAreaQueryResultStore,
     IGeoLeadCatalog geoLeadCatalog) : IRequestHandler<SubmitGeoAreaQueryCommand, (Guid QueryId, int Count)>
 {
     public async Task<(Guid QueryId, int Count)> Handle(SubmitGeoAreaQueryCommand request, CancellationToken cancellationToken)
@@ -21,7 +20,7 @@ public sealed class SubmitGeoAreaQueryCommandHandler(
 
         var leads = await geoLeadCatalog.SearchAsync(request.Geometry, request.LeadTypes, request.Limit, cancellationToken);
         var results = leads.Select((lead, index) => new GeoAreaQueryResult(
-            lead.Id,
+            query.Id,
             index + 1,
             Math.Round((lead.TourismRelevanceScore * 0.35m) + (lead.ContactabilityScore * 0.30m) + (lead.ConfidenceScore * 0.35m), 4),
             lead,
@@ -29,7 +28,6 @@ public sealed class SubmitGeoAreaQueryCommandHandler(
 
         query.Complete(results);
         await geoAreaQueryRepository.AddAsync(query, cancellationToken);
-        await geoAreaQueryResultStore.SaveAsync(query.Id, results, cancellationToken);
         return (query.Id, results.Count);
     }
 }

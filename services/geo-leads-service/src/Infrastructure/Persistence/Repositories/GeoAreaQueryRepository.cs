@@ -13,5 +13,7 @@ public sealed class GeoAreaQueryRepository(GeoLeadsDbContext dbContext) : IGeoAr
     }
 
     public Task<GeoAreaQuery?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken cancellationToken)
-        => dbContext.GeoAreaQueries.SingleOrDefaultAsync(x => x.Id == id && x.TenantId == tenantId, cancellationToken);
+        => dbContext.GeoAreaQueries
+            .Include(x => x.Results)
+            .SingleOrDefaultAsync(x => x.Id == id && x.TenantId == tenantId, cancellationToken);
 }
