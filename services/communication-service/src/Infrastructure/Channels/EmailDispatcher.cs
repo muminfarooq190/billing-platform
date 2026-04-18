@@ -1,3 +1,4 @@
+using System.Text.Json;
 using CommunicationService.Application.Abstractions;
 using CommunicationService.Domain.Enums;
 using Microsoft.Extensions.Options;
@@ -21,10 +22,41 @@ public sealed class EmailDispatcher(
         if (provider.Name.Equals("sendgrid", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(subject))
             return new ChannelDispatchResult(false, null, "Email subject is required for SendGrid delivery.");
 
-        var result = await provider.SendAsync(new EmailMessage(recipient, settings.DefaultFromEmail ?? string.Empty, settings.DefaultFromName, subject, body), cancellationToken);
+        var (renderedBody, attachments) = TryExtractDocumentAwareBody(body);
+        var result = await provider.SendAsync(new EmailMessage(recipient, settings.DefaultFromEmail ?? string.Empty, settings.DefaultFromName, subject, renderedBody, attachments), cancellationToken);
         if (!result.Success)
             logger.LogWarning("Email dispatch failed via provider {Provider}: {Error}", provider.Name, result.ErrorMessage);
 
         return new ChannelDispatchResult(result.Success, result.ProviderMessageId, result.ErrorMessage);
     }
+
+    private static (string Body, IReadOnlyList<EmailAttachmentReference> Attachments) TryExtractDocumentAwareBody(string body)
+    {
+        const string marker = "\n\n[DocumentReferencesJson]";
+        var markerIndex = body.IndexOf(marker, StringComparison.Ordinal);
+        if (markerIndex < 0)
+            return (body, []);
+
+        var displayBody = body[..markerIndex].TrimEnd();
+        var json = body[(markerIndex + marker.Length)..].Trim();
+        try
+        {
+            var docs = JsonSerializer.Deserialize<List<EmailDocumentPayload>>(json) ?? [];
+            if (docs.Count == 0)
+                return (displayBody, []);
+
+            var attachmentRefs = docs
+                .Select(x => new EmailAttachmentReference(x.Name, x.Url, x.ContentType))
+                .ToList();
+            var lines = docs.Select((doc, index) => $"{index + 1}. {doc.Name}: {doc.Url ?? doc.DocumentId ?? "document reference"}");
+            var enhancedBody = $"{displayBody}\n\nDocuments:\n{string.Join("\n", lines)}";
+            return (enhancedBody, attachmentRefs);
+        }
+        catch (JsonException)
+        {
+            return (body, []);
+        }
+    }
+
+    private sealed record EmailDocumentPayload(string Name, string? DocumentId, string? Url, string? ContentType, long? SizeBytes, Dictionary<string, string>? Metadata);
 }

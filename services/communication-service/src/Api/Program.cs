@@ -46,6 +46,17 @@ public sealed class Program
             })
             .ValidateOnStart();
         builder.Services.AddSingleton<IValidateOptions<SmsChannelOptions>, SmsChannelOptionsValidator>();
+        builder.Services.AddOptions<WhatsAppChannelOptions>()
+            .Configure<IConfiguration>((options, configuration) =>
+            {
+                options.Provider = configuration["WHATSAPP_PROVIDER"] ?? "log";
+                options.DefaultFromNumber = configuration["WHATSAPP_DEFAULT_FROM_NUMBER"];
+                options.TwilioAccountSid = configuration["TWILIO_ACCOUNT_SID"];
+                options.TwilioAuthToken = configuration["TWILIO_AUTH_TOKEN"];
+                options.TwilioBaseUrl = configuration["TWILIO_BASE_URL"] ?? "https://api.twilio.com/";
+            })
+            .ValidateOnStart();
+        builder.Services.AddSingleton<IValidateOptions<WhatsAppChannelOptions>, WhatsAppChannelOptionsValidator>();
         builder.Services.AddHttpClient<SendGridEmailProvider>((serviceProvider, client) =>
         {
             var options = serviceProvider.GetRequiredService<IOptions<EmailChannelOptions>>().Value;
@@ -56,12 +67,20 @@ public sealed class Program
             var options = serviceProvider.GetRequiredService<IOptions<SmsChannelOptions>>().Value;
             client.BaseAddress = new Uri(options.TwilioBaseUrl);
         });
+        builder.Services.AddHttpClient<TwilioWhatsAppProvider>((serviceProvider, client) =>
+        {
+            var options = serviceProvider.GetRequiredService<IOptions<WhatsAppChannelOptions>>().Value;
+            client.BaseAddress = new Uri(options.TwilioBaseUrl);
+        });
         builder.Services.AddScoped<IEmailDeliveryProvider, LogEmailProvider>();
         builder.Services.AddScoped<IEmailDeliveryProvider>(serviceProvider => serviceProvider.GetRequiredService<SendGridEmailProvider>());
         builder.Services.AddScoped<ISmsDeliveryProvider, LogSmsProvider>();
         builder.Services.AddScoped<ISmsDeliveryProvider>(serviceProvider => serviceProvider.GetRequiredService<TwilioSmsProvider>());
+        builder.Services.AddScoped<IWhatsAppDeliveryProvider, LogWhatsAppProvider>();
+        builder.Services.AddScoped<IWhatsAppDeliveryProvider>(serviceProvider => serviceProvider.GetRequiredService<TwilioWhatsAppProvider>());
         builder.Services.AddScoped<EmailProviderResolver>();
         builder.Services.AddScoped<SmsProviderResolver>();
+        builder.Services.AddScoped<WhatsAppProviderResolver>();
         builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
         builder.Services.AddScoped<INotificationTemplateRepository, NotificationTemplateRepository>();
         builder.Services.AddScoped<IRecipientPreferencesRepository, RecipientPreferencesRepository>();
@@ -84,6 +103,7 @@ public sealed class Program
         builder.Services.AddScoped<IFeatureGate, CachedFeatureGate>();
         builder.Services.AddScoped<IChannelDispatcher, EmailDispatcher>();
         builder.Services.AddScoped<IChannelDispatcher, SmsDispatcher>();
+        builder.Services.AddScoped<IChannelDispatcher, WhatsAppDispatcher>();
         builder.Services.AddScoped<IChannelDispatcher, PushNotificationDispatcher>();
         builder.Services.AddScoped<IChannelDispatcher, InAppDispatcher>();
 

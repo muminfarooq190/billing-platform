@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.Options;
 
 namespace CommunicationService.Infrastructure.Channels;
@@ -17,6 +16,17 @@ public sealed class EmailChannelOptions
 public sealed class SmsChannelOptions
 {
     public const string SectionName = "Communication:Sms";
+
+    public string Provider { get; set; } = "log";
+    public string? DefaultFromNumber { get; set; }
+    public string? TwilioAccountSid { get; set; }
+    public string? TwilioAuthToken { get; set; }
+    public string TwilioBaseUrl { get; set; } = "https://api.twilio.com/";
+}
+
+public sealed class WhatsAppChannelOptions
+{
+    public const string SectionName = "Communication:WhatsApp";
 
     public string Provider { get; set; } = "log";
     public string? DefaultFromNumber { get; set; }
@@ -56,6 +66,26 @@ public sealed class SmsChannelOptionsValidator : IValidateOptions<SmsChannelOpti
             if (string.IsNullOrWhiteSpace(options.TwilioAuthToken)) failures.Add("Communication:Sms:TwilioAuthToken is required when SMS_PROVIDER=twilio.");
             if (string.IsNullOrWhiteSpace(options.DefaultFromNumber)) failures.Add("Communication:Sms:DefaultFromNumber is required when SMS_PROVIDER=twilio.");
             if (!Uri.TryCreate(options.TwilioBaseUrl, UriKind.Absolute, out _)) failures.Add("Communication:Sms:TwilioBaseUrl must be an absolute URI.");
+
+            return failures.Count > 0 ? ValidateOptionsResult.Fail(failures) : ValidateOptionsResult.Success;
+        }
+
+        return ValidateOptionsResult.Success;
+    }
+}
+
+public sealed class WhatsAppChannelOptionsValidator : IValidateOptions<WhatsAppChannelOptions>
+{
+    public ValidateOptionsResult Validate(string? name, WhatsAppChannelOptions options)
+    {
+        var provider = options.Provider.Trim();
+        if (provider.Equals("twilio", StringComparison.OrdinalIgnoreCase))
+        {
+            var failures = new List<string>();
+            if (string.IsNullOrWhiteSpace(options.TwilioAccountSid)) failures.Add("Communication:WhatsApp:TwilioAccountSid is required when WHATSAPP_PROVIDER=twilio.");
+            if (string.IsNullOrWhiteSpace(options.TwilioAuthToken)) failures.Add("Communication:WhatsApp:TwilioAuthToken is required when WHATSAPP_PROVIDER=twilio.");
+            if (string.IsNullOrWhiteSpace(options.DefaultFromNumber)) failures.Add("Communication:WhatsApp:DefaultFromNumber is required when WHATSAPP_PROVIDER=twilio.");
+            if (!Uri.TryCreate(options.TwilioBaseUrl, UriKind.Absolute, out _)) failures.Add("Communication:WhatsApp:TwilioBaseUrl must be an absolute URI.");
 
             return failures.Count > 0 ? ValidateOptionsResult.Fail(failures) : ValidateOptionsResult.Success;
         }
