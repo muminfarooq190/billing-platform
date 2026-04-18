@@ -5,7 +5,8 @@ This service now has a pragmatic MVP pass focused on not faking money flows.
 ## Payment behavior
 
 - `StripePaymentGateway` no longer returns unconditional success.
-- If Stripe is configured, invoice payment requests now return an **action-required** style result with a checkout URL shape instead of pretending payment already completed.
+- If Stripe is configured, invoice payment requests now create a real Stripe Checkout Session via Stripe's API and return an **action-required** result with the hosted checkout URL.
+- Checkout session metadata includes `invoiceId` and `tenantId` for webhook reconciliation.
 - If Stripe is selected but not configured, the payment attempt fails explicitly.
 - Mock gateway remains available for local/dev flows and returns a deterministic mock success.
 

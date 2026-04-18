@@ -41,7 +41,11 @@ public sealed class Program
 
         if (string.Equals(builder.Configuration["PAYMENT_GATEWAY"], "Stripe", StringComparison.OrdinalIgnoreCase))
         {
-            builder.Services.AddScoped<IPaymentGateway, StripePaymentGateway>();
+            builder.Services.AddHttpClient<StripePaymentGateway>(client =>
+            {
+                client.BaseAddress = new Uri(builder.Configuration["STRIPE_API_BASE_URL"] ?? "https://api.stripe.com/");
+            });
+            builder.Services.AddScoped<IPaymentGateway>(serviceProvider => serviceProvider.GetRequiredService<StripePaymentGateway>());
         }
         else
         {
