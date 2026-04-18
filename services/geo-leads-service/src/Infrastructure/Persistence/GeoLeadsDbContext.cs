@@ -7,6 +7,7 @@ public sealed class GeoLeadsDbContext(DbContextOptions<GeoLeadsDbContext> option
 {
     public DbSet<GeoAreaQuery> GeoAreaQueries => Set<GeoAreaQuery>();
     public DbSet<GeoAreaQueryResult> GeoAreaQueryResults => Set<GeoAreaQueryResult>();
+    public DbSet<LeadSourceRecord> LeadSourceRecords => Set<LeadSourceRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -45,6 +46,25 @@ public sealed class GeoLeadsDbContext(DbContextOptions<GeoLeadsDbContext> option
             builder.Property(x => x.Longitude).HasColumnName("longitude");
             builder.Property(x => x.SourcesJson).HasColumnName("sources_json");
             builder.Property(x => x.ReasoningJson).HasColumnName("reasoning_json");
+        });
+
+        modelBuilder.Entity<LeadSourceRecord>(builder =>
+        {
+            builder.ToTable("lead_source_records");
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.SourceName).HasColumnName("source_name");
+            builder.Property(x => x.SourceRecordId).HasColumnName("source_record_id");
+            builder.Property(x => x.RawName).HasColumnName("raw_name");
+            builder.Property(x => x.RawCategory).HasColumnName("raw_category");
+            builder.Property(x => x.RawAddress).HasColumnName("raw_address");
+            builder.Property(x => x.RawPhone).HasColumnName("raw_phone");
+            builder.Property(x => x.RawEmail).HasColumnName("raw_email");
+            builder.Property(x => x.RawWebsite).HasColumnName("raw_website");
+            builder.Property(x => x.RawLatitude).HasColumnName("raw_latitude");
+            builder.Property(x => x.RawLongitude).HasColumnName("raw_longitude");
+            builder.Property(x => x.RawPayloadJson).HasColumnName("raw_payload_json");
+            builder.Property(x => x.FirstSeenAt).HasColumnName("first_seen_at");
+            builder.Property(x => x.LastSeenAt).HasColumnName("last_seen_at");
         });
     }
 }

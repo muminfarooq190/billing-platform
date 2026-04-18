@@ -13,19 +13,26 @@ Initial MVP backend skeleton:
 - stricter polygon validation (closed polygons, coordinate bounds, minimum point count)
 - persisted query metadata via EF Core/Postgres-ready DbContext
 - persisted query result rows with lead snapshots for retrieval/export
-- seeded/in-memory lead catalog with simple polygon filtering and ranking
+- ingestion skeleton for raw source records
+- source adapter abstraction for future scraper/indexer plug-in
+- searchable catalog that can use ingested source records or fallback seeded data
 - domain/data structures for queries and leads
 
 ## What is NOT implemented yet
 
 Not built yet:
-- real scraper/indexer pipeline
-- persistent database storage
+- real external scraper/indexer pipeline
 - PostGIS support
-- source ingestion jobs
+- scheduled/background ingestion jobs
 - external enrichment
 - compliance allowlist/blacklist tooling
 - saved queries / refresh jobs
+
+## Current ingestion endpoint
+
+- `POST /geo-leads/sources/ingest`
+
+Current ingestion uses a seeded source adapter and persists raw source records so future source adapters can plug into the same flow.
 
 ## Current purpose
 

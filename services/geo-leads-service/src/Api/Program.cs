@@ -18,7 +18,9 @@ public sealed class Program
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<ITenantContext, HeaderTenantContext>();
         builder.Services.AddScoped<IGeoAreaQueryRepository, GeoAreaQueryRepository>();
+        builder.Services.AddScoped<ILeadSourceRecordRepository, LeadSourceRecordRepository>();
         builder.Services.AddScoped<IGeoLeadCatalog, SeededGeoLeadCatalog>();
+        builder.Services.AddScoped<IGeoLeadSourceAdapter, SeededGeoLeadSourceAdapter>();
         builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
         builder.Services.AddHealthChecks();
         builder.Services.AddControllers();
