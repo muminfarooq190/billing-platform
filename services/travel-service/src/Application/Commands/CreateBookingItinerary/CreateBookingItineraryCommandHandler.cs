@@ -1,6 +1,5 @@
 using MediatR;
 using TravelService.Application.Abstractions;
-using TravelService.Application.Commands.CreateItinerary;
 using TravelService.Domain.Aggregates;
 using TravelService.Domain.Enums;
 using TravelService.Domain.Exceptions;
@@ -11,6 +10,7 @@ namespace TravelService.Application.Commands.CreateBookingItinerary;
 public sealed class CreateBookingItineraryCommandHandler(
     IBookingRepository bookingRepository,
     IItineraryRepository itineraryRepository,
+    ICommunicationWorkflowClient communicationWorkflowClient,
     IActivityWriter activityWriter,
     IUnitOfWork unitOfWork) : IRequestHandler<CreateBookingItineraryCommand, Guid>
 {
@@ -60,6 +60,27 @@ public sealed class CreateBookingItineraryCommandHandler(
                 new { ItineraryId = itinerary.Id, booking.QuotationId }),
             cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var publicBaseUrl = Environment.GetEnvironmentVariable("TRAVEL_PUBLIC_BASE_URL")?.TrimEnd('/') ?? "http://localhost:5060";
+        var itineraryUrl = $"{publicBaseUrl}/travel/bookings/{booking.Id:D}/itinerary";
+        await communicationWorkflowClient.SendItineraryAsync(request.TenantId, new ItineraryCommunicationRequest(
+            booking.PrimaryContactId,
+            "Email",
+            $"Your itinerary is ready - {request.Title}",
+            $"Your itinerary for {request.Destination} is ready. Please review the attached/shared itinerary document.",
+            itinerary.Id.ToString("D"),
+            booking.Id.ToString("D"),
+            $"itinerary-sent:{itinerary.Id:D}",
+            [
+                new CommunicationDocumentReference(
+                    $"itinerary-{itinerary.Id:D}.pdf",
+                    itinerary.Id.ToString("D"),
+                    itineraryUrl,
+                    "application/pdf",
+                    null,
+                    new Dictionary<string, string> { ["bookingId"] = booking.Id.ToString("D"), ["quotationId"] = booking.QuotationId?.ToString("D") ?? string.Empty })
+            ]), cancellationToken);
+
         return itinerary.Id;
     }
 }
