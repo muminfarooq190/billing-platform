@@ -82,6 +82,7 @@ public sealed class Program
         builder.Services.AddScoped<EmailProviderResolver>();
         builder.Services.AddScoped<SmsProviderResolver>();
         builder.Services.AddScoped<WhatsAppProviderResolver>();
+        builder.Services.AddScoped<IChannelPreferenceResolver, ChannelPreferenceResolver>();
         builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
         builder.Services.AddScoped<INotificationTemplateRepository, NotificationTemplateRepository>();
         builder.Services.AddScoped<IRecipientPreferencesRepository, RecipientPreferencesRepository>();
