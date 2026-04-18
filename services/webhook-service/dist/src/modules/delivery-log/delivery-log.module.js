@@ -10,13 +10,14 @@ exports.DeliveryLogModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const webhook_delivery_log_entity_1 = require("../../entities/webhook-delivery-log.entity");
+const webhook_subscription_entity_1 = require("../../entities/webhook-subscription.entity");
 const delivery_log_service_1 = require("./delivery-log.service");
 let DeliveryLogModule = class DeliveryLogModule {
 };
 exports.DeliveryLogModule = DeliveryLogModule;
 exports.DeliveryLogModule = DeliveryLogModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([webhook_delivery_log_entity_1.WebhookDeliveryLogEntity])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([webhook_delivery_log_entity_1.WebhookDeliveryLogEntity, webhook_subscription_entity_1.WebhookSubscriptionEntity])],
         providers: [delivery_log_service_1.DeliveryLogService],
         exports: [delivery_log_service_1.DeliveryLogService],
     })

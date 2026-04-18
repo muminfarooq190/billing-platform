@@ -20,6 +20,7 @@ const webhook_module_1 = require("./modules/webhook/webhook.module");
 const webhook_signer_service_1 = require("./signing/webhook-signer.service");
 const webhook_delivery_log_entity_1 = require("./entities/webhook-delivery-log.entity");
 const webhook_subscription_entity_1 = require("./entities/webhook-subscription.entity");
+const _0000000000001_initial_schema_1 = require("./migrations/0000000000001-initial-schema");
 let AppModule = class AppModule {
 };
 AppModule = __decorate([
@@ -29,7 +30,8 @@ AppModule = __decorate([
                 type: 'postgres',
                 url: process.env.DATABASE_URL,
                 entities: [webhook_delivery_log_entity_1.WebhookDeliveryLogEntity, webhook_subscription_entity_1.WebhookSubscriptionEntity],
-                synchronize: true,
+                migrations: [_0000000000001_initial_schema_1.InitialSchema0000000000001],
+                synchronize: false,
             }),
             webhook_module_1.WebhookModule,
             delivery_log_module_1.DeliveryLogModule,
@@ -40,6 +42,9 @@ AppModule = __decorate([
 ], AppModule);
 async function bootstrap() {
     const app = await core_1.NestFactory.create(AppModule);
+    app.useGlobalPipes(new common_1.ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
+    const dataSource = app.get((0, typeorm_1.getDataSourceToken)());
+    await dataSource.runMigrations();
     const processor = app.get(webhook_delivery_processor_1.WebhookDeliveryProcessor);
     const redisUrl = process.env.REDIS_URL ?? 'redis://redis:6379';
     const worker = new bullmq_1.Worker('webhook-delivery', async (job) => processor.process(job), {

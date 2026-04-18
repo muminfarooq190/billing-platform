@@ -54,6 +54,10 @@ __decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)
 ], WebhookDeliveryLogEntity.prototype, "createdAt", void 0);
+__decorate([
+    (0, typeorm_1.UpdateDateColumn)({ name: 'updated_at' }),
+    __metadata("design:type", Date)
+], WebhookDeliveryLogEntity.prototype, "updatedAt", void 0);
 exports.WebhookDeliveryLogEntity = WebhookDeliveryLogEntity = __decorate([
     (0, typeorm_1.Entity)({ name: 'webhook_delivery_logs' })
 ], WebhookDeliveryLogEntity);

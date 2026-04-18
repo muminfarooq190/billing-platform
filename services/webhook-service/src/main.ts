@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Module } from '@nestjs/common';
+import { Module, ValidationPipe } from '@nestjs/common';
 import { HealthController } from './common/health.controller';
 import { NestFactory } from '@nestjs/core';
 import { TypeOrmModule, getDataSourceToken } from '@nestjs/typeorm';
@@ -34,6 +34,7 @@ class AppModule {}
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
   const dataSource = app.get<DataSource>(getDataSourceToken());
   await dataSource.runMigrations();
 
