@@ -39,9 +39,13 @@ Added pragmatic webhook endpoint:
 - `POST /billing/webhooks/stripe`
 
 Current MVP behavior:
-- validates a simple configured webhook secret if present
+- validates `Stripe-Signature` using HMAC SHA-256 when `STRIPE_WEBHOOK_SECRET` is configured
+- parses a Stripe-style raw event envelope from the request body
+- resolves invoice id from `data.object.metadata.invoiceId` (or nested invoice metadata)
 - marks invoice paid on `payment_intent.succeeded` / `checkout.session.completed`
 - marks invoice failed/overdue on `payment_intent.payment_failed`
+
+Expected webhook shape is now closer to real Stripe events, not the old flat DTO. The relevant invoice id should be present in metadata.
 
 ## Billing to communication wiring
 

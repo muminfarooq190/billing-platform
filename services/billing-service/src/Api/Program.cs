@@ -47,6 +47,7 @@ public sealed class Program
         {
             builder.Services.AddScoped<IPaymentGateway, MockPaymentGateway>();
         }
+        builder.Services.AddSingleton<IStripeWebhookVerifier, StripeWebhookVerifier>();
 
         builder.Services.AddHostedService<OutboxPublisherService>();
         builder.Services.AddHostedService<BillingSchedulerService>();
