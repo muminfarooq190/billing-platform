@@ -26,7 +26,24 @@ Added internal invoice read API expected by downstream services:
 
 Still intentionally deferred:
 - live Stripe SDK checkout session creation
-- webhook-based reconciliation
 - dedicated payment transaction table/entity
 - refunds / partial refunds
 - invoice PDF generation
+
+## Stripe webhook / reconciliation
+
+Added pragmatic webhook endpoint:
+- `POST /billing/webhooks/stripe`
+
+Current MVP behavior:
+- validates a simple configured webhook secret if present
+- marks invoice paid on `payment_intent.succeeded` / `checkout.session.completed`
+- marks invoice failed/overdue on `payment_intent.payment_failed`
+
+## Billing to communication wiring
+
+Communication service now listens to billing invoice events and relays them into workflow sends for:
+- `invoice-issued`
+- `payment-receipt`
+
+This is intentionally lightweight MVP glue built on the existing RabbitMQ billing event exchange.

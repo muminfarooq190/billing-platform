@@ -31,6 +31,16 @@ Workflow sends resolve through the same notification pipeline and support:
 - optional freeform `metadata`
 - optional template override / placeholder data
 
+## Billing event relay
+
+Communication service now includes a lightweight billing-event relay worker.
+
+It listens to billing invoice events and triggers communication workflows for:
+- `billing.invoice.created` -> `invoice-issued`
+- `billing.invoice.paid` -> `payment-receipt`
+
+This is intentionally MVP-level orchestration so billing events can produce customer-facing communication without building a giant integration platform first.
+
 ## Ops visibility
 
 New notification ops endpoints:

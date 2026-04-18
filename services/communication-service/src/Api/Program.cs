@@ -1,6 +1,7 @@
 using CommunicationService.Api.Filters;
 using CommunicationService.Application.Abstractions;
 using CommunicationService.Domain.Repositories;
+using CommunicationService.Infrastructure.Billing;
 using CommunicationService.Infrastructure.Branding;
 using CommunicationService.Infrastructure.Caching;
 using CommunicationService.Infrastructure.Channels;
@@ -76,6 +77,10 @@ public sealed class Program
         {
             client.BaseAddress = new Uri(builder.Configuration["BILLING_SERVICE_URL"] ?? "http://localhost:5080/");
         });
+        builder.Services.AddHttpClient("BillingEventRelayCommunication", client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["COMMUNICATION_SERVICE_URL"] ?? "http://localhost:8080/");
+        });
         builder.Services.AddScoped<IFeatureGate, CachedFeatureGate>();
         builder.Services.AddScoped<IChannelDispatcher, EmailDispatcher>();
         builder.Services.AddScoped<IChannelDispatcher, SmsDispatcher>();
@@ -87,6 +92,7 @@ public sealed class Program
 
         builder.Services.AddHostedService<OutboxPublisherService>();
         builder.Services.AddHostedService<NotificationDispatcherService>();
+        builder.Services.AddHostedService<BillingEventRelayService>();
         builder.Services.AddHealthChecks();
 
         builder.Services.AddControllers(options => options.Filters.Add<GlobalExceptionFilter>());

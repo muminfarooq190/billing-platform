@@ -71,7 +71,7 @@ public sealed class BillingMvpPassTests
 
         pricing.LineItems.Should().ContainSingle();
         pricing.LineItems[0].UnitPrice.Amount.Should().Be(1990m);
-        pricing.PricingReference.Should().Be("plan:Enterprise");
+        pricing.PricingReference.Should().Be("fallback:no-package-assignment");
     }
 
     private sealed class StubSubscriptionRepository(Subscription subscription) : ISubscriptionRepository

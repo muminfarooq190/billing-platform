@@ -47,15 +47,15 @@ public sealed class BillingPricingResolver(
             else
             {
                 var fallback = ResolvePlanFallbackPrice(subscription.PlanType, subscription.BillingCycle);
-                lineItems.Add(new InvoiceLineItem($"{subscription.PlanType} plan ({subscription.BillingCycle})", 1, fallback));
-                pricingReference = $"plan:{subscription.PlanType}";
+                lineItems.Add(new InvoiceLineItem($"Unmapped package fallback ({subscription.BillingCycle})", 1, fallback));
+                pricingReference = "fallback:missing-package";
             }
         }
         else
         {
             var fallback = ResolvePlanFallbackPrice(subscription.PlanType, subscription.BillingCycle);
-            lineItems.Add(new InvoiceLineItem($"{subscription.PlanType} plan ({subscription.BillingCycle})", 1, fallback));
-            pricingReference = $"plan:{subscription.PlanType}";
+            lineItems.Add(new InvoiceLineItem($"Package pricing fallback ({subscription.BillingCycle})", 1, fallback));
+            pricingReference = "fallback:no-package-assignment";
         }
 
         var subtotal = lineItems.Select(x => x.LineTotal).Aggregate(new Money(0m, lineItems[0].UnitPrice.Currency), (acc, next) => acc.Add(next));
