@@ -18,11 +18,8 @@ public sealed class GeoLeadsController(IMediator mediator, ITenantContext tenant
         if (tenantContext.TenantId == Guid.Empty)
             return Unauthorized(new { error = "x-tenant-id header is required." });
 
-        if (!string.Equals(request.Geometry.Type, "Polygon", StringComparison.OrdinalIgnoreCase))
-            return BadRequest(new { error = "Only Polygon geometry is supported in the initial MVP implementation." });
-
-        if (request.Geometry.Coordinates is null || request.Geometry.Coordinates.Count < 3)
-            return BadRequest(new { error = "Polygon must contain at least three coordinate pairs." });
+        if (!request.Geometry.IsValidPolygon(out var geometryError))
+            return BadRequest(new { error = geometryError });
 
         var polygon = new GeoPolygon(request.Geometry.Coordinates.Select(x => new GeoCoordinate(x[0], x[1])).ToList());
         var (queryId, count) = await mediator.Send(new SubmitGeoAreaQueryCommand(

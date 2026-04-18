@@ -10,7 +10,10 @@ Initial MVP backend skeleton:
 - get query results by id
 - export query results as CSV
 - tenant-scoped query access via `x-tenant-id`
+- stricter polygon validation (closed polygons, coordinate bounds, minimum point count)
+- persisted query metadata via EF Core/Postgres-ready DbContext
 - seeded/in-memory lead catalog with simple polygon filtering and ranking
+- in-memory result store for current MVP phase
 - domain/data structures for queries and leads
 
 ## What is NOT implemented yet

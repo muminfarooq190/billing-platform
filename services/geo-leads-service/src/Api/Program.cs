@@ -1,6 +1,8 @@
 using GeoLeadsService.Application.Abstractions;
 using GeoLeadsService.Domain.Repositories;
+using GeoLeadsService.Infrastructure.Persistence;
 using GeoLeadsService.Infrastructure.Persistence.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace GeoLeadsService.Api;
 
@@ -10,9 +12,13 @@ public sealed class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        var databaseUrl = builder.Configuration["DATABASE_URL"] ?? "Host=postgres;Port=5432;Database=geo_leads;Username=billing_user;Password=changeme";
+
+        builder.Services.AddDbContext<GeoLeadsDbContext>(options => options.UseNpgsql(databaseUrl));
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<ITenantContext, HeaderTenantContext>();
-        builder.Services.AddScoped<IGeoAreaQueryRepository, InMemoryGeoAreaQueryRepository>();
+        builder.Services.AddScoped<IGeoAreaQueryRepository, GeoAreaQueryRepository>();
+        builder.Services.AddScoped<IGeoAreaQueryResultStore, InMemoryGeoAreaQueryResultStore>();
         builder.Services.AddScoped<IGeoLeadCatalog, SeededGeoLeadCatalog>();
         builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
         builder.Services.AddHealthChecks();
@@ -21,6 +27,11 @@ public sealed class Program
         builder.Services.AddSwaggerGen();
 
         var app = builder.Build();
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<GeoLeadsDbContext>();
+            db.Database.EnsureCreated();
+        }
         app.UseSwagger();
         app.UseSwaggerUI();
         app.MapControllers();
