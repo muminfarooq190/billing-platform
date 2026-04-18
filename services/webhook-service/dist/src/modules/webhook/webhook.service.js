@@ -21,8 +21,8 @@ let WebhookService = class WebhookService {
     constructor(subscriptionRepository) {
         this.subscriptionRepository = subscriptionRepository;
     }
-    async listSubscriptions() {
-        return this.subscriptionRepository.find({ where: { isActive: true }, order: { createdAt: 'DESC' } });
+    async listSubscriptions(tenantId) {
+        return this.subscriptionRepository.find({ where: { tenantId, isActive: true }, order: { createdAt: 'DESC' } });
     }
     async listByTenantAndEvent(tenantId, eventType) {
         const rows = await this.subscriptionRepository.find({ where: { tenantId, isActive: true } });
@@ -38,7 +38,10 @@ let WebhookService = class WebhookService {
         });
         return this.subscriptionRepository.save(entity);
     }
-    async deactivateSubscription(id) {
+    async deactivateSubscription(id, tenantId) {
+        const existing = await this.subscriptionRepository.findOne({ where: tenantId ? { id, tenantId } : { id } });
+        if (!existing)
+            throw new common_1.NotFoundException();
         await this.subscriptionRepository.update(id, { isActive: false });
     }
     async getById(id) {

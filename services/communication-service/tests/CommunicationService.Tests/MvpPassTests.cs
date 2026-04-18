@@ -4,6 +4,7 @@ using CommunicationService.Api.Controllers;
 using CommunicationService.Application.Abstractions;
 using CommunicationService.Application.Commands.SendNotification;
 using CommunicationService.Application.Commands.SendWorkflowNotification;
+using CommunicationService.Infrastructure.Channels;
 using CommunicationService.Domain.Aggregates;
 using CommunicationService.Domain.Enums;
 using CommunicationService.Domain.Repositories;
@@ -70,6 +71,7 @@ public sealed class MvpPassTests
             new NullPreferenceRepository(),
             new AllowFeatureGate(),
             new PassthroughBrandingRenderer(),
+            new ChannelPreferenceResolver(),
             new NoOpUnitOfWork(),
             new StubTenantContext(tenantId));
 

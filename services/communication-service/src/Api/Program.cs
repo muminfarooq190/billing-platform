@@ -9,6 +9,7 @@ using CommunicationService.Infrastructure.Entitlements;
 using CommunicationService.Infrastructure.Persistence;
 using CommunicationService.Infrastructure.Persistence.Outbox;
 using CommunicationService.Infrastructure.Persistence.Repositories;
+using CommunicationService.Infrastructure.Recipients;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -81,6 +82,7 @@ public sealed class Program
         builder.Services.AddScoped<EmailProviderResolver>();
         builder.Services.AddScoped<SmsProviderResolver>();
         builder.Services.AddScoped<WhatsAppProviderResolver>();
+        builder.Services.AddScoped<IChannelPreferenceResolver, ChannelPreferenceResolver>();
         builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
         builder.Services.AddScoped<INotificationTemplateRepository, NotificationTemplateRepository>();
         builder.Services.AddScoped<IRecipientPreferencesRepository, RecipientPreferencesRepository>();
@@ -95,6 +97,10 @@ public sealed class Program
         builder.Services.AddHttpClient<IBillingEntitlementsClient, BillingEntitlementsClient>(client =>
         {
             client.BaseAddress = new Uri(builder.Configuration["BILLING_SERVICE_URL"] ?? "http://localhost:5080/");
+        });
+        builder.Services.AddHttpClient<IRecipientAddressResolver, TravelContactRecipientAddressResolver>(client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["TRAVEL_SERVICE_URL"] ?? "http://localhost:5060/");
         });
         builder.Services.AddHttpClient("BillingEventRelayCommunication", client =>
         {

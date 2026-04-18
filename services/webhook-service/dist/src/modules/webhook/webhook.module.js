@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.WebhookModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
+const tenant_context_1 = require("../../common/tenant-context");
 const webhook_delivery_queue_1 = require("../../jobs/webhook-delivery.queue");
 const webhook_subscription_entity_1 = require("../../entities/webhook-subscription.entity");
 const delivery_log_module_1 = require("../delivery-log/delivery-log.module");
@@ -21,7 +22,7 @@ exports.WebhookModule = WebhookModule = __decorate([
     (0, common_1.Module)({
         imports: [typeorm_1.TypeOrmModule.forFeature([webhook_subscription_entity_1.WebhookSubscriptionEntity]), delivery_log_module_1.DeliveryLogModule],
         controllers: [webhook_controller_1.WebhookController],
-        providers: [webhook_service_1.WebhookService, webhook_delivery_queue_1.WebhookDeliveryQueue],
+        providers: [webhook_service_1.WebhookService, webhook_delivery_queue_1.WebhookDeliveryQueue, tenant_context_1.TenantContext],
         exports: [webhook_service_1.WebhookService, webhook_delivery_queue_1.WebhookDeliveryQueue],
     })
 ], WebhookModule);

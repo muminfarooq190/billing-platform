@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WebhookSubscriptionEntity } from '../../entities/webhook-subscription.entity';
@@ -11,8 +11,8 @@ export class WebhookService {
     private readonly subscriptionRepository: Repository<WebhookSubscriptionEntity>,
   ) {}
 
-  public async listSubscriptions(): Promise<WebhookSubscriptionEntity[]> {
-    return this.subscriptionRepository.find({ where: { isActive: true }, order: { createdAt: 'DESC' } });
+  public async listSubscriptions(tenantId: string): Promise<WebhookSubscriptionEntity[]> {
+    return this.subscriptionRepository.find({ where: { tenantId, isActive: true }, order: { createdAt: 'DESC' } });
   }
 
   public async listByTenantAndEvent(tenantId: string, eventType: string): Promise<WebhookSubscriptionEntity[]> {
@@ -32,7 +32,9 @@ export class WebhookService {
     return this.subscriptionRepository.save(entity);
   }
 
-  public async deactivateSubscription(id: string): Promise<void> {
+  public async deactivateSubscription(id: string, tenantId?: string): Promise<void> {
+    const existing = await this.subscriptionRepository.findOne({ where: tenantId ? { id, tenantId } : { id } });
+    if (!existing) throw new NotFoundException();
     await this.subscriptionRepository.update(id, { isActive: false });
   }
 

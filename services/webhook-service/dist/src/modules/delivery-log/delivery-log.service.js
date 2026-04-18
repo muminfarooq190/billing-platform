@@ -17,24 +17,39 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const webhook_delivery_log_entity_1 = require("../../entities/webhook-delivery-log.entity");
+const webhook_subscription_entity_1 = require("../../entities/webhook-subscription.entity");
 let DeliveryLogService = class DeliveryLogService {
-    constructor(deliveryLogRepository) {
+    constructor(deliveryLogRepository, subscriptionRepository) {
         this.deliveryLogRepository = deliveryLogRepository;
+        this.subscriptionRepository = subscriptionRepository;
     }
-    async list(page, pageSize) {
+    async list(tenantId, page, pageSize) {
+        const subscriptions = await this.subscriptionRepository.find({ where: { tenantId } });
+        const subscriptionIds = subscriptions.map((x) => x.id);
+        if (subscriptionIds.length === 0)
+            return [];
         return this.deliveryLogRepository.find({
+            where: subscriptionIds.map((id) => ({ webhookSubscriptionId: id })),
             order: { createdAt: 'DESC' },
             skip: (page - 1) * pageSize,
             take: pageSize,
         });
     }
-    async getById(id) {
-        return this.deliveryLogRepository.findOne({ where: { id } });
+    async getById(id, tenantId) {
+        const log = await this.deliveryLogRepository.findOne({ where: { id } });
+        if (!log || !tenantId)
+            return log;
+        const subscription = await this.subscriptionRepository.findOne({ where: { id: log.webhookSubscriptionId, tenantId } });
+        return subscription ? log : null;
     }
-    async createPending(webhookSubscriptionId, eventType, payload) {
+    async getByFingerprint(webhookSubscriptionId, eventFingerprint) {
+        return this.deliveryLogRepository.findOne({ where: { webhookSubscriptionId, eventFingerprint } });
+    }
+    async createPending(webhookSubscriptionId, eventType, payload, eventFingerprint) {
         const entity = this.deliveryLogRepository.create({
             webhookSubscriptionId,
             eventType,
+            eventFingerprint: eventFingerprint ?? null,
             payload,
             status: 'Pending',
             attemptCount: 0,
@@ -58,6 +73,8 @@ exports.DeliveryLogService = DeliveryLogService;
 exports.DeliveryLogService = DeliveryLogService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(webhook_delivery_log_entity_1.WebhookDeliveryLogEntity)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __param(1, (0, typeorm_1.InjectRepository)(webhook_subscription_entity_1.WebhookSubscriptionEntity)),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository])
 ], DeliveryLogService);
 //# sourceMappingURL=delivery-log.service.js.map

@@ -13,6 +13,7 @@ public sealed class SendNotificationCommandHandler(
     IRecipientPreferencesRepository preferencesRepository,
     IFeatureGate featureGate,
     IBrandingTemplateRenderer brandingTemplateRenderer,
+    IChannelPreferenceResolver channelPreferenceResolver,
     IUnitOfWork unitOfWork,
     Api.ITenantContext tenantContext) : IRequestHandler<SendNotificationCommand, Guid>
 {
@@ -32,6 +33,8 @@ public sealed class SendNotificationCommandHandler(
         var brandingChannel = string.IsNullOrWhiteSpace(request.Channel) ? "Email" : request.Channel!;
         var placeholders = await brandingTemplateRenderer.EnrichAsync(request.TenantId, brandingChannel, request.Placeholders ?? [], cancellationToken);
 
+        var preferences = await preferencesRepository.GetByRecipientIdAsync(request.RecipientId, request.TenantId, cancellationToken);
+
         string subject;
         string body;
         Guid? templateId = null;
@@ -47,16 +50,17 @@ public sealed class SendNotificationCommandHandler(
             subject = template.RenderSubject(placeholders);
             body = template.RenderBody(placeholders);
             templateId = template.Id;
-            channel = template.Channel;
+            channel = string.IsNullOrWhiteSpace(request.Channel)
+                ? channelPreferenceResolver.ResolvePreferredChannel(null, preferences, template.Channel)
+                : template.Channel;
         }
         else
         {
             subject = request.Subject ?? throw new DomainException("Subject is required when not using a template.");
             body = request.Body ?? throw new DomainException("Body is required when not using a template.");
-            channel = Enum.Parse<ChannelType>(request.Channel ?? "Email", true);
+            channel = channelPreferenceResolver.ResolvePreferredChannel(request.Channel, preferences, ChannelType.Email);
         }
 
-        var preferences = await preferencesRepository.GetByRecipientIdAsync(request.RecipientId, request.TenantId, cancellationToken);
         if (preferences is not null && !preferences.IsChannelEnabled(channel) && priority != NotificationPriority.Critical)
         {
             throw new DomainException($"Recipient has disabled {channel} notifications. Use Critical priority to override.");

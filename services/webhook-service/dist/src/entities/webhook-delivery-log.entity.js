@@ -27,6 +27,10 @@ __decorate([
     __metadata("design:type", String)
 ], WebhookDeliveryLogEntity.prototype, "eventType", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'event_fingerprint', type: 'varchar', length: 128, nullable: true }),
+    __metadata("design:type", Object)
+], WebhookDeliveryLogEntity.prototype, "eventFingerprint", void 0);
+__decorate([
     (0, typeorm_1.Column)({ name: 'payload', type: 'jsonb' }),
     __metadata("design:type", Object)
 ], WebhookDeliveryLogEntity.prototype, "payload", void 0);
@@ -54,6 +58,10 @@ __decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)
 ], WebhookDeliveryLogEntity.prototype, "createdAt", void 0);
+__decorate([
+    (0, typeorm_1.UpdateDateColumn)({ name: 'updated_at' }),
+    __metadata("design:type", Date)
+], WebhookDeliveryLogEntity.prototype, "updatedAt", void 0);
 exports.WebhookDeliveryLogEntity = WebhookDeliveryLogEntity = __decorate([
     (0, typeorm_1.Entity)({ name: 'webhook_delivery_logs' })
 ], WebhookDeliveryLogEntity);
