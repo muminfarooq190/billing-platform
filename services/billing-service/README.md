@@ -12,10 +12,13 @@ This service now has a pragmatic MVP pass focused on not faking money flows.
 ## Invoice generation
 
 Invoice generation is now package/subscription-aware:
-- pricing resolves from the tenant's active package metadata when available
-- otherwise falls back to sane plan defaults by billing cycle
+- pricing resolves from the tenant's active commercial package metadata
+- package metadata is now the primary source of truth for monthly/annual price and tax rate
+- legacy compatibility packages are seeded with explicit pricing metadata so migrated tenants still work
 - invoices now carry billing period start/end and pricing reference metadata
 - duplicate invoice generation for the same subscription + billing period is prevented by lookup and DB uniqueness
+
+If no active package assignment exists, or if a package does not contain valid pricing metadata, invoice generation now fails loudly instead of silently falling back to deprecated plan pricing.
 
 ## Internal finance reads
 

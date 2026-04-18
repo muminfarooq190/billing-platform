@@ -62,16 +62,14 @@ public sealed class BillingMvpPassTests
     }
 
     [Fact]
-    public async Task BillingPricingResolver_ShouldUseFallbackPlanPricing_WhenNoPackageAssignmentExists()
+    public async Task BillingPricingResolver_ShouldRequirePackageAssignment_WhenNoCommercialPackageExists()
     {
         var subscription = Subscription.Create(Guid.NewGuid(), PlanType.Enterprise, BillingCycle.Annual);
         var resolver = new BillingPricingResolver(new StubTenantPackageRepository(), new StubCommercialPackageRepository());
 
-        var pricing = await resolver.ResolveAsync(subscription, CancellationToken.None);
+        var act = () => resolver.ResolveAsync(subscription, CancellationToken.None);
 
-        pricing.LineItems.Should().ContainSingle();
-        pricing.LineItems[0].UnitPrice.Amount.Should().Be(1990m);
-        pricing.PricingReference.Should().Be("fallback:no-package-assignment");
+        await act.Should().ThrowAsync<Exception>();
     }
 
     private sealed class StubSubscriptionRepository(Subscription subscription) : ISubscriptionRepository
