@@ -11,6 +11,9 @@ public sealed class InvoiceRepository(BillingDbContext dbContext) : IInvoiceRepo
 
     public Task<Invoice?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => dbContext.Invoices.SingleOrDefaultAsync(x => x.Id == id && x.DeletedAt == null, cancellationToken);
 
+    public Task<Invoice?> GetBySubscriptionAndBillingPeriodAsync(Guid subscriptionId, DateOnly billingPeriodStart, DateOnly billingPeriodEnd, CancellationToken cancellationToken)
+        => dbContext.Invoices.SingleOrDefaultAsync(x => x.SubscriptionId == subscriptionId && x.BillingPeriodStart == billingPeriodStart && x.BillingPeriodEnd == billingPeriodEnd && x.DeletedAt == null, cancellationToken);
+
     public Task UpdateAsync(Invoice invoice, CancellationToken cancellationToken)
     {
         dbContext.Invoices.Update(invoice);

@@ -1,5 +1,6 @@
 using BillingService.Api.Filters;
 using BillingService.Application.Abstractions;
+using BillingService.Application.Commands.GenerateInvoice;
 using BillingService.Domain.Repositories;
 using BillingService.Infrastructure.Caching;
 using BillingService.Infrastructure.Entitlements;
@@ -30,6 +31,7 @@ public sealed class Program
         builder.Services.AddScoped<ITenantFeatureOverrideRepository, TenantFeatureOverrideRepository>();
         builder.Services.AddScoped<ITenantUserFeatureAssignmentRepository, TenantUserFeatureAssignmentRepository>();
         builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+        builder.Services.AddScoped<IBillingPricingResolver, BillingPricingResolver>();
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
         builder.Services.AddScoped<IReadDbConnectionFactory, ReadDbConnectionFactory>();
         builder.Services.AddScoped<ICacheService, RedisCacheService>();

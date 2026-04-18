@@ -12,7 +12,15 @@ public sealed class Invoice : AggregateRoot
 
     private Invoice() { }
 
-    private Invoice(Guid subscriptionId, Guid tenantId, IReadOnlyCollection<InvoiceLineItem> lineItems, Money taxAmount, DateTimeOffset dueDate)
+    private Invoice(
+        Guid subscriptionId,
+        Guid tenantId,
+        IReadOnlyCollection<InvoiceLineItem> lineItems,
+        Money taxAmount,
+        DateTimeOffset dueDate,
+        DateOnly billingPeriodStart,
+        DateOnly billingPeriodEnd,
+        string pricingReference)
     {
         Id = Guid.NewGuid();
         SubscriptionId = subscriptionId;
@@ -23,6 +31,9 @@ public sealed class Invoice : AggregateRoot
         Total = Subtotal.Add(TaxAmount);
         Status = InvoiceStatus.Issued;
         DueDate = dueDate;
+        BillingPeriodStart = billingPeriodStart;
+        BillingPeriodEnd = billingPeriodEnd;
+        PricingReference = pricingReference.Trim();
         IssuedAt = DateTimeOffset.UtcNow;
         CreatedAt = DateTimeOffset.UtcNow;
         UpdatedAt = DateTimeOffset.UtcNow;
@@ -38,16 +49,40 @@ public sealed class Invoice : AggregateRoot
     public Money Total { get; private set; }
     public InvoiceStatus Status { get; private set; }
     public DateTimeOffset DueDate { get; private set; }
+    public DateOnly BillingPeriodStart { get; private set; }
+    public DateOnly BillingPeriodEnd { get; private set; }
+    public string PricingReference { get; private set; } = string.Empty;
+    public string? ProviderPaymentId { get; private set; }
+    public string? PaymentGateway { get; private set; }
+    public string? PaymentFailureCode { get; private set; }
+    public string? PaymentFailureMessage { get; private set; }
     public DateTimeOffset? PaidAt { get; private set; }
     public DateTimeOffset? IssuedAt { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
 
-    public static Invoice Generate(Guid subscriptionId, Guid tenantId, IReadOnlyCollection<InvoiceLineItem> lineItems, Money taxAmount, DateTimeOffset dueDate)
-        => new(subscriptionId, tenantId, lineItems, taxAmount, dueDate);
+    public static Invoice Generate(Guid subscriptionId, Guid tenantId, IReadOnlyCollection<InvoiceLineItem> lineItems, Money taxAmount, DateTimeOffset dueDate, DateOnly billingPeriodStart, DateOnly billingPeriodEnd, string pricingReference)
+        => new(subscriptionId, tenantId, lineItems, taxAmount, dueDate, billingPeriodStart, billingPeriodEnd, pricingReference);
 
-    public void MarkAsPaid(DateTimeOffset paidAt)
+    public void MarkPaymentPending(string gateway, string providerPaymentId)
+    {
+        PaymentGateway = gateway?.Trim();
+        ProviderPaymentId = providerPaymentId?.Trim();
+        PaymentFailureCode = null;
+        PaymentFailureMessage = null;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void MarkPaymentFailed(string gateway, string? errorCode, string? errorMessage)
+    {
+        PaymentGateway = gateway?.Trim();
+        PaymentFailureCode = errorCode?.Trim();
+        PaymentFailureMessage = errorMessage?.Trim();
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void MarkAsPaid(DateTimeOffset paidAt, string? gateway = null, string? providerPaymentId = null)
     {
         if (Status == InvoiceStatus.Paid)
         {
@@ -61,6 +96,10 @@ public sealed class Invoice : AggregateRoot
 
         Status = InvoiceStatus.Paid;
         PaidAt = paidAt;
+        PaymentGateway = gateway?.Trim() ?? PaymentGateway;
+        ProviderPaymentId = providerPaymentId?.Trim() ?? ProviderPaymentId;
+        PaymentFailureCode = null;
+        PaymentFailureMessage = null;
         UpdatedAt = DateTimeOffset.UtcNow;
         AddDomainEvent(new InvoicePaidEvent(Id, TenantId));
     }
