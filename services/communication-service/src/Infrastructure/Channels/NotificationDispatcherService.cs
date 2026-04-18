@@ -2,6 +2,7 @@ using CommunicationService.Application.Abstractions;
 using CommunicationService.Domain.Enums;
 using CommunicationService.Domain.Repositories;
 using CommunicationService.Infrastructure.Persistence;
+using CommunicationService.Infrastructure.Recipients;
 
 namespace CommunicationService.Infrastructure.Channels;
 
@@ -18,6 +19,7 @@ public sealed class NotificationDispatcherService(
                 using var scope = scopeFactory.CreateScope();
                 var notificationRepo = scope.ServiceProvider.GetRequiredService<INotificationRepository>();
                 var preferencesRepo = scope.ServiceProvider.GetRequiredService<IRecipientPreferencesRepository>();
+                var recipientAddressResolver = scope.ServiceProvider.GetRequiredService<IRecipientAddressResolver>();
                 var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
                 var dispatchers = scope.ServiceProvider.GetServices<IChannelDispatcher>().ToDictionary(d => d.Channel);
 
@@ -32,13 +34,13 @@ public sealed class NotificationDispatcherService(
                     }
 
                     var preferences = await preferencesRepo.GetByRecipientIdAsync(notification.RecipientId, notification.TenantId, stoppingToken);
-                    var recipient = notification.Channel switch
+                    var recipient = await recipientAddressResolver.ResolveAsync(notification, preferences, stoppingToken);
+                    if (string.IsNullOrWhiteSpace(recipient))
                     {
-                        ChannelType.Email => preferences?.Email ?? "unknown",
-                        ChannelType.Sms => preferences?.Phone ?? "unknown",
-                        ChannelType.PushNotification => preferences?.DeviceToken ?? "unknown",
-                        _ => notification.RecipientId.ToString()
-                    };
+                        notification.MarkFailed($"Could not resolve recipient address for recipient {notification.RecipientId} and channel {notification.Channel}.");
+                        await notificationRepo.UpdateAsync(notification, stoppingToken);
+                        continue;
+                    }
 
                     var result = await dispatcher.SendAsync(recipient, notification.Subject, notification.Body, stoppingToken);
 
@@ -50,7 +52,6 @@ public sealed class NotificationDispatcherService(
                     await notificationRepo.UpdateAsync(notification, stoppingToken);
                 }
 
-                // Retry failed notifications
                 var retryable = await notificationRepo.ListRetryableAsync(3, 10, stoppingToken);
                 foreach (var notification in retryable)
                 {
