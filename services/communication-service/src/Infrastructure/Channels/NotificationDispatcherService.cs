@@ -7,11 +7,8 @@ namespace CommunicationService.Infrastructure.Channels;
 
 public sealed class NotificationDispatcherService(
     IServiceScopeFactory scopeFactory,
-    IEnumerable<IChannelDispatcher> dispatchers,
     ILogger<NotificationDispatcherService> logger) : BackgroundService
 {
-    private readonly Dictionary<ChannelType, IChannelDispatcher> _dispatchers = dispatchers.ToDictionary(d => d.Channel);
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
@@ -22,11 +19,12 @@ public sealed class NotificationDispatcherService(
                 var notificationRepo = scope.ServiceProvider.GetRequiredService<INotificationRepository>();
                 var preferencesRepo = scope.ServiceProvider.GetRequiredService<IRecipientPreferencesRepository>();
                 var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                var dispatchers = scope.ServiceProvider.GetServices<IChannelDispatcher>().ToDictionary(d => d.Channel);
 
                 var pending = await notificationRepo.ListPendingAsync(20, stoppingToken);
                 foreach (var notification in pending)
                 {
-                    if (!_dispatchers.TryGetValue(notification.Channel, out var dispatcher))
+                    if (!dispatchers.TryGetValue(notification.Channel, out var dispatcher))
                     {
                         notification.MarkFailed($"No dispatcher registered for channel {notification.Channel}");
                         await notificationRepo.UpdateAsync(notification, stoppingToken);
