@@ -37,7 +37,20 @@ public sealed class Invoice : AggregateRoot
         IssuedAt = DateTimeOffset.UtcNow;
         CreatedAt = DateTimeOffset.UtcNow;
         UpdatedAt = DateTimeOffset.UtcNow;
-        AddDomainEvent(new InvoiceCreatedEvent(Id, TenantId));
+        AddDomainEvent(new InvoiceCreatedEvent(
+            Id,
+            TenantId,
+            SubscriptionId,
+            Status.ToString(),
+            Subtotal.Amount,
+            Subtotal.Currency,
+            TaxAmount.Amount,
+            Total.Amount,
+            DueDate,
+            BillingPeriodStart,
+            BillingPeriodEnd,
+            PricingReference,
+            _lineItems.Select(x => new InvoiceCreatedLineItem(x.Description, x.Quantity, x.UnitPrice.Amount, x.UnitPrice.Currency, x.LineTotal.Amount)).ToList()));
     }
 
     public Guid Id { get; private set; }
@@ -101,7 +114,17 @@ public sealed class Invoice : AggregateRoot
         PaymentFailureCode = null;
         PaymentFailureMessage = null;
         UpdatedAt = DateTimeOffset.UtcNow;
-        AddDomainEvent(new InvoicePaidEvent(Id, TenantId));
+        AddDomainEvent(new InvoicePaidEvent(
+            Id,
+            TenantId,
+            SubscriptionId,
+            Status.ToString(),
+            Total.Amount,
+            Total.Currency,
+            PaidAt.Value,
+            PaymentGateway,
+            ProviderPaymentId,
+            PricingReference));
     }
 
     public void MarkOverdue()

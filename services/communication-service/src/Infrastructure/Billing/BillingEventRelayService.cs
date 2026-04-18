@@ -30,20 +30,33 @@ public sealed class BillingEventRelayService(IServiceScopeFactory scopeFactory, 
                 using var document = JsonDocument.Parse(payload);
                 var root = document.RootElement;
 
-                var tenantId = root.TryGetProperty("TenantId", out var tenantIdElement)
-                    ? tenantIdElement.GetGuid()
-                    : root.GetProperty("tenantId").GetGuid();
-                var invoiceId = root.TryGetProperty("InvoiceId", out var invoiceIdElement)
-                    ? invoiceIdElement.GetGuid()
-                    : root.GetProperty("invoiceId").GetGuid();
+                var tenantId = root.GetProperty("TenantId").GetGuid();
+                var invoiceId = root.GetProperty("InvoiceId").GetGuid();
+                var totalAmount = root.TryGetProperty("TotalAmount", out var totalAmountElement) ? totalAmountElement.GetDecimal() : 0m;
+                var currency = root.TryGetProperty("Currency", out var currencyElement) ? currencyElement.GetString() ?? "USD" : "USD";
+                var pricingReference = root.TryGetProperty("PricingReference", out var pricingReferenceElement) ? pricingReferenceElement.GetString() ?? string.Empty : string.Empty;
+                var paymentGateway = root.TryGetProperty("PaymentGateway", out var paymentGatewayElement) ? paymentGatewayElement.GetString() : null;
+                var providerPaymentId = root.TryGetProperty("ProviderPaymentId", out var providerPaymentIdElement) ? providerPaymentIdElement.GetString() : null;
 
                 var workflowType = args.RoutingKey.EndsWith("created", StringComparison.OrdinalIgnoreCase)
                     ? "invoice-issued"
                     : "payment-receipt";
-                var subject = workflowType == "invoice-issued" ? "Your invoice is ready" : "Payment received";
+                var subject = workflowType == "invoice-issued"
+                    ? $"Your invoice is ready ({currency} {totalAmount:0.##})"
+                    : $"Payment received for invoice {invoiceId:D}";
                 var body = workflowType == "invoice-issued"
-                    ? "We've issued your invoice. Please review the referenced invoice and complete payment."
-                    : "We've received your payment. Your invoice has been marked paid.";
+                    ? $"We've issued your invoice for {currency} {totalAmount:0.##}. Pricing reference: {pricingReference}. Please review the invoice and complete payment."
+                    : $"We've received your payment of {currency} {totalAmount:0.##}. Gateway: {paymentGateway ?? "Stripe"}. Reference: {providerPaymentId ?? invoiceId.ToString("D")}.";
+
+                var metadata = new Dictionary<string, string>
+                {
+                    ["eventType"] = args.RoutingKey,
+                    ["currency"] = currency,
+                    ["totalAmount"] = totalAmount.ToString("0.####"),
+                    ["pricingReference"] = pricingReference
+                };
+                if (!string.IsNullOrWhiteSpace(paymentGateway)) metadata["paymentGateway"] = paymentGateway;
+                if (!string.IsNullOrWhiteSpace(providerPaymentId)) metadata["providerPaymentId"] = providerPaymentId!;
 
                 var request = new
                 {
@@ -58,9 +71,9 @@ public sealed class BillingEventRelayService(IServiceScopeFactory scopeFactory, 
                     idempotencyKey = $"{workflowType}:{invoiceId:D}",
                     documents = new[]
                     {
-                        new { name = "invoice", documentId = invoiceId.ToString(), url = (string?)null, contentType = "application/json", sizeBytes = (long?)null, metadata = new Dictionary<string, string> { ["source"] = "billing.events" } }
+                        new { name = "invoice", documentId = invoiceId.ToString(), url = (string?)null, contentType = "application/json", sizeBytes = (long?)null, metadata = new Dictionary<string, string> { ["source"] = "billing.events", ["pricingReference"] = pricingReference } }
                     },
-                    metadata = new Dictionary<string, string> { ["eventType"] = args.RoutingKey }
+                    metadata
                 };
 
                 using var message = new HttpRequestMessage(HttpMethod.Post, $"communication/notifications/workflows/{workflowType}")

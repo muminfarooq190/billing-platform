@@ -54,4 +54,14 @@ Communication service now listens to billing invoice events and relays them into
 - `invoice-issued`
 - `payment-receipt`
 
-This is intentionally lightweight MVP glue built on the existing RabbitMQ billing event exchange.
+Billing invoice events now include richer payload fields such as:
+- subscription id
+- status
+- totals and currency
+- due date / paid at
+- billing period
+- pricing reference
+- line items (invoice created)
+- payment gateway / provider payment id (invoice paid)
+
+This is intentionally lightweight MVP glue built on the existing RabbitMQ billing event exchange, but the payloads are now much more useful for downstream consumers.
