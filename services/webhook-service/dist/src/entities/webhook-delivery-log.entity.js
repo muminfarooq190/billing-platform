@@ -27,6 +27,10 @@ __decorate([
     __metadata("design:type", String)
 ], WebhookDeliveryLogEntity.prototype, "eventType", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'event_fingerprint', type: 'varchar', length: 128, nullable: true }),
+    __metadata("design:type", Object)
+], WebhookDeliveryLogEntity.prototype, "eventFingerprint", void 0);
+__decorate([
     (0, typeorm_1.Column)({ name: 'payload', type: 'jsonb' }),
     __metadata("design:type", Object)
 ], WebhookDeliveryLogEntity.prototype, "payload", void 0);

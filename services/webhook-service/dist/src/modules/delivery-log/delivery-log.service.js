@@ -42,10 +42,14 @@ let DeliveryLogService = class DeliveryLogService {
         const subscription = await this.subscriptionRepository.findOne({ where: { id: log.webhookSubscriptionId, tenantId } });
         return subscription ? log : null;
     }
-    async createPending(webhookSubscriptionId, eventType, payload) {
+    async getByFingerprint(webhookSubscriptionId, eventFingerprint) {
+        return this.deliveryLogRepository.findOne({ where: { webhookSubscriptionId, eventFingerprint } });
+    }
+    async createPending(webhookSubscriptionId, eventType, payload, eventFingerprint) {
         const entity = this.deliveryLogRepository.create({
             webhookSubscriptionId,
             eventType,
+            eventFingerprint: eventFingerprint ?? null,
             payload,
             status: 'Pending',
             attemptCount: 0,

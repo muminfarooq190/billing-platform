@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var BillingEventsConsumer_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BillingEventsConsumer = void 0;
+const crypto_1 = require("crypto");
 const common_1 = require("@nestjs/common");
 const delivery_log_service_1 = require("../modules/delivery-log/delivery-log.service");
 const webhook_service_1 = require("../modules/webhook/webhook.service");
@@ -29,7 +30,13 @@ let BillingEventsConsumer = BillingEventsConsumer_1 = class BillingEventsConsume
             return;
         }
         for (const subscription of subscriptions) {
-            const log = await this.deliveryLogService.createPending(subscription.id, event.eventType, event.payload);
+            const fingerprint = this.buildFingerprint(subscription.id, event);
+            const existing = await this.deliveryLogService.getByFingerprint(subscription.id, fingerprint);
+            if (existing) {
+                this.logger.debug(`Skipping duplicate webhook event ${event.eventType} for subscription ${subscription.id}.`);
+                continue;
+            }
+            const log = await this.deliveryLogService.createPending(subscription.id, event.eventType, event.payload, fingerprint);
             await this.deliveryQueue.enqueue({
                 webhookSubscriptionId: subscription.id,
                 deliveryLogId: log.id,
@@ -38,6 +45,26 @@ let BillingEventsConsumer = BillingEventsConsumer_1 = class BillingEventsConsume
                 attemptNumber: 1,
             });
         }
+    }
+    buildFingerprint(subscriptionId, event) {
+        const payload = JSON.stringify(this.sortObject(event.payload));
+        return (0, crypto_1.createHash)('sha256')
+            .update(`${subscriptionId}|${event.tenantId}|${event.eventType}|${payload}`)
+            .digest('hex');
+    }
+    sortObject(value) {
+        if (Array.isArray(value)) {
+            return value.map((item) => this.sortObject(item));
+        }
+        if (value && typeof value === 'object') {
+            return Object.keys(value)
+                .sort()
+                .reduce((accumulator, key) => {
+                accumulator[key] = this.sortObject(value[key]);
+                return accumulator;
+            }, {});
+        }
+        return value;
     }
 };
 exports.BillingEventsConsumer = BillingEventsConsumer;

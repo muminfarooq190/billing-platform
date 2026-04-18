@@ -11,6 +11,9 @@ export class WebhookDeliveryLogEntity {
   @Column({ name: 'event_type', type: 'varchar', length: 200 })
   public eventType!: string;
 
+  @Column({ name: 'event_fingerprint', type: 'varchar', length: 128, nullable: true })
+  public eventFingerprint!: string | null;
+
   @Column({ name: 'payload', type: 'jsonb' })
   public payload!: Record<string, unknown>;
 

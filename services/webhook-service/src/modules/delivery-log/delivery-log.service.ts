@@ -34,10 +34,20 @@ export class DeliveryLogService {
     return subscription ? log : null;
   }
 
-  public async createPending(webhookSubscriptionId: string, eventType: string, payload: Record<string, unknown>): Promise<WebhookDeliveryLogEntity> {
+  public async getByFingerprint(webhookSubscriptionId: string, eventFingerprint: string): Promise<WebhookDeliveryLogEntity | null> {
+    return this.deliveryLogRepository.findOne({ where: { webhookSubscriptionId, eventFingerprint } });
+  }
+
+  public async createPending(
+    webhookSubscriptionId: string,
+    eventType: string,
+    payload: Record<string, unknown>,
+    eventFingerprint?: string,
+  ): Promise<WebhookDeliveryLogEntity> {
     const entity = this.deliveryLogRepository.create({
       webhookSubscriptionId,
       eventType,
+      eventFingerprint: eventFingerprint ?? null,
       payload,
       status: 'Pending',
       attemptCount: 0,

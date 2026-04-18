@@ -21,6 +21,7 @@ const webhook_signer_service_1 = require("./signing/webhook-signer.service");
 const webhook_delivery_log_entity_1 = require("./entities/webhook-delivery-log.entity");
 const webhook_subscription_entity_1 = require("./entities/webhook-subscription.entity");
 const _0000000000001_initial_schema_1 = require("./migrations/0000000000001-initial-schema");
+const _0000000000002_add_event_fingerprint_1 = require("./migrations/0000000000002-add-event-fingerprint");
 let AppModule = class AppModule {
 };
 AppModule = __decorate([
@@ -30,7 +31,7 @@ AppModule = __decorate([
                 type: 'postgres',
                 url: process.env.DATABASE_URL,
                 entities: [webhook_delivery_log_entity_1.WebhookDeliveryLogEntity, webhook_subscription_entity_1.WebhookSubscriptionEntity],
-                migrations: [_0000000000001_initial_schema_1.InitialSchema0000000000001],
+                migrations: [_0000000000001_initial_schema_1.InitialSchema0000000000001, _0000000000002_add_event_fingerprint_1.AddEventFingerprint0000000000002],
                 synchronize: false,
             }),
             webhook_module_1.WebhookModule,
