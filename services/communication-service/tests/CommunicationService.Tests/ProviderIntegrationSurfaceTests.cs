@@ -42,6 +42,7 @@ public sealed class ProviderIntegrationSurfaceTests
     {
         var dispatcher = new EmailDispatcher(
             new EmailProviderResolver([new LogEmailProvider(NullLogger<LogEmailProvider>.Instance)], Options.Create(new EmailChannelOptions())),
+            new DummyHttpClientFactory(),
             Options.Create(new EmailChannelOptions()),
             NullLogger<EmailDispatcher>.Instance);
 
@@ -70,6 +71,7 @@ public sealed class ProviderIntegrationSurfaceTests
     {
         var dispatcher = new EmailDispatcher(
             new EmailProviderResolver([new LogEmailProvider(NullLogger<LogEmailProvider>.Instance)], Options.Create(new EmailChannelOptions { Provider = "log", DefaultFromEmail = "noreply@example.com" })),
+            new DummyHttpClientFactory(),
             Options.Create(new EmailChannelOptions { Provider = "log", DefaultFromEmail = "noreply@example.com" }),
             NullLogger<EmailDispatcher>.Instance);
 
@@ -77,5 +79,10 @@ public sealed class ProviderIntegrationSurfaceTests
 
         result.Success.Should().BeTrue();
         result.ProviderMessageId.Should().StartWith("log-");
+    }
+
+    private sealed class DummyHttpClientFactory : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => new();
     }
 }

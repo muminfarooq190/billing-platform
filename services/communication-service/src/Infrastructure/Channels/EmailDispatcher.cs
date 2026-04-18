@@ -1,3 +1,4 @@
+using System.Net.Http;
 using System.Text.Json;
 using CommunicationService.Application.Abstractions;
 using CommunicationService.Domain.Enums;
@@ -7,6 +8,7 @@ namespace CommunicationService.Infrastructure.Channels;
 
 public sealed class EmailDispatcher(
     EmailProviderResolver providerResolver,
+    IHttpClientFactory httpClientFactory,
     IOptions<EmailChannelOptions> options,
     ILogger<EmailDispatcher> logger) : IChannelDispatcher
 {
@@ -22,7 +24,7 @@ public sealed class EmailDispatcher(
         if (provider.Name.Equals("sendgrid", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(subject))
             return new ChannelDispatchResult(false, null, "Email subject is required for SendGrid delivery.");
 
-        var (renderedBody, attachments) = TryExtractDocumentAwareBody(body);
+        var (renderedBody, attachments) = await TryExtractDocumentAwareBodyAsync(body, cancellationToken);
         var result = await provider.SendAsync(new EmailMessage(recipient, settings.DefaultFromEmail ?? string.Empty, settings.DefaultFromName, subject, renderedBody, attachments), cancellationToken);
         if (!result.Success)
             logger.LogWarning("Email dispatch failed via provider {Provider}: {Error}", provider.Name, result.ErrorMessage);
@@ -30,7 +32,7 @@ public sealed class EmailDispatcher(
         return new ChannelDispatchResult(result.Success, result.ProviderMessageId, result.ErrorMessage);
     }
 
-    private static (string Body, IReadOnlyList<EmailAttachmentReference> Attachments) TryExtractDocumentAwareBody(string body)
+    private async Task<(string Body, IReadOnlyList<EmailAttachmentReference> Attachments)> TryExtractDocumentAwareBodyAsync(string body, CancellationToken cancellationToken)
     {
         const string marker = "\n\n[DocumentReferencesJson]";
         var markerIndex = body.IndexOf(marker, StringComparison.Ordinal);
@@ -45,9 +47,26 @@ public sealed class EmailDispatcher(
             if (docs.Count == 0)
                 return (displayBody, []);
 
-            var attachmentRefs = docs
-                .Select(x => new EmailAttachmentReference(x.Name, x.Url, x.ContentType))
-                .ToList();
+            var attachmentRefs = new List<EmailAttachmentReference>();
+            foreach (var doc in docs)
+            {
+                byte[]? content = null;
+                if (!string.IsNullOrWhiteSpace(doc.Url))
+                {
+                    try
+                    {
+                        var client = httpClientFactory.CreateClient();
+                        content = await client.GetByteArrayAsync(doc.Url, cancellationToken);
+                    }
+                    catch
+                    {
+                        content = null;
+                    }
+                }
+
+                attachmentRefs.Add(new EmailAttachmentReference(doc.Name, doc.Url, doc.ContentType, content));
+            }
+
             var lines = docs.Select((doc, index) => $"{index + 1}. {doc.Name}: {doc.Url ?? doc.DocumentId ?? "document reference"}");
             var enhancedBody = $"{displayBody}\n\nDocuments:\n{string.Join("\n", lines)}";
             return (enhancedBody, attachmentRefs);
