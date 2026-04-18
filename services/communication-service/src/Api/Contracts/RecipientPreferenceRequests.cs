@@ -1,7 +1,6 @@
 namespace CommunicationService.Api.Contracts;
 
 public sealed record UpdateRecipientPreferencesRequest(
-    Guid TenantId,
     Guid RecipientId,
     string RecipientType,
     string Email,

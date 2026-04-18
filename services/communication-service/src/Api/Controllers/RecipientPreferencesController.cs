@@ -8,13 +8,13 @@ namespace CommunicationService.Api.Controllers;
 
 [ApiController]
 [Route("communication/recipient-preferences")]
-public sealed class RecipientPreferencesController(IMediator mediator) : ControllerBase
+public sealed class RecipientPreferencesController(IMediator mediator, ITenantContext tenantContext) : ControllerBase
 {
     [HttpPut]
     public async Task<IActionResult> Upsert([FromBody] UpdateRecipientPreferencesRequest request, CancellationToken cancellationToken)
     {
         var id = await mediator.Send(new UpdateRecipientPreferencesCommand(
-            request.TenantId,
+            tenantContext.TenantId,
             request.RecipientId,
             request.RecipientType,
             request.Email,
@@ -26,10 +26,10 @@ public sealed class RecipientPreferencesController(IMediator mediator) : Control
         return Ok(new { id });
     }
 
-    [HttpGet("{tenantId:guid}/{recipientId:guid}")]
-    public async Task<IActionResult> Get(Guid tenantId, Guid recipientId, CancellationToken cancellationToken)
+    [HttpGet("{recipientId:guid}")]
+    public async Task<IActionResult> Get(Guid recipientId, CancellationToken cancellationToken)
     {
-        var model = await mediator.Send(new GetRecipientPreferencesQuery(recipientId, tenantId), cancellationToken);
+        var model = await mediator.Send(new GetRecipientPreferencesQuery(recipientId, tenantContext.TenantId), cancellationToken);
         return model is null ? NotFound() : Ok(model);
     }
 }

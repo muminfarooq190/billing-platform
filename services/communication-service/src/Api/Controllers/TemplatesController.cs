@@ -10,12 +10,12 @@ namespace CommunicationService.Api.Controllers;
 
 [ApiController]
 [Route("communication/templates")]
-public sealed class TemplatesController(IMediator mediator) : ControllerBase
+public sealed class TemplatesController(IMediator mediator, ITenantContext tenantContext) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateTemplateRequest request, CancellationToken cancellationToken)
     {
-        var id = await mediator.Send(new CreateTemplateCommand(request.TenantId, request.Name, request.Subject, request.BodyTemplate, request.Channel, request.Description), cancellationToken);
+        var id = await mediator.Send(new CreateTemplateCommand(tenantContext.TenantId, request.Name, request.Subject, request.BodyTemplate, request.Channel, request.Description), cancellationToken);
         return Created($"/communication/templates/{id}", new { id });
     }
 
@@ -26,10 +26,10 @@ public sealed class TemplatesController(IMediator mediator) : ControllerBase
         return model is null ? NotFound() : Ok(model);
     }
 
-    [HttpGet("tenant/{tenantId:guid}")]
-    public async Task<IActionResult> ListByTenant(Guid tenantId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
+    [HttpGet]
+    public async Task<IActionResult> ListByTenant([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
-        var models = await mediator.Send(new ListTemplatesByTenantQuery(tenantId, page, pageSize), cancellationToken);
+        var models = await mediator.Send(new ListTemplatesByTenantQuery(tenantContext.TenantId, page, pageSize), cancellationToken);
         return Ok(models);
     }
 

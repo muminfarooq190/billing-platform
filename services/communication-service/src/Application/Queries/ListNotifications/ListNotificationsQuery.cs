@@ -1,10 +1,19 @@
 using MediatR;
 
-namespace CommunicationService.Application.Queries.ListNotificationsByRecipient;
+namespace CommunicationService.Application.Queries.ListNotifications;
 
-public sealed record ListNotificationsByRecipientQuery(Guid TenantId, Guid RecipientId, int Page = 1, int PageSize = 20) : IRequest<IReadOnlyList<NotificationReadModel>>;
+public sealed record ListNotificationsQuery(
+    Guid TenantId,
+    string? Status,
+    string? Channel,
+    string? ReferenceId,
+    string? CorrelationId,
+    string? WorkflowType,
+    Guid? RecipientId,
+    int Page = 1,
+    int PageSize = 20) : IRequest<IReadOnlyList<NotificationListItemReadModel>>;
 
-public sealed record NotificationReadModel(
+public sealed record NotificationListItemReadModel(
     Guid Id,
     Guid TenantId,
     Guid RecipientId,

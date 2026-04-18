@@ -1,20 +1,20 @@
 using MediatR;
 
-namespace CommunicationService.Application.Commands.SendNotification;
+namespace CommunicationService.Application.Commands.SendWorkflowNotification;
 
-public sealed record SendNotificationCommand(
+public sealed record SendWorkflowNotificationCommand(
     Guid TenantId,
+    string WorkflowType,
     Guid RecipientId,
     string RecipientType,
     string? Channel,
     string? TemplateName,
     string? Subject,
     string? Body,
-    string Priority,
+    string? Priority,
     string? ReferenceId,
     string? CorrelationId,
     string? IdempotencyKey,
-    string? WorkflowType,
     string DocumentReferencesJson,
     string MetadataJson,
     Dictionary<string, string>? Placeholders) : IRequest<Guid>;
