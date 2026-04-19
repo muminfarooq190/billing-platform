@@ -28,9 +28,10 @@ Not built yet:
 - compliance allowlist/blacklist tooling
 - saved queries / refresh jobs
 
-## Current ingestion endpoint
+## Current ingestion endpoints
 
 - `POST /geo-leads/sources/ingest`
+- `GET /geo-leads/sources/status`
 
 Current ingestion uses seeded/config-backed source adapters and upserts raw source records by `(source_name, source_record_id)` so repeated ingests refresh existing snapshots instead of blindly duplicating them.
 

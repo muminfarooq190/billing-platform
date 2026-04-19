@@ -114,5 +114,8 @@ public sealed class IngestLeadSourcesHandlerTests
 
         public Task<IReadOnlyList<LeadSourceRecord>> ListAsync(CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<LeadSourceRecord>>(Stored);
+
+        public Task<IReadOnlyList<LeadSourceRecord>> ListRecentAsync(int limit, CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<LeadSourceRecord>>(Stored.OrderByDescending(x => x.LastSeenAt).Take(limit).ToList());
     }
 }

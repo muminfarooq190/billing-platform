@@ -36,5 +36,8 @@ public sealed class GeoLeadCatalogTests
 
         public Task<IReadOnlyList<LeadSourceRecord>> ListAsync(CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<LeadSourceRecord>>([]);
+
+        public Task<IReadOnlyList<LeadSourceRecord>> ListRecentAsync(int limit, CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<LeadSourceRecord>>([]);
     }
 }

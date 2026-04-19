@@ -48,4 +48,10 @@ public sealed class LeadSourceRecordRepository(GeoLeadsDbContext dbContext) : IL
 
     public Task<IReadOnlyList<LeadSourceRecord>> ListAsync(CancellationToken cancellationToken)
         => dbContext.Set<LeadSourceRecord>().OrderByDescending(x => x.LastSeenAt).ToListAsync(cancellationToken).ContinueWith(t => (IReadOnlyList<LeadSourceRecord>)t.Result, cancellationToken);
+
+    public async Task<IReadOnlyList<LeadSourceRecord>> ListRecentAsync(int limit, CancellationToken cancellationToken)
+        => await dbContext.Set<LeadSourceRecord>()
+            .OrderByDescending(x => x.LastSeenAt)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
 }
