@@ -30,7 +30,7 @@ public sealed class IngestLeadSourcesCommandHandler(
         }
 
         if (records.Count > 0)
-            await leadSourceRecordRepository.AddRangeAsync(records, cancellationToken);
+            await leadSourceRecordRepository.UpsertRangeAsync(records, cancellationToken);
 
         return records.Count;
     }

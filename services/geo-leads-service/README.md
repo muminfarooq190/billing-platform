@@ -32,7 +32,7 @@ Not built yet:
 
 - `POST /geo-leads/sources/ingest`
 
-Current ingestion uses a seeded source adapter and persists raw source records so future source adapters can plug into the same flow.
+Current ingestion uses seeded/config-backed source adapters and upserts raw source records by `(source_name, source_record_id)` so repeated ingests refresh existing snapshots instead of blindly duplicating them.
 
 ## Current purpose
 

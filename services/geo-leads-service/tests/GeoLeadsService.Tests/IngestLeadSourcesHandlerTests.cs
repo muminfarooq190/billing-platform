@@ -39,6 +39,21 @@ public sealed class IngestLeadSourcesHandlerTests
         repository.Stored.Select(x => x.SourceName).Should().Contain(["stub-source", "second-stub-source"]);
     }
 
+    [Fact]
+    public async Task IngestLeadSourcesCommandHandler_ShouldUpsertDuplicateSourceRecords()
+    {
+        var repository = new StubLeadSourceRecordRepository();
+        repository.Stored.Add(new LeadSourceRecord("stub-source", "source-1", "Old Lead", "hotel", "Old", null, null, null, 18.90m, 72.80m, "{\"old\":true}"));
+        var handler = new IngestLeadSourcesCommandHandler([new StubAdapter()], repository);
+
+        var count = await handler.Handle(new IngestLeadSourcesCommand(), CancellationToken.None);
+
+        count.Should().Be(1);
+        repository.Stored.Should().HaveCount(1);
+        repository.Stored[0].RawName.Should().Be("Sample Lead");
+        repository.Stored[0].RawCategory.Should().Be("tour_operator");
+    }
+
     private sealed class StubAdapter : IGeoLeadSourceAdapter
     {
         public string SourceName => "stub-source";
@@ -68,6 +83,32 @@ public sealed class IngestLeadSourcesHandlerTests
         public Task AddRangeAsync(IReadOnlyCollection<LeadSourceRecord> records, CancellationToken cancellationToken)
         {
             Stored.AddRange(records);
+            return Task.CompletedTask;
+        }
+
+        public Task UpsertRangeAsync(IReadOnlyCollection<LeadSourceRecord> records, CancellationToken cancellationToken)
+        {
+            foreach (var record in records)
+            {
+                var existing = Stored.SingleOrDefault(x => x.SourceName == record.SourceName && x.SourceRecordId == record.SourceRecordId);
+                if (existing is null)
+                {
+                    Stored.Add(record);
+                    continue;
+                }
+
+                existing.Refresh(
+                    record.RawName,
+                    record.RawCategory,
+                    record.RawAddress,
+                    record.RawPhone,
+                    record.RawEmail,
+                    record.RawWebsite,
+                    record.RawLatitude,
+                    record.RawLongitude,
+                    record.RawPayloadJson);
+            }
+
             return Task.CompletedTask;
         }
 

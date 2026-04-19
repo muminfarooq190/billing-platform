@@ -67,6 +67,7 @@ public sealed class GeoLeadsDbContext(DbContextOptions<GeoLeadsDbContext> option
             builder.Property(x => x.RawPayloadJson).HasColumnName("raw_payload_json");
             builder.Property(x => x.FirstSeenAt).HasColumnName("first_seen_at");
             builder.Property(x => x.LastSeenAt).HasColumnName("last_seen_at");
+            builder.HasIndex(x => new { x.SourceName, x.SourceRecordId }).IsUnique();
         });
 
         modelBuilder.Entity<SavedGeoArea>(builder =>
