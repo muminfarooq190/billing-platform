@@ -1,6 +1,7 @@
 using GeoLeadsService.Api.Contracts;
 using GeoLeadsService.Api;
 using GeoLeadsService.Application.Abstractions;
+using GeoLeadsService.Application.Commands.RefreshGeoAreaQuery;
 using GeoLeadsService.Application.Commands.SubmitGeoAreaQuery;
 using GeoLeadsService.Application.Queries.GetGeoAreaQueryById;
 using MediatR;
@@ -46,6 +47,7 @@ public sealed class GeoLeadsController(IMediator mediator, ITenantContext tenant
         {
             queryId = query.Id,
             status = query.Status.ToString(),
+            rankingMode = query.RankingMode,
             count = query.Results.Count,
             results = query.Results.Select(x => new
             {
@@ -66,6 +68,19 @@ public sealed class GeoLeadsController(IMediator mediator, ITenantContext tenant
                 reason = x.GetReasoning()
             })
         });
+    }
+
+    [HttpPost("{queryId:guid}/refresh")]
+    public async Task<IActionResult> Refresh(Guid queryId, CancellationToken cancellationToken)
+    {
+        if (tenantContext.TenantId == Guid.Empty)
+            return Unauthorized(new { error = "x-tenant-id header is required." });
+
+        var refreshed = await mediator.Send(new RefreshGeoAreaQueryCommand(tenantContext.TenantId, queryId), cancellationToken);
+        if (refreshed is null)
+            return NotFound();
+
+        return Ok(new GeoAreaQueryResponse(refreshed.Value.QueryId, "Completed", refreshed.Value.Count));
     }
 
     [HttpGet("{queryId:guid}/export")]

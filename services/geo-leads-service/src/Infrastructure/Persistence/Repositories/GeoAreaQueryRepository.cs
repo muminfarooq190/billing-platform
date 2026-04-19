@@ -12,6 +12,12 @@ public sealed class GeoAreaQueryRepository(GeoLeadsDbContext dbContext) : IGeoAr
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task UpdateAsync(GeoAreaQuery query, CancellationToken cancellationToken)
+    {
+        dbContext.GeoAreaQueries.Update(query);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public Task<GeoAreaQuery?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken cancellationToken)
         => dbContext.GeoAreaQueries
             .Include(x => x.Results)

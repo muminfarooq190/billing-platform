@@ -8,13 +8,14 @@ public sealed class GeoAreaQuery
 
     private GeoAreaQuery() { }
 
-    public GeoAreaQuery(Guid tenantId, string geometryJson, IReadOnlyList<string> requestedLeadTypes, int requestedLimit)
+    public GeoAreaQuery(Guid tenantId, string geometryJson, IReadOnlyList<string> requestedLeadTypes, int requestedLimit, string? rankingMode)
     {
         Id = Guid.NewGuid();
         TenantId = tenantId;
         GeometryJson = geometryJson;
         RequestedLeadTypesJson = System.Text.Json.JsonSerializer.Serialize(requestedLeadTypes);
         RequestedLimit = requestedLimit;
+        RankingMode = string.IsNullOrWhiteSpace(rankingMode) ? "relevance" : rankingMode.Trim();
         Status = GeoAreaQueryStatus.Pending;
         CreatedAt = DateTimeOffset.UtcNow;
     }
@@ -24,6 +25,7 @@ public sealed class GeoAreaQuery
     public string GeometryJson { get; private set; } = string.Empty;
     public string RequestedLeadTypesJson { get; private set; } = "[]";
     public int RequestedLimit { get; private set; }
+    public string RankingMode { get; private set; } = "relevance";
     public GeoAreaQueryStatus Status { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset? CompletedAt { get; private set; }

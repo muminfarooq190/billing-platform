@@ -14,6 +14,12 @@ public sealed class InMemoryGeoAreaQueryRepository : IGeoAreaQueryRepository
         return Task.CompletedTask;
     }
 
+    public Task UpdateAsync(GeoAreaQuery query, CancellationToken cancellationToken)
+    {
+        Store[query.Id] = query;
+        return Task.CompletedTask;
+    }
+
     public Task<GeoAreaQuery?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken cancellationToken)
     {
         if (Store.TryGetValue(id, out var query) && query.TenantId == tenantId)

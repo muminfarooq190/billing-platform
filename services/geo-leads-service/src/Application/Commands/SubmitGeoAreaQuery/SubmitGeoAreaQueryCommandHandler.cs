@@ -16,7 +16,8 @@ public sealed class SubmitGeoAreaQueryCommandHandler(
             request.TenantId,
             JsonSerializer.Serialize(request.Geometry),
             request.LeadTypes,
-            request.Limit);
+            request.Limit,
+            request.RankingMode);
 
         var leads = await geoLeadCatalog.SearchAsync(request.Geometry, request.LeadTypes, request.Limit, cancellationToken);
         var results = leads.Select((lead, index) => new GeoAreaQueryResult(

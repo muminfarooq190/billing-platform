@@ -18,6 +18,7 @@ public sealed class GeoLeadsDbContext(DbContextOptions<GeoLeadsDbContext> option
             builder.Property(x => x.GeometryJson).HasColumnName("geometry_json");
             builder.Property(x => x.RequestedLeadTypesJson).HasColumnName("requested_lead_types_json");
             builder.Property(x => x.RequestedLimit).HasColumnName("requested_limit");
+            builder.Property(x => x.RankingMode).HasColumnName("ranking_mode");
             builder.Property(x => x.Status).HasConversion<string>().HasColumnName("status");
             builder.Property(x => x.CreatedAt).HasColumnName("created_at");
             builder.Property(x => x.CompletedAt).HasColumnName("completed_at");

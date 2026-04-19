@@ -42,6 +42,7 @@ This service is an honest starting point so frontend and product flow can be wir
 
 - `POST /geo-leads/queries`
 - `GET /geo-leads/queries/{queryId}`
+- `POST /geo-leads/queries/{queryId}/refresh`
 - `GET /geo-leads/queries/{queryId}/export?format=csv`
 - `GET /health`
 
