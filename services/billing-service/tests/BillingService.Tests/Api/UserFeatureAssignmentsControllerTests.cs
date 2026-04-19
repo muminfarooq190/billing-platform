@@ -17,19 +17,19 @@ namespace BillingService.Tests.Api;
 public sealed class UserFeatureAssignmentsControllerTests
 {
     [Fact]
-    public async Task GetTenantFeatureAllocations_ShouldUseRouteTenantId()
+    public async Task GetTenantFeatureAllocations_ShouldForbid_CrossTenantAccess()
     {
-        var tenantId = Guid.NewGuid();
+        var routeTenantId = Guid.NewGuid();
+        var contextTenantId = Guid.NewGuid();
         var mediator = new Mock<IMediator>();
         var tenantContext = new Mock<ITenantContext>();
-        mediator.Setup(x => x.Send(It.Is<GetTenantFeatureAllocationsQuery>(q => q.TenantId == tenantId), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<TenantFeatureAllocationReadModel> { new() { FeatureKey = "travel.booking.create", AssignmentMode = "ExplicitUserAssignment", TenantGranted = true } });
+        tenantContext.SetupGet(x => x.TenantId).Returns(contextTenantId);
 
         var controller = new UserFeatureAssignmentsController(mediator.Object, tenantContext.Object);
-        var result = await controller.GetTenantFeatureAllocations(tenantId, CancellationToken.None);
+        var result = await controller.GetTenantFeatureAllocations(routeTenantId, CancellationToken.None);
 
-        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        ok.Value.Should().BeAssignableTo<IReadOnlyList<TenantFeatureAllocationReadModel>>();
+        result.Should().BeOfType<ForbidResult>();
+        mediator.Verify(x => x.Send(It.IsAny<GetTenantFeatureAllocationsQuery>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -40,6 +40,7 @@ public sealed class UserFeatureAssignmentsControllerTests
         var actingUserId = Guid.NewGuid();
         var mediator = new Mock<IMediator>();
         var tenantContext = new Mock<ITenantContext>();
+        tenantContext.SetupGet(x => x.TenantId).Returns(tenantId);
         tenantContext.SetupGet(x => x.UserId).Returns(actingUserId);
 
         mediator.Setup(x => x.Send(It.IsAny<AssignUserFeaturesCommand>(), It.IsAny<CancellationToken>()))
@@ -73,6 +74,24 @@ public sealed class UserFeatureAssignmentsControllerTests
     }
 
     [Fact]
+    public async Task AssignFeatures_ShouldForbid_CrossTenantAccess()
+    {
+        var routeTenantId = Guid.NewGuid();
+        var contextTenantId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var mediator = new Mock<IMediator>();
+        var tenantContext = new Mock<ITenantContext>();
+        tenantContext.SetupGet(x => x.TenantId).Returns(contextTenantId);
+        tenantContext.SetupGet(x => x.UserId).Returns(Guid.NewGuid());
+
+        var controller = new UserFeatureAssignmentsController(mediator.Object, tenantContext.Object);
+        var result = await controller.AssignFeatures(routeTenantId, userId, new AssignUserFeaturesRequest { FeatureKeys = new[] { "travel.booking.create" } }, CancellationToken.None);
+
+        result.Should().BeOfType<ForbidResult>();
+        mediator.Verify(x => x.Send(It.IsAny<AssignUserFeaturesCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task RevokeFeature_ShouldForwardTenantContextUserId()
     {
         var tenantId = Guid.NewGuid();
@@ -80,6 +99,7 @@ public sealed class UserFeatureAssignmentsControllerTests
         var actingUserId = Guid.NewGuid();
         var mediator = new Mock<IMediator>();
         var tenantContext = new Mock<ITenantContext>();
+        tenantContext.SetupGet(x => x.TenantId).Returns(tenantId);
         tenantContext.SetupGet(x => x.UserId).Returns(actingUserId);
 
         var controller = new UserFeatureAssignmentsController(mediator.Object, tenantContext.Object);

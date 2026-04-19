@@ -15,15 +15,27 @@ public sealed class UserFeatureAssignmentsController(IMediator mediator, ITenant
 {
     [HttpGet("tenants/{tenantId:guid}/feature-allocations")]
     public async Task<IActionResult> GetTenantFeatureAllocations(Guid tenantId, CancellationToken cancellationToken)
-        => Ok(await mediator.Send(new GetTenantFeatureAllocationsQuery(tenantId), cancellationToken));
+    {
+        if (tenantId != tenantContext.TenantId)
+            return Forbid();
+
+        return Ok(await mediator.Send(new GetTenantFeatureAllocationsQuery(tenantId), cancellationToken));
+    }
 
     [HttpGet("tenants/{tenantId:guid}/users/{userId:guid}/features")]
     public async Task<IActionResult> GetUserFeatures(Guid tenantId, Guid userId, CancellationToken cancellationToken)
-        => Ok(await mediator.Send(new GetUserFeatureAccessQuery(tenantId, userId), cancellationToken));
+    {
+        if (tenantId != tenantContext.TenantId)
+            return Forbid();
+
+        return Ok(await mediator.Send(new GetUserFeatureAccessQuery(tenantId, userId), cancellationToken));
+    }
 
     [HttpPost("tenants/{tenantId:guid}/users/{userId:guid}/feature-assignments")]
     public async Task<IActionResult> AssignFeatures(Guid tenantId, Guid userId, [FromBody] AssignUserFeaturesRequest request, CancellationToken cancellationToken)
     {
+        if (tenantId != tenantContext.TenantId)
+            return Forbid();
         var assignedFeatures = await mediator.Send(new AssignUserFeaturesCommand(
             tenantId,
             userId,
@@ -40,6 +52,8 @@ public sealed class UserFeatureAssignmentsController(IMediator mediator, ITenant
     [HttpDelete("tenants/{tenantId:guid}/users/{userId:guid}/feature-assignments/{featureKey}")]
     public async Task<IActionResult> RevokeFeature(Guid tenantId, Guid userId, string featureKey, CancellationToken cancellationToken)
     {
+        if (tenantId != tenantContext.TenantId)
+            return Forbid();
         await mediator.Send(new RevokeUserFeatureAssignmentCommand(tenantId, userId, featureKey, tenantContext.UserId), cancellationToken);
         return NoContent();
     }

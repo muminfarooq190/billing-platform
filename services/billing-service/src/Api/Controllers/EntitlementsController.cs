@@ -22,6 +22,9 @@ public sealed class EntitlementsController(IMediator mediator, ITenantContext te
     [HttpGet("{tenantId:guid}")]
     public async Task<IActionResult> GetByTenant(Guid tenantId, CancellationToken cancellationToken)
     {
+        if (tenantId != tenantContext.TenantId)
+            return Forbid();
+
         var model = await mediator.Send(new GetEffectiveEntitlementsQuery(tenantId), cancellationToken);
         return Ok(model);
     }
@@ -29,6 +32,9 @@ public sealed class EntitlementsController(IMediator mediator, ITenantContext te
     [HttpPost("{tenantId:guid}/grants")]
     public async Task<IActionResult> Grant(Guid tenantId, [FromBody] GrantFeatureEntitlementRequest request, CancellationToken cancellationToken)
     {
+        if (tenantId != tenantContext.TenantId)
+            return Forbid();
+
         var result = await mediator.Send(new GrantFeatureEntitlementCommand(tenantId, request.FeatureKey, request.Granted, request.LimitValue, request.EffectiveFrom, request.EffectiveTo, request.Reason), cancellationToken);
         return Ok(result);
     }
@@ -36,6 +42,8 @@ public sealed class EntitlementsController(IMediator mediator, ITenantContext te
     [HttpPost("{tenantId:guid}/packages")]
     public async Task<IActionResult> AssignPackage(Guid tenantId, [FromBody] AssignTenantPackageRequest request, CancellationToken cancellationToken)
     {
+        if (tenantId != tenantContext.TenantId)
+            return Forbid();
         var id = await mediator.Send(new AssignTenantPackageCommand(
             tenantId,
             request.CommercialPackageId,
@@ -51,6 +59,8 @@ public sealed class EntitlementsController(IMediator mediator, ITenantContext te
     [HttpPost("{tenantId:guid}/overrides")]
     public async Task<IActionResult> CreateOverride(Guid tenantId, [FromBody] CreateTenantFeatureOverrideRequest request, CancellationToken cancellationToken)
     {
+        if (tenantId != tenantContext.TenantId)
+            return Forbid();
         var id = await mediator.Send(new CreateTenantFeatureOverrideCommand(
             tenantId,
             request.FeatureKey,
