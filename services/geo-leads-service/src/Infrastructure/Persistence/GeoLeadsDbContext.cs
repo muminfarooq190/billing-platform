@@ -8,6 +8,7 @@ public sealed class GeoLeadsDbContext(DbContextOptions<GeoLeadsDbContext> option
     public DbSet<GeoAreaQuery> GeoAreaQueries => Set<GeoAreaQuery>();
     public DbSet<GeoAreaQueryResult> GeoAreaQueryResults => Set<GeoAreaQueryResult>();
     public DbSet<LeadSourceRecord> LeadSourceRecords => Set<LeadSourceRecord>();
+    public DbSet<SavedGeoArea> SavedGeoAreas => Set<SavedGeoArea>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -66,6 +67,16 @@ public sealed class GeoLeadsDbContext(DbContextOptions<GeoLeadsDbContext> option
             builder.Property(x => x.RawPayloadJson).HasColumnName("raw_payload_json");
             builder.Property(x => x.FirstSeenAt).HasColumnName("first_seen_at");
             builder.Property(x => x.LastSeenAt).HasColumnName("last_seen_at");
+        });
+
+        modelBuilder.Entity<SavedGeoArea>(builder =>
+        {
+            builder.ToTable("saved_geo_areas");
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.TenantId).HasColumnName("tenant_id");
+            builder.Property(x => x.Name).HasColumnName("name");
+            builder.Property(x => x.GeometryJson).HasColumnName("geometry_json");
+            builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         });
     }
 }

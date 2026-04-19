@@ -53,3 +53,5 @@ public sealed record GeometryPayload(string Type, IReadOnlyList<IReadOnlyList<de
 }
 
 public sealed record GeoAreaQueryResponse(Guid QueryId, string Status, int Count);
+
+public sealed record SaveGeoAreaRequest(string Name, GeometryPayload Geometry);
