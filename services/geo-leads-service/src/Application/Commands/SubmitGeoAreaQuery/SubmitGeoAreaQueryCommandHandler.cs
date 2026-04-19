@@ -8,10 +8,12 @@ namespace GeoLeadsService.Application.Commands.SubmitGeoAreaQuery;
 
 public sealed class SubmitGeoAreaQueryCommandHandler(
     IGeoAreaQueryRepository geoAreaQueryRepository,
-    IGeoLeadCatalog geoLeadCatalog) : IRequestHandler<SubmitGeoAreaQueryCommand, (Guid QueryId, int Count)>
+    IGeoLeadCatalog geoLeadCatalog,
+    IFeatureGate featureGate) : IRequestHandler<SubmitGeoAreaQueryCommand, (Guid QueryId, int Count)>
 {
     public async Task<(Guid QueryId, int Count)> Handle(SubmitGeoAreaQueryCommand request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync("geo-leads.manage", request.TenantId, cancellationToken);
         var query = new GeoAreaQuery(
             request.TenantId,
             JsonSerializer.Serialize(request.Geometry),

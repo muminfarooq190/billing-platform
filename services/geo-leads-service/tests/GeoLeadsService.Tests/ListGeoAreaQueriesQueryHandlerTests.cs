@@ -1,4 +1,5 @@
 using FluentAssertions;
+using GeoLeadsService.Application.Abstractions;
 using GeoLeadsService.Application.Queries.ListGeoAreaQueries;
 using GeoLeadsService.Domain.Aggregates;
 using GeoLeadsService.Domain.Repositories;
@@ -18,12 +19,19 @@ public sealed class ListGeoAreaQueriesQueryHandlerTests
             new(tenantId, "{}", ["tour_operator"], 25, "contactability")
         };
 
-        var handler = new ListGeoAreaQueriesQueryHandler(new StubGeoAreaQueryRepository(expected));
+        var handler = new ListGeoAreaQueriesQueryHandler(new StubGeoAreaQueryRepository(expected), new AllowFeatureGate());
 
         var result = await handler.Handle(new ListGeoAreaQueriesQuery(tenantId, 10), CancellationToken.None);
 
         result.Should().HaveCount(2);
         result.Should().OnlyContain(x => x.TenantId == tenantId);
+    }
+
+    private sealed class AllowFeatureGate : IFeatureGate
+    {
+        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(true);
+        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
     }
 
     private sealed class StubGeoAreaQueryRepository(IReadOnlyList<GeoAreaQuery> queries) : IGeoAreaQueryRepository

@@ -25,7 +25,7 @@ public sealed class RefreshGeoAreaQueryHandlerTests
 
         var query = new GeoAreaQuery(tenantId, JsonSerializer.Serialize(polygon), [], 10, "relevance");
         var repository = new StubGeoAreaQueryRepository(query);
-        var handler = new RefreshGeoAreaQueryCommandHandler(repository, new StubGeoLeadCatalog());
+        var handler = new RefreshGeoAreaQueryCommandHandler(repository, new StubGeoLeadCatalog(), new AllowFeatureGate());
 
         var refreshed = await handler.Handle(new RefreshGeoAreaQueryCommand(tenantId, query.Id), CancellationToken.None);
 
@@ -33,6 +33,13 @@ public sealed class RefreshGeoAreaQueryHandlerTests
         refreshed!.Value.Count.Should().Be(1);
         repository.Stored.Results.Should().ContainSingle();
         repository.UpdateCalled.Should().BeTrue();
+    }
+
+    private sealed class AllowFeatureGate : IFeatureGate
+    {
+        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(true);
+        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
     }
 
     private sealed class StubGeoLeadCatalog : IGeoLeadCatalog

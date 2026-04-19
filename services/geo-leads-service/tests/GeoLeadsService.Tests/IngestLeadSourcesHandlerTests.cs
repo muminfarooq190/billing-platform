@@ -17,7 +17,9 @@ public sealed class IngestLeadSourcesHandlerTests
         var handler = new IngestLeadSourcesCommandHandler(
             [new StubAdapter()],
             repository,
-            runRepository);
+            runRepository,
+            new FakeTenantContext(),
+            new AllowFeatureGate());
 
         var count = await handler.Handle(new IngestLeadSourcesCommand(), CancellationToken.None);
 
@@ -36,7 +38,9 @@ public sealed class IngestLeadSourcesHandlerTests
         var handler = new IngestLeadSourcesCommandHandler(
             [new StubAdapter(), new SecondStubAdapter()],
             repository,
-            runRepository);
+            runRepository,
+            new FakeTenantContext(),
+            new AllowFeatureGate());
 
         var count = await handler.Handle(new IngestLeadSourcesCommand(), CancellationToken.None);
 
@@ -51,7 +55,7 @@ public sealed class IngestLeadSourcesHandlerTests
     {
         var repository = new StubLeadSourceRecordRepository();
         var runRepository = new StubLeadSourceIngestionRunRepository();
-        var handler = new IngestLeadSourcesCommandHandler([new DisabledStubAdapter(), new StubAdapter()], repository, runRepository);
+        var handler = new IngestLeadSourcesCommandHandler([new DisabledStubAdapter(), new StubAdapter()], repository, runRepository, new FakeTenantContext(), new AllowFeatureGate());
 
         var count = await handler.Handle(new IngestLeadSourcesCommand(), CancellationToken.None);
 
@@ -67,7 +71,7 @@ public sealed class IngestLeadSourcesHandlerTests
         var repository = new StubLeadSourceRecordRepository();
         var runRepository = new StubLeadSourceIngestionRunRepository();
         repository.Stored.Add(new LeadSourceRecord("stub-source", "source-1", "Old Lead", "hotel", "Old", null, null, null, 18.90m, 72.80m, "{\"old\":true}"));
-        var handler = new IngestLeadSourcesCommandHandler([new StubAdapter()], repository, runRepository);
+        var handler = new IngestLeadSourcesCommandHandler([new StubAdapter()], repository, runRepository, new FakeTenantContext(), new AllowFeatureGate());
 
         var count = await handler.Handle(new IngestLeadSourcesCommand(), CancellationToken.None);
 
@@ -75,6 +79,18 @@ public sealed class IngestLeadSourcesHandlerTests
         repository.Stored.Should().HaveCount(1);
         repository.Stored[0].RawName.Should().Be("Sample Lead");
         repository.Stored[0].RawCategory.Should().Be("tour_operator");
+    }
+
+    private sealed class FakeTenantContext : GeoLeadsService.Api.ITenantContext
+    {
+        public Guid TenantId { get; } = Guid.NewGuid();
+    }
+
+    private sealed class AllowFeatureGate : IFeatureGate
+    {
+        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(true);
+        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
     }
 
     private sealed class StubAdapter : IConfigurableGeoLeadSourceAdapter

@@ -1,3 +1,4 @@
+using GeoLeadsService.Api;
 using GeoLeadsService.Application.Abstractions;
 using GeoLeadsService.Domain.Aggregates;
 using GeoLeadsService.Domain.Repositories;
@@ -8,10 +9,13 @@ namespace GeoLeadsService.Application.Commands.IngestLeadSources;
 public sealed class IngestLeadSourcesCommandHandler(
     IEnumerable<IGeoLeadSourceAdapter> geoLeadSourceAdapters,
     ILeadSourceRecordRepository leadSourceRecordRepository,
-    ILeadSourceIngestionRunRepository leadSourceIngestionRunRepository) : IRequestHandler<IngestLeadSourcesCommand, int>
+    ILeadSourceIngestionRunRepository leadSourceIngestionRunRepository,
+    ITenantContext tenantContext,
+    IFeatureGate featureGate) : IRequestHandler<IngestLeadSourcesCommand, int>
 {
     public async Task<int> Handle(IngestLeadSourcesCommand request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync("geo-leads.manage", tenantContext.TenantId, cancellationToken);
         var total = 0;
 
         foreach (var adapter in geoLeadSourceAdapters.Where(x => x is not IConfigurableGeoLeadSourceAdapter configurable || configurable.IsEnabled))

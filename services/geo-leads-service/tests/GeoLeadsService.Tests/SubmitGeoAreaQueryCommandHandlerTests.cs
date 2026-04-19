@@ -13,7 +13,7 @@ public sealed class SubmitGeoAreaQueryCommandHandlerTests
     public async Task SubmitGeoAreaQueryCommandHandler_ShouldPersistCompletedQuery()
     {
         var repository = new StubGeoAreaQueryRepository();
-        var handler = new SubmitGeoAreaQueryCommandHandler(repository, new StubGeoLeadCatalog());
+        var handler = new SubmitGeoAreaQueryCommandHandler(repository, new StubGeoLeadCatalog(), new AllowFeatureGate());
         var polygon = new GeoPolygon(
         [
             new GeoCoordinate(72.82m, 18.92m),
@@ -37,6 +37,13 @@ public sealed class SubmitGeoAreaQueryCommandHandlerTests
             [
                 new GeoLead(Guid.NewGuid(), "Saved Area Lead", "hotel", "hello@example.com", null, "https://example.com", "Somewhere", 18.93m, 72.83m, "Mumbai", "Maharashtra", "India", 0.9m, 0.7m, 0.8m, ["stub"], ["reason"], DateTimeOffset.UtcNow)
             ]);
+    }
+
+    private sealed class AllowFeatureGate : IFeatureGate
+    {
+        public Task EnsureEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<bool> IsEnabledAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(true);
+        public Task<int?> GetLimitAsync(string featureKey, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<int?>(null);
     }
 
     private sealed class StubGeoAreaQueryRepository : IGeoAreaQueryRepository

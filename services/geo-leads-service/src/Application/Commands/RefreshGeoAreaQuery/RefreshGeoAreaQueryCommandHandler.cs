@@ -8,10 +8,12 @@ namespace GeoLeadsService.Application.Commands.RefreshGeoAreaQuery;
 
 public sealed class RefreshGeoAreaQueryCommandHandler(
     IGeoAreaQueryRepository geoAreaQueryRepository,
-    IGeoLeadCatalog geoLeadCatalog) : IRequestHandler<RefreshGeoAreaQueryCommand, (Guid QueryId, int Count)?>
+    IGeoLeadCatalog geoLeadCatalog,
+    IFeatureGate featureGate) : IRequestHandler<RefreshGeoAreaQueryCommand, (Guid QueryId, int Count)?>
 {
     public async Task<(Guid QueryId, int Count)?> Handle(RefreshGeoAreaQueryCommand request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync("geo-leads.manage", request.TenantId, cancellationToken);
         var query = await geoAreaQueryRepository.GetByIdAsync(request.QueryId, request.TenantId, cancellationToken);
         if (query is null)
             return null;

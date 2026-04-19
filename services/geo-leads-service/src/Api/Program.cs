@@ -1,5 +1,7 @@
+using GeoLeadsService.Api.Filters;
 using GeoLeadsService.Application.Abstractions;
 using GeoLeadsService.Domain.Repositories;
+using GeoLeadsService.Infrastructure.Entitlements;
 using GeoLeadsService.Infrastructure.Persistence;
 using GeoLeadsService.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +18,7 @@ public sealed class Program
 
         builder.Services.AddDbContext<GeoLeadsDbContext>(options => options.UseNpgsql(databaseUrl));
         builder.Services.AddHttpContextAccessor();
+        builder.Services.AddMemoryCache();
         builder.Services.AddScoped<ITenantContext, HeaderTenantContext>();
         builder.Services.AddScoped<IGeoAreaQueryRepository, GeoAreaQueryRepository>();
         builder.Services.AddScoped<ILeadSourceRecordRepository, LeadSourceRecordRepository>();
@@ -26,9 +29,14 @@ public sealed class Program
         builder.Services.AddScoped<IGeoLeadCatalog, SeededGeoLeadCatalog>();
         builder.Services.AddScoped<IGeoLeadSourceAdapter, SeededGeoLeadSourceAdapter>();
         builder.Services.AddScoped<IGeoLeadSourceAdapter, PublicDirectoryGeoLeadSourceAdapter>();
+        builder.Services.AddHttpClient<IBillingEntitlementsClient, BillingEntitlementsClient>(client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["BILLING_SERVICE_URL"] ?? "http://billing-service:8080/");
+        });
+        builder.Services.AddScoped<IFeatureGate, CachedFeatureGate>();
         builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
         builder.Services.AddHealthChecks();
-        builder.Services.AddControllers();
+        builder.Services.AddControllers(options => options.Filters.Add<GlobalExceptionFilter>());
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 
