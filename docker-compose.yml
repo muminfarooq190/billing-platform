@@ -208,6 +208,38 @@ services:
       retries: 5
       start_period: 20s
 
+  geo-leads-service:
+    build:
+      context: ./services/geo-leads-service
+      dockerfile: Dockerfile
+    container_name: billing-geo-leads-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_ENVIRONMENT: Production
+      DATABASE_URL: ${GEO_LEADS_DATABASE_URL}
+      RABBITMQ_URL: ${RABBITMQ_URL}
+      REDIS_URL: ${REDIS_URL}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_SERVICE_NAME: geo-leads-service
+    ports:
+      - "5006:8080"
+    networks:
+      - billing-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   postgres:
     image: postgres:16-alpine
     container_name: billing-postgres
