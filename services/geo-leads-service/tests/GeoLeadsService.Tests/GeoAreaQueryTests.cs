@@ -13,4 +13,12 @@ public sealed class GeoAreaQueryTests
 
         query.RankingMode.Should().Be("relevance");
     }
+
+    [Fact]
+    public void GeoAreaQuery_ShouldNormalizeUnsupportedRankingModeToRelevance()
+    {
+        var query = new GeoAreaQuery(Guid.NewGuid(), "{}", [], 10, "nonsense");
+
+        query.RankingMode.Should().Be("relevance");
+    }
 }

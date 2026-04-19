@@ -20,12 +20,18 @@ public sealed class SubmitGeoAreaQueryCommandHandler(
             request.RankingMode);
 
         var leads = await geoLeadCatalog.SearchAsync(request.Geometry, request.LeadTypes, request.Limit, cancellationToken);
-        var results = leads.Select((lead, index) => new GeoAreaQueryResult(
+        var rankedLeads = leads
+            .Select(lead => new { Lead = lead, Score = GeoLeadRanking.Score(lead, query.RankingMode) })
+            .OrderByDescending(x => x.Score)
+            .ThenBy(x => x.Lead.CanonicalName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var results = rankedLeads.Select((entry, index) => new GeoAreaQueryResult(
             query.Id,
             index + 1,
-            Math.Round((lead.TourismRelevanceScore * 0.35m) + (lead.ContactabilityScore * 0.30m) + (lead.ConfidenceScore * 0.35m), 4),
-            lead,
-            lead.Reasons)).ToList();
+            entry.Score,
+            entry.Lead,
+            entry.Lead.Reasons)).ToList();
 
         query.Complete(results);
         await geoAreaQueryRepository.AddAsync(query, cancellationToken);

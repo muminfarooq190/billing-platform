@@ -15,7 +15,7 @@ public sealed class GeoAreaQuery
         GeometryJson = geometryJson;
         RequestedLeadTypesJson = System.Text.Json.JsonSerializer.Serialize(requestedLeadTypes);
         RequestedLimit = requestedLimit;
-        RankingMode = string.IsNullOrWhiteSpace(rankingMode) ? "relevance" : rankingMode.Trim();
+        RankingMode = GeoLeadsService.Application.GeoLeadRanking.NormalizeMode(rankingMode);
         Status = GeoAreaQueryStatus.Pending;
         CreatedAt = DateTimeOffset.UtcNow;
     }
