@@ -24,6 +24,21 @@ public sealed class IngestLeadSourcesHandlerTests
         repository.Stored[0].RawName.Should().Be("Sample Lead");
     }
 
+    [Fact]
+    public async Task IngestLeadSourcesCommandHandler_ShouldCombineMultipleAdapters()
+    {
+        var repository = new StubLeadSourceRecordRepository();
+        var handler = new IngestLeadSourcesCommandHandler(
+            [new StubAdapter(), new SecondStubAdapter()],
+            repository);
+
+        var count = await handler.Handle(new IngestLeadSourcesCommand(), CancellationToken.None);
+
+        count.Should().Be(2);
+        repository.Stored.Should().HaveCount(2);
+        repository.Stored.Select(x => x.SourceName).Should().Contain(["stub-source", "second-stub-source"]);
+    }
+
     private sealed class StubAdapter : IGeoLeadSourceAdapter
     {
         public string SourceName => "stub-source";
@@ -32,6 +47,17 @@ public sealed class IngestLeadSourcesHandlerTests
             => Task.FromResult<IReadOnlyList<GeoLeadSourceRecordInput>>(
             [
                 new("source-1", "Sample Lead", "tour_operator", "Somewhere", null, "hello@example.com", null, 18.92m, 72.83m, "{}")
+            ]);
+    }
+
+    private sealed class SecondStubAdapter : IGeoLeadSourceAdapter
+    {
+        public string SourceName => "second-stub-source";
+
+        public Task<IReadOnlyList<GeoLeadSourceRecordInput>> FetchAsync(CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<GeoLeadSourceRecordInput>>(
+            [
+                new("source-2", "Second Lead", "hotel", "Elsewhere", null, "stay@example.com", null, 18.94m, 72.84m, "{}")
             ]);
     }
 

@@ -19,8 +19,11 @@ public sealed class Program
         builder.Services.AddScoped<ITenantContext, HeaderTenantContext>();
         builder.Services.AddScoped<IGeoAreaQueryRepository, GeoAreaQueryRepository>();
         builder.Services.AddScoped<ILeadSourceRecordRepository, LeadSourceRecordRepository>();
+        builder.Configuration.AddJsonFile("Api/appsettings.json", optional: true, reloadOnChange: false);
+
         builder.Services.AddScoped<IGeoLeadCatalog, SeededGeoLeadCatalog>();
         builder.Services.AddScoped<IGeoLeadSourceAdapter, SeededGeoLeadSourceAdapter>();
+        builder.Services.AddScoped<IGeoLeadSourceAdapter, PublicDirectoryGeoLeadSourceAdapter>();
         builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
         builder.Services.AddHealthChecks();
         builder.Services.AddControllers();
