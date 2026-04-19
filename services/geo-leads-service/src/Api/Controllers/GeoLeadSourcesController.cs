@@ -7,12 +7,16 @@ namespace GeoLeadsService.Api.Controllers;
 
 [ApiController]
 [Route("geo-leads/sources")]
-public sealed class GeoLeadSourcesController(IMediator mediator, ILeadSourceRecordRepository leadSourceRecordRepository) : ControllerBase
+public sealed class GeoLeadSourcesController(
+    IMediator mediator,
+    ILeadSourceRecordRepository leadSourceRecordRepository,
+    ILeadSourceIngestionRunRepository leadSourceIngestionRunRepository) : ControllerBase
 {
     [HttpGet("status")]
     public async Task<IActionResult> Status([FromQuery] int limit = 20, CancellationToken cancellationToken = default)
     {
         var records = await leadSourceRecordRepository.ListRecentAsync(Math.Clamp(limit, 1, 100), cancellationToken);
+        var runs = await leadSourceIngestionRunRepository.ListRecentAsync(Math.Clamp(limit, 1, 100), cancellationToken);
 
         var grouped = records
             .GroupBy(x => x.SourceName)
@@ -38,6 +42,16 @@ public sealed class GeoLeadSourcesController(IMediator mediator, ILeadSourceReco
         {
             sourceCount = grouped.Count,
             recordCount = records.Count,
+            recentRuns = runs.Select(x => new
+            {
+                runId = x.Id,
+                sourceName = x.SourceName,
+                status = x.Status,
+                fetchedCount = x.FetchedCount,
+                errorMessage = x.ErrorMessage,
+                startedAt = x.StartedAt,
+                completedAt = x.CompletedAt
+            }),
             sources = grouped
         });
     }

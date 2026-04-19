@@ -13,38 +13,46 @@ public sealed class IngestLeadSourcesHandlerTests
     public async Task IngestLeadSourcesCommandHandler_ShouldPersistFetchedRecords()
     {
         var repository = new StubLeadSourceRecordRepository();
+        var runRepository = new StubLeadSourceIngestionRunRepository();
         var handler = new IngestLeadSourcesCommandHandler(
             [new StubAdapter()],
-            repository);
+            repository,
+            runRepository);
 
         var count = await handler.Handle(new IngestLeadSourcesCommand(), CancellationToken.None);
 
         count.Should().Be(1);
         repository.Stored.Should().ContainSingle();
         repository.Stored[0].RawName.Should().Be("Sample Lead");
+        runRepository.Stored.Should().ContainSingle();
+        runRepository.Stored[0].Status.Should().Be("Completed");
     }
 
     [Fact]
     public async Task IngestLeadSourcesCommandHandler_ShouldCombineMultipleAdapters()
     {
         var repository = new StubLeadSourceRecordRepository();
+        var runRepository = new StubLeadSourceIngestionRunRepository();
         var handler = new IngestLeadSourcesCommandHandler(
             [new StubAdapter(), new SecondStubAdapter()],
-            repository);
+            repository,
+            runRepository);
 
         var count = await handler.Handle(new IngestLeadSourcesCommand(), CancellationToken.None);
 
         count.Should().Be(2);
         repository.Stored.Should().HaveCount(2);
         repository.Stored.Select(x => x.SourceName).Should().Contain(["stub-source", "second-stub-source"]);
+        runRepository.Stored.Should().HaveCount(2);
     }
 
     [Fact]
     public async Task IngestLeadSourcesCommandHandler_ShouldUpsertDuplicateSourceRecords()
     {
         var repository = new StubLeadSourceRecordRepository();
+        var runRepository = new StubLeadSourceIngestionRunRepository();
         repository.Stored.Add(new LeadSourceRecord("stub-source", "source-1", "Old Lead", "hotel", "Old", null, null, null, 18.90m, 72.80m, "{\"old\":true}"));
-        var handler = new IngestLeadSourcesCommandHandler([new StubAdapter()], repository);
+        var handler = new IngestLeadSourcesCommandHandler([new StubAdapter()], repository, runRepository);
 
         var count = await handler.Handle(new IngestLeadSourcesCommand(), CancellationToken.None);
 
@@ -117,5 +125,22 @@ public sealed class IngestLeadSourcesHandlerTests
 
         public Task<IReadOnlyList<LeadSourceRecord>> ListRecentAsync(int limit, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<LeadSourceRecord>>(Stored.OrderByDescending(x => x.LastSeenAt).Take(limit).ToList());
+    }
+
+    private sealed class StubLeadSourceIngestionRunRepository : ILeadSourceIngestionRunRepository
+    {
+        public List<LeadSourceIngestionRun> Stored { get; } = [];
+
+        public Task AddAsync(LeadSourceIngestionRun run, CancellationToken cancellationToken)
+        {
+            Stored.Add(run);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(LeadSourceIngestionRun run, CancellationToken cancellationToken)
+            => Task.CompletedTask;
+
+        public Task<IReadOnlyList<LeadSourceIngestionRun>> ListRecentAsync(int limit, CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<LeadSourceIngestionRun>>(Stored.OrderByDescending(x => x.StartedAt).Take(limit).ToList());
     }
 }

@@ -8,6 +8,7 @@ public sealed class GeoLeadsDbContext(DbContextOptions<GeoLeadsDbContext> option
     public DbSet<GeoAreaQuery> GeoAreaQueries => Set<GeoAreaQuery>();
     public DbSet<GeoAreaQueryResult> GeoAreaQueryResults => Set<GeoAreaQueryResult>();
     public DbSet<LeadSourceRecord> LeadSourceRecords => Set<LeadSourceRecord>();
+    public DbSet<LeadSourceIngestionRun> LeadSourceIngestionRuns => Set<LeadSourceIngestionRun>();
     public DbSet<SavedGeoArea> SavedGeoAreas => Set<SavedGeoArea>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -68,6 +69,18 @@ public sealed class GeoLeadsDbContext(DbContextOptions<GeoLeadsDbContext> option
             builder.Property(x => x.FirstSeenAt).HasColumnName("first_seen_at");
             builder.Property(x => x.LastSeenAt).HasColumnName("last_seen_at");
             builder.HasIndex(x => new { x.SourceName, x.SourceRecordId }).IsUnique();
+        });
+
+        modelBuilder.Entity<LeadSourceIngestionRun>(builder =>
+        {
+            builder.ToTable("lead_source_ingestion_runs");
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.SourceName).HasColumnName("source_name");
+            builder.Property(x => x.Status).HasColumnName("status");
+            builder.Property(x => x.FetchedCount).HasColumnName("fetched_count");
+            builder.Property(x => x.ErrorMessage).HasColumnName("error_message");
+            builder.Property(x => x.StartedAt).HasColumnName("started_at");
+            builder.Property(x => x.CompletedAt).HasColumnName("completed_at");
         });
 
         modelBuilder.Entity<SavedGeoArea>(builder =>

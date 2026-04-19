@@ -33,7 +33,7 @@ Not built yet:
 - `POST /geo-leads/sources/ingest`
 - `GET /geo-leads/sources/status`
 
-Current ingestion uses seeded/config-backed source adapters and upserts raw source records by `(source_name, source_record_id)` so repeated ingests refresh existing snapshots instead of blindly duplicating them.
+Current ingestion uses seeded/config-backed source adapters, upserts raw source records by `(source_name, source_record_id)`, and stores ingestion run audit rows so status can show actual run history instead of only inferring from latest records.
 
 ## Current purpose
 
