@@ -1,8 +1,12 @@
 using GeoLeadsService.Api.Contracts;
 using GeoLeadsService.Application.Abstractions;
-using GeoLeadsService.Application.Commands.SubmitGeoAreaQuery;
-using GeoLeadsService.Domain.Aggregates;
-using GeoLeadsService.Domain.Repositories;
+using GeoLeadsService.Application.Commands.CreateSavedGeoArea;
+using GeoLeadsService.Application.Commands.DeleteSavedGeoArea;
+using GeoLeadsService.Application.Commands.RunSavedGeoAreaQuery;
+using GeoLeadsService.Application.Commands.UpdateSavedGeoArea;
+using GeoLeadsService.Application.Queries.GetSavedGeoAreaById;
+using GeoLeadsService.Application.Queries.ListSavedGeoAreas;
+using GeoLeadsService.Application.SavedGeoAreas;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,7 +14,7 @@ namespace GeoLeadsService.Api.Controllers;
 
 [ApiController]
 [Route("geo-leads/saved-areas")]
-public sealed class SavedGeoAreasController(ISavedGeoAreaRepository savedGeoAreaRepository, ITenantContext tenantContext, IMediator mediator) : ControllerBase
+public sealed class SavedGeoAreasController(ITenantContext tenantContext, IMediator mediator) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] SaveGeoAreaRequest request, CancellationToken cancellationToken)
@@ -24,13 +28,14 @@ public sealed class SavedGeoAreasController(ISavedGeoAreaRepository savedGeoArea
         if (!request.Geometry.IsValidPolygon(out var geometryError))
             return BadRequest(new { error = geometryError });
 
-        var area = new SavedGeoArea(
-            tenantContext.TenantId,
-            request.Name,
-            System.Text.Json.JsonSerializer.Serialize(new GeoPolygon(request.Geometry.Coordinates.Select(x => new GeoCoordinate(x[0], x[1])).ToList())));
+        var area = await mediator.Send(
+            new CreateSavedGeoAreaCommand(
+                tenantContext.TenantId,
+                request.Name,
+                new GeoPolygon(request.Geometry.Coordinates.Select(x => new GeoCoordinate(x[0], x[1])).ToList())),
+            cancellationToken);
 
-        await savedGeoAreaRepository.AddAsync(area, cancellationToken);
-        return Ok(ToResponse(area));
+        return Ok(SavedGeoAreaMapper.ToResponse(area));
     }
 
     [HttpGet]
@@ -39,8 +44,8 @@ public sealed class SavedGeoAreasController(ISavedGeoAreaRepository savedGeoArea
         if (tenantContext.TenantId == Guid.Empty)
             return Unauthorized(new { error = "x-tenant-id header is required." });
 
-        var areas = await savedGeoAreaRepository.ListByTenantAsync(tenantContext.TenantId, Math.Clamp(limit, 1, 100), cancellationToken);
-        return Ok(new { count = areas.Count, areas = areas.Select(ToResponse) });
+        var areas = await mediator.Send(new ListSavedGeoAreasQuery(tenantContext.TenantId, Math.Clamp(limit, 1, 100)), cancellationToken);
+        return Ok(new { count = areas.Count, areas = areas.Select(SavedGeoAreaMapper.ToResponse) });
     }
 
     [HttpGet("{areaId:guid}")]
@@ -49,11 +54,11 @@ public sealed class SavedGeoAreasController(ISavedGeoAreaRepository savedGeoArea
         if (tenantContext.TenantId == Guid.Empty)
             return Unauthorized(new { error = "x-tenant-id header is required." });
 
-        var area = await savedGeoAreaRepository.GetByIdAsync(areaId, tenantContext.TenantId, cancellationToken);
+        var area = await mediator.Send(new GetSavedGeoAreaByIdQuery(tenantContext.TenantId, areaId), cancellationToken);
         if (area is null)
             return NotFound();
 
-        return Ok(ToResponse(area));
+        return Ok(SavedGeoAreaMapper.ToResponse(area));
     }
 
     [HttpPut("{areaId:guid}")]
@@ -68,16 +73,18 @@ public sealed class SavedGeoAreasController(ISavedGeoAreaRepository savedGeoArea
         if (!request.Geometry.IsValidPolygon(out var geometryError))
             return BadRequest(new { error = geometryError });
 
-        var area = await savedGeoAreaRepository.GetByIdAsync(areaId, tenantContext.TenantId, cancellationToken);
+        var area = await mediator.Send(
+            new UpdateSavedGeoAreaCommand(
+                tenantContext.TenantId,
+                areaId,
+                request.Name,
+                new GeoPolygon(request.Geometry.Coordinates.Select(x => new GeoCoordinate(x[0], x[1])).ToList())),
+            cancellationToken);
+
         if (area is null)
             return NotFound();
 
-        area.Update(
-            request.Name,
-            System.Text.Json.JsonSerializer.Serialize(new GeoPolygon(request.Geometry.Coordinates.Select(x => new GeoCoordinate(x[0], x[1])).ToList())));
-
-        await savedGeoAreaRepository.UpdateAsync(area, cancellationToken);
-        return Ok(ToResponse(area));
+        return Ok(SavedGeoAreaMapper.ToResponse(area));
     }
 
     [HttpPost("{areaId:guid}/run-query")]
@@ -86,22 +93,19 @@ public sealed class SavedGeoAreasController(ISavedGeoAreaRepository savedGeoArea
         if (tenantContext.TenantId == Guid.Empty)
             return Unauthorized(new { error = "x-tenant-id header is required." });
 
-        var area = await savedGeoAreaRepository.GetByIdAsync(areaId, tenantContext.TenantId, cancellationToken);
-        if (area is null)
+        var result = await mediator.Send(
+            new RunSavedGeoAreaQueryCommand(
+                tenantContext.TenantId,
+                areaId,
+                request.LeadTypes?.ToList() ?? [],
+                Math.Clamp(request.Limit ?? 50, 1, 500),
+                request.RankingMode),
+            cancellationToken);
+
+        if (result is null)
             return NotFound();
 
-        var polygon = System.Text.Json.JsonSerializer.Deserialize<GeoPolygon>(area.GeometryJson);
-        if (polygon is null)
-            return BadRequest(new { error = "Saved area geometry is invalid." });
-
-        var (queryId, count) = await mediator.Send(new SubmitGeoAreaQueryCommand(
-            tenantContext.TenantId,
-            polygon,
-            request.LeadTypes?.ToList() ?? [],
-            Math.Clamp(request.Limit ?? 50, 1, 500),
-            request.RankingMode), cancellationToken);
-
-        return Ok(new GeoAreaQueryResponse(queryId, "Completed", count));
+        return Ok(new GeoAreaQueryResponse(result.Value.QueryId, "Completed", result.Value.Count));
     }
 
     [HttpDelete("{areaId:guid}")]
@@ -110,31 +114,10 @@ public sealed class SavedGeoAreasController(ISavedGeoAreaRepository savedGeoArea
         if (tenantContext.TenantId == Guid.Empty)
             return Unauthorized(new { error = "x-tenant-id header is required." });
 
-        var area = await savedGeoAreaRepository.GetByIdAsync(areaId, tenantContext.TenantId, cancellationToken);
-        if (area is null)
+        var deleted = await mediator.Send(new DeleteSavedGeoAreaCommand(tenantContext.TenantId, areaId), cancellationToken);
+        if (!deleted)
             return NotFound();
 
-        await savedGeoAreaRepository.DeleteAsync(area, cancellationToken);
         return NoContent();
-    }
-
-    private static object ToResponse(SavedGeoArea area)
-    {
-        var polygon = System.Text.Json.JsonSerializer.Deserialize<GeoPolygon>(area.GeometryJson);
-
-        return new
-        {
-            areaId = area.Id,
-            name = area.Name,
-            createdAt = area.CreatedAt,
-            updatedAt = area.UpdatedAt,
-            geometry = polygon is null
-                ? null
-                : new
-                {
-                    type = "Polygon",
-                    coordinates = polygon.Coordinates.Select(x => new[] { x.Longitude, x.Latitude })
-                }
-        };
     }
 }
