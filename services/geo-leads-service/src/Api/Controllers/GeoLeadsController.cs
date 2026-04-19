@@ -27,15 +27,26 @@ public sealed class GeoLeadsController(IMediator mediator, ITenantContext tenant
             count = queries.Count,
             queries = queries.Select(query => new
             {
-                queryId = query.Id,
-                status = query.Status.ToString(),
+                queryId = query.QueryId,
+                status = query.Status,
                 rankingMode = query.RankingMode,
                 requestedLimit = query.RequestedLimit,
-                requestedLeadTypes = System.Text.Json.JsonSerializer.Deserialize<List<string>>(query.RequestedLeadTypesJson) ?? new List<string>(),
-                resultCount = query.Results.Count,
+                requestedLeadTypes = query.RequestedLeadTypes,
+                resultCount = query.ResultCount,
                 createdAt = query.CreatedAt,
                 completedAt = query.CompletedAt,
-                geometry = BuildGeometrySummary(query.GeometryJson)
+                geometry = query.PointCount is null ? null : new
+                {
+                    type = "Polygon",
+                    pointCount = query.PointCount,
+                    boundingBox = new
+                    {
+                        minLng = query.MinLng,
+                        minLat = query.MinLat,
+                        maxLng = query.MaxLng,
+                        maxLat = query.MaxLat
+                    }
+                }
             })
         });
     }
@@ -123,29 +134,6 @@ public sealed class GeoLeadsController(IMediator mediator, ITenantContext tenant
         var lines = new List<string> { "Name,LeadType,Email,Phone,Website,Address,City,Region,Country,Score" };
         lines.AddRange(query.Results.Select(x => string.Join(',', Escape(x.CanonicalName), Escape(x.LeadType), Escape(x.PrimaryEmail), Escape(x.PrimaryPhone), Escape(x.Website), Escape(x.Address), Escape(x.City), Escape(x.Region), Escape(x.Country), x.Score.ToString("0.####"))));
         return File(System.Text.Encoding.UTF8.GetBytes(string.Join(Environment.NewLine, lines)), "text/csv", $"geo-leads-{queryId:D}.csv");
-    }
-
-    private static object? BuildGeometrySummary(string geometryJson)
-    {
-        var polygon = System.Text.Json.JsonSerializer.Deserialize<GeoPolygon>(geometryJson);
-        if (polygon is null || polygon.Coordinates.Count == 0)
-            return null;
-
-        var lngs = polygon.Coordinates.Select(x => x.Longitude).ToList();
-        var lats = polygon.Coordinates.Select(x => x.Latitude).ToList();
-
-        return new
-        {
-            type = "Polygon",
-            pointCount = polygon.Coordinates.Count,
-            boundingBox = new
-            {
-                minLng = lngs.Min(),
-                minLat = lats.Min(),
-                maxLng = lngs.Max(),
-                maxLat = lats.Max()
-            }
-        };
     }
 
     private static string Escape(string? value) => $"\"{(value ?? string.Empty).Replace("\"", "\"\"")}\"";

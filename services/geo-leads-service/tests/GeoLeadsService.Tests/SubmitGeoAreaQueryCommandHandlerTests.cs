@@ -1,6 +1,7 @@
 using FluentAssertions;
 using GeoLeadsService.Application.Abstractions;
 using GeoLeadsService.Application.Commands.SubmitGeoAreaQuery;
+using GeoLeadsService.Application.Queries.ListGeoAreaQueries;
 using GeoLeadsService.Domain.Aggregates;
 using GeoLeadsService.Domain.Repositories;
 using Xunit;
@@ -60,5 +61,7 @@ public sealed class SubmitGeoAreaQueryCommandHandlerTests
         public Task<GeoAreaQuery?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<GeoAreaQuery?>(null);
         public Task<IReadOnlyList<GeoAreaQuery>> ListByTenantAsync(Guid tenantId, int limit, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<GeoAreaQuery>>([]);
+        public Task<IReadOnlyList<GeoAreaQueryListItem>> ListSummariesByTenantAsync(Guid tenantId, int limit, CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<GeoAreaQueryListItem>>([]);
     }
 }

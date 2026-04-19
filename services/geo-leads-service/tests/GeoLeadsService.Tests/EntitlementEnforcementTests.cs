@@ -93,6 +93,9 @@ public sealed class EntitlementEnforcementTests
 
         public Task<IReadOnlyList<GeoAreaQuery>> ListByTenantAsync(Guid tenantId, int limit, CancellationToken cancellationToken)
             => throw new InvalidOperationException("The feature gate should block before any repository call is made.");
+
+        public Task<IReadOnlyList<GeoAreaQueryListItem>> ListSummariesByTenantAsync(Guid tenantId, int limit, CancellationToken cancellationToken)
+            => throw new InvalidOperationException("The feature gate should block before any repository call is made.");
     }
 
     private sealed class ThrowingLeadSourceRecordRepository : ILeadSourceRecordRepository
