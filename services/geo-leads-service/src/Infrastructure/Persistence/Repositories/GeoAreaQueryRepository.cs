@@ -22,4 +22,12 @@ public sealed class GeoAreaQueryRepository(GeoLeadsDbContext dbContext) : IGeoAr
         => dbContext.GeoAreaQueries
             .Include(x => x.Results)
             .SingleOrDefaultAsync(x => x.Id == id && x.TenantId == tenantId, cancellationToken);
+
+    public async Task<IReadOnlyList<GeoAreaQuery>> ListByTenantAsync(Guid tenantId, int limit, CancellationToken cancellationToken)
+        => await dbContext.GeoAreaQueries
+            .Include(x => x.Results)
+            .Where(x => x.TenantId == tenantId)
+            .OrderByDescending(x => x.CreatedAt)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
 }

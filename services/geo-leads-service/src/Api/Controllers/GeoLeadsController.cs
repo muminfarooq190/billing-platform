@@ -4,6 +4,7 @@ using GeoLeadsService.Application.Abstractions;
 using GeoLeadsService.Application.Commands.RefreshGeoAreaQuery;
 using GeoLeadsService.Application.Commands.SubmitGeoAreaQuery;
 using GeoLeadsService.Application.Queries.GetGeoAreaQueryById;
+using GeoLeadsService.Application.Queries.ListGeoAreaQueries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,6 +14,32 @@ namespace GeoLeadsService.Api.Controllers;
 [Route("geo-leads/queries")]
 public sealed class GeoLeadsController(IMediator mediator, ITenantContext tenantContext) : ControllerBase
 {
+    [HttpGet]
+    public async Task<IActionResult> List([FromQuery] int limit = 20, CancellationToken cancellationToken = default)
+    {
+        if (tenantContext.TenantId == Guid.Empty)
+            return Unauthorized(new { error = "x-tenant-id header is required." });
+
+        var queries = await mediator.Send(new ListGeoAreaQueriesQuery(tenantContext.TenantId, Math.Clamp(limit, 1, 100)), cancellationToken);
+
+        return Ok(new
+        {
+            count = queries.Count,
+            queries = queries.Select(query => new
+            {
+                queryId = query.Id,
+                status = query.Status.ToString(),
+                rankingMode = query.RankingMode,
+                requestedLimit = query.RequestedLimit,
+                requestedLeadTypes = System.Text.Json.JsonSerializer.Deserialize<List<string>>(query.RequestedLeadTypesJson) ?? new List<string>(),
+                resultCount = query.Results.Count,
+                createdAt = query.CreatedAt,
+                completedAt = query.CompletedAt,
+                geometry = BuildGeometrySummary(query.GeometryJson)
+            })
+        });
+    }
+
     [HttpPost]
     public async Task<IActionResult> Submit([FromBody] SubmitGeoAreaQueryRequest request, CancellationToken cancellationToken)
     {
@@ -96,6 +123,29 @@ public sealed class GeoLeadsController(IMediator mediator, ITenantContext tenant
         var lines = new List<string> { "Name,LeadType,Email,Phone,Website,Address,City,Region,Country,Score" };
         lines.AddRange(query.Results.Select(x => string.Join(',', Escape(x.CanonicalName), Escape(x.LeadType), Escape(x.PrimaryEmail), Escape(x.PrimaryPhone), Escape(x.Website), Escape(x.Address), Escape(x.City), Escape(x.Region), Escape(x.Country), x.Score.ToString("0.####"))));
         return File(System.Text.Encoding.UTF8.GetBytes(string.Join(Environment.NewLine, lines)), "text/csv", $"geo-leads-{queryId:D}.csv");
+    }
+
+    private static object? BuildGeometrySummary(string geometryJson)
+    {
+        var polygon = System.Text.Json.JsonSerializer.Deserialize<GeoPolygon>(geometryJson);
+        if (polygon is null || polygon.Coordinates.Count == 0)
+            return null;
+
+        var lngs = polygon.Coordinates.Select(x => x.Longitude).ToList();
+        var lats = polygon.Coordinates.Select(x => x.Latitude).ToList();
+
+        return new
+        {
+            type = "Polygon",
+            pointCount = polygon.Coordinates.Count,
+            boundingBox = new
+            {
+                minLng = lngs.Min(),
+                minLat = lats.Min(),
+                maxLng = lngs.Max(),
+                maxLat = lats.Max()
+            }
+        };
     }
 
     private static string Escape(string? value) => $"\"{(value ?? string.Empty).Replace("\"", "\"\"")}\"";

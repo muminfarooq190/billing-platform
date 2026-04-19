@@ -27,4 +27,11 @@ public sealed class InMemoryGeoAreaQueryRepository : IGeoAreaQueryRepository
 
         return Task.FromResult<GeoAreaQuery?>(null);
     }
+
+    public Task<IReadOnlyList<GeoAreaQuery>> ListByTenantAsync(Guid tenantId, int limit, CancellationToken cancellationToken)
+        => Task.FromResult<IReadOnlyList<GeoAreaQuery>>(Store.Values
+            .Where(x => x.TenantId == tenantId)
+            .OrderByDescending(x => x.CreatedAt)
+            .Take(limit)
+            .ToList());
 }

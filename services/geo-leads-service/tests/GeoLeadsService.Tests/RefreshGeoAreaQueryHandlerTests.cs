@@ -64,5 +64,8 @@ public sealed class RefreshGeoAreaQueryHandlerTests
 
         public Task<GeoAreaQuery?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken cancellationToken)
             => Task.FromResult(Stored.Id == id && Stored.TenantId == tenantId ? Stored : null);
+
+        public Task<IReadOnlyList<GeoAreaQuery>> ListByTenantAsync(Guid tenantId, int limit, CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<GeoAreaQuery>>(Stored.TenantId == tenantId ? [Stored] : []);
     }
 }

@@ -40,6 +40,7 @@ This service is an honest starting point so frontend and product flow can be wir
 
 ## Endpoints
 
+- `GET /geo-leads/queries`
 - `POST /geo-leads/queries`
 - `GET /geo-leads/queries/{queryId}`
 - `POST /geo-leads/queries/{queryId}/refresh`
