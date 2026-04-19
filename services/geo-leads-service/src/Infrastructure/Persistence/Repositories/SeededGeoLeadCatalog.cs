@@ -16,7 +16,6 @@ public sealed class SeededGeoLeadCatalog(ILeadSourceRecordRepository leadSourceR
         var filtered = leads
             .Where(x => leadTypes.Count == 0 || leadTypes.Contains(x.LeadType, StringComparer.OrdinalIgnoreCase))
             .Where(x => IsInsidePolygon(x.Longitude, x.Latitude, geometry))
-            .OrderByDescending(x => (x.TourismRelevanceScore * 0.35m) + (x.ContactabilityScore * 0.30m) + (x.ConfidenceScore * 0.35m))
             .Take(limit)
             .ToList();
 

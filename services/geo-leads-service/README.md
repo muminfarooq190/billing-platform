@@ -28,11 +28,12 @@ Not built yet:
 - compliance allowlist/blacklist tooling
 - saved queries / refresh jobs
 
-## Current ingestion endpoint
+## Current ingestion endpoints
 
 - `POST /geo-leads/sources/ingest`
+- `GET /geo-leads/sources/status`
 
-Current ingestion uses a seeded source adapter and persists raw source records so future source adapters can plug into the same flow.
+Current ingestion uses seeded/config-backed source adapters, upserts raw source records by `(source_name, source_record_id)`, and stores ingestion run audit rows so status can show actual run history instead of only inferring from latest records.
 
 ## Current purpose
 
@@ -40,9 +41,17 @@ This service is an honest starting point so frontend and product flow can be wir
 
 ## Endpoints
 
+- `GET /geo-leads/queries`
 - `POST /geo-leads/queries`
 - `GET /geo-leads/queries/{queryId}`
+- `POST /geo-leads/queries/{queryId}/refresh`
 - `GET /geo-leads/queries/{queryId}/export?format=csv`
+- `POST /geo-leads/saved-areas`
+- `GET /geo-leads/saved-areas`
+- `GET /geo-leads/saved-areas/{areaId}`
+- `PUT /geo-leads/saved-areas/{areaId}`
+- `POST /geo-leads/saved-areas/{areaId}/run-query`
+- `DELETE /geo-leads/saved-areas/{areaId}`
 - `GET /health`
 
 ## Request notes

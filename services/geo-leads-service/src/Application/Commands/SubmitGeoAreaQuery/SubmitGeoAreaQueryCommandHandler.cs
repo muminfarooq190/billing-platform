@@ -8,23 +8,29 @@ namespace GeoLeadsService.Application.Commands.SubmitGeoAreaQuery;
 
 public sealed class SubmitGeoAreaQueryCommandHandler(
     IGeoAreaQueryRepository geoAreaQueryRepository,
-    IGeoLeadCatalog geoLeadCatalog) : IRequestHandler<SubmitGeoAreaQueryCommand, (Guid QueryId, int Count)>
+    IGeoLeadCatalog geoLeadCatalog,
+    IFeatureGate featureGate) : IRequestHandler<SubmitGeoAreaQueryCommand, (Guid QueryId, int Count)>
 {
     public async Task<(Guid QueryId, int Count)> Handle(SubmitGeoAreaQueryCommand request, CancellationToken cancellationToken)
     {
+        await featureGate.EnsureEnabledAsync("geo-leads.manage", request.TenantId, cancellationToken);
         var query = new GeoAreaQuery(
             request.TenantId,
             JsonSerializer.Serialize(request.Geometry),
             request.LeadTypes,
-            request.Limit);
+            request.Limit,
+            request.RankingMode);
 
         var leads = await geoLeadCatalog.SearchAsync(request.Geometry, request.LeadTypes, request.Limit, cancellationToken);
-        var results = leads.Select((lead, index) => new GeoAreaQueryResult(
+        var rankedLeads = SpatialLeadScoring.Rank(request.Geometry, leads, query.RankingMode);
+
+        var results = rankedLeads.Select((entry, index) => new GeoAreaQueryResult(
             query.Id,
             index + 1,
-            Math.Round((lead.TourismRelevanceScore * 0.35m) + (lead.ContactabilityScore * 0.30m) + (lead.ConfidenceScore * 0.35m), 4),
-            lead,
-            lead.Reasons)).ToList();
+            entry.Score,
+            entry.Lead,
+            [.. entry.Lead.Reasons, $"distanceMeters={entry.DistanceMeters:0.##}", $"intersectionBoost={entry.IntersectionBoost:0.####}"]))
+            .ToList();
 
         query.Complete(results);
         await geoAreaQueryRepository.AddAsync(query, cancellationToken);

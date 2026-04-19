@@ -32,7 +32,12 @@ public sealed class GeoLeadCatalogTests
     {
         public Task AddRangeAsync(IReadOnlyCollection<LeadSourceRecord> records, CancellationToken cancellationToken) => Task.CompletedTask;
 
+        public Task UpsertRangeAsync(IReadOnlyCollection<LeadSourceRecord> records, CancellationToken cancellationToken) => Task.CompletedTask;
+
         public Task<IReadOnlyList<LeadSourceRecord>> ListAsync(CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<LeadSourceRecord>>([]);
+
+        public Task<IReadOnlyList<LeadSourceRecord>> ListRecentAsync(int limit, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<LeadSourceRecord>>([]);
     }
 }

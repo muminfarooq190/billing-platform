@@ -15,6 +15,7 @@ builder.Services.AddHealthChecks()
     .AddDownstreamUrl("billing-service", "http://billing-service:8080/health")
     .AddDownstreamUrl("travel-service", "http://travel-service:8080/health")
     .AddDownstreamUrl("communication-service", "http://communication-service:8080/health")
+    .AddDownstreamUrl("geo-leads-service", "http://geo-leads-service:8080/health")
     .AddDownstreamUrl("webhook-service", "http://webhook-service:3000/health");
 builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(builder.Configuration["REDIS_URL"] ?? "redis:6379"));
 builder.Services.Configure<FeatureEntitlementOptions>(builder.Configuration.GetSection("FeatureEntitlements"));

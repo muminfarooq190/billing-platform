@@ -20,3 +20,8 @@ create_db "billing_billing"
 create_db "billing_webhook"
 create_db "billing_travel"
 create_db "billing_communication"
+create_db "billing_geo_leads"
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "billing_geo_leads" <<-EOSQL
+  CREATE EXTENSION IF NOT EXISTS postgis;
+EOSQL

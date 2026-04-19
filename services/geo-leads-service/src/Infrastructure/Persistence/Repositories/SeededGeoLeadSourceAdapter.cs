@@ -1,11 +1,13 @@
 using System.Text.Json;
 using GeoLeadsService.Application.Abstractions;
+using Microsoft.Extensions.Configuration;
 
 namespace GeoLeadsService.Infrastructure.Persistence.Repositories;
 
-public sealed class SeededGeoLeadSourceAdapter : IGeoLeadSourceAdapter
+public sealed class SeededGeoLeadSourceAdapter(IConfiguration configuration) : IConfigurableGeoLeadSourceAdapter
 {
     public string SourceName => "seeded-public-tourism";
+    public bool IsEnabled => configuration.GetValue<bool?>("GeoLeadSources:Seeded:Enabled") ?? true;
 
     public Task<IReadOnlyList<GeoLeadSourceRecordInput>> FetchAsync(CancellationToken cancellationToken)
     {

@@ -1,3 +1,4 @@
+using BillingService.Api;
 using BillingService.Api.Contracts;
 using BillingService.Api.Controllers;
 using BillingService.Application.Abstractions;
@@ -72,7 +73,9 @@ public sealed class FlexibleEntitlementsAdminControllerTests
                 new() { FeatureKey = "travel.audit.read", Granted = true, Source = "Package" }
             });
 
-        var controller = new TenantBillingController(assignmentRepo, overrideRepo, packageRepo, new FakeUnitOfWork(), mediator.Object);
+        var tenantContext = new Mock<ITenantContext>();
+        tenantContext.SetupGet(x => x.TenantId).Returns(tenantId);
+        var controller = new TenantBillingController(assignmentRepo, overrideRepo, packageRepo, new FakeUnitOfWork(), mediator.Object, tenantContext.Object);
 
         var createAssignment = await controller.CreatePackage(tenantId, new AssignTenantPackageRequest(package.Id, "Sales", "Active", DateTimeOffset.UtcNow.AddDays(-1), null, null), CancellationToken.None);
         createAssignment.Should().BeOfType<CreatedAtActionResult>();
@@ -99,6 +102,25 @@ public sealed class FlexibleEntitlementsAdminControllerTests
 
         (await controller.DeletePackage(tenantId, assignment.Id, CancellationToken.None)).Should().BeOfType<NoContentResult>();
         assignment.DeletedAt.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task TenantBillingController_ShouldForbid_CrossTenantAccess()
+    {
+        var routeTenantId = Guid.NewGuid();
+        var contextTenantId = Guid.NewGuid();
+        var packageRepo = new InMemoryCommercialPackageRepository();
+        var assignmentRepo = new InMemoryTenantSubscriptionPackageRepository();
+        var overrideRepo = new InMemoryTenantFeatureOverrideRepository();
+        var mediator = new Mock<IMediator>();
+        var tenantContext = new Mock<ITenantContext>();
+        tenantContext.SetupGet(x => x.TenantId).Returns(contextTenantId);
+
+        var controller = new TenantBillingController(assignmentRepo, overrideRepo, packageRepo, new FakeUnitOfWork(), mediator.Object, tenantContext.Object);
+        var result = await controller.GetEntitlements(routeTenantId, CancellationToken.None);
+
+        result.Should().BeOfType<ForbidResult>();
+        mediator.Verify(x => x.Send(It.IsAny<GetEffectiveEntitlementsQuery>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     private sealed class FakeUnitOfWork : IUnitOfWork

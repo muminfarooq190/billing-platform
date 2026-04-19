@@ -1,8 +1,10 @@
 using GeoLeadsService.Api.Contracts;
 using GeoLeadsService.Api;
 using GeoLeadsService.Application.Abstractions;
+using GeoLeadsService.Application.Commands.RefreshGeoAreaQuery;
 using GeoLeadsService.Application.Commands.SubmitGeoAreaQuery;
 using GeoLeadsService.Application.Queries.GetGeoAreaQueryById;
+using GeoLeadsService.Application.Queries.ListGeoAreaQueries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,6 +14,43 @@ namespace GeoLeadsService.Api.Controllers;
 [Route("geo-leads/queries")]
 public sealed class GeoLeadsController(IMediator mediator, ITenantContext tenantContext) : ControllerBase
 {
+    [HttpGet]
+    public async Task<IActionResult> List([FromQuery] int limit = 20, CancellationToken cancellationToken = default)
+    {
+        if (tenantContext.TenantId == Guid.Empty)
+            return Unauthorized(new { error = "x-tenant-id header is required." });
+
+        var queries = await mediator.Send(new ListGeoAreaQueriesQuery(tenantContext.TenantId, Math.Clamp(limit, 1, 100)), cancellationToken);
+
+        return Ok(new
+        {
+            count = queries.Count,
+            queries = queries.Select(query => new
+            {
+                queryId = query.QueryId,
+                status = query.Status,
+                rankingMode = query.RankingMode,
+                requestedLimit = query.RequestedLimit,
+                requestedLeadTypes = query.RequestedLeadTypes,
+                resultCount = query.ResultCount,
+                createdAt = query.CreatedAt,
+                completedAt = query.CompletedAt,
+                geometry = query.PointCount is null ? null : new
+                {
+                    type = "Polygon",
+                    pointCount = query.PointCount,
+                    boundingBox = new
+                    {
+                        minLng = query.MinLng,
+                        minLat = query.MinLat,
+                        maxLng = query.MaxLng,
+                        maxLat = query.MaxLat
+                    }
+                }
+            })
+        });
+    }
+
     [HttpPost]
     public async Task<IActionResult> Submit([FromBody] SubmitGeoAreaQueryRequest request, CancellationToken cancellationToken)
     {
@@ -46,6 +85,7 @@ public sealed class GeoLeadsController(IMediator mediator, ITenantContext tenant
         {
             queryId = query.Id,
             status = query.Status.ToString(),
+            rankingMode = query.RankingMode,
             count = query.Results.Count,
             results = query.Results.Select(x => new
             {
@@ -66,6 +106,19 @@ public sealed class GeoLeadsController(IMediator mediator, ITenantContext tenant
                 reason = x.GetReasoning()
             })
         });
+    }
+
+    [HttpPost("{queryId:guid}/refresh")]
+    public async Task<IActionResult> Refresh(Guid queryId, CancellationToken cancellationToken)
+    {
+        if (tenantContext.TenantId == Guid.Empty)
+            return Unauthorized(new { error = "x-tenant-id header is required." });
+
+        var refreshed = await mediator.Send(new RefreshGeoAreaQueryCommand(tenantContext.TenantId, queryId), cancellationToken);
+        if (refreshed is null)
+            return NotFound();
+
+        return Ok(new GeoAreaQueryResponse(refreshed.Value.QueryId, "Completed", refreshed.Value.Count));
     }
 
     [HttpGet("{queryId:guid}/export")]

@@ -1,5 +1,7 @@
+using GeoLeadsService.Api.Filters;
 using GeoLeadsService.Application.Abstractions;
 using GeoLeadsService.Domain.Repositories;
+using GeoLeadsService.Infrastructure.Entitlements;
 using GeoLeadsService.Infrastructure.Persistence;
 using GeoLeadsService.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -14,16 +16,27 @@ public sealed class Program
 
         var databaseUrl = builder.Configuration["DATABASE_URL"] ?? "Host=postgres;Port=5432;Database=geo_leads;Username=billing_user;Password=changeme";
 
-        builder.Services.AddDbContext<GeoLeadsDbContext>(options => options.UseNpgsql(databaseUrl));
+        builder.Services.AddDbContext<GeoLeadsDbContext>(options => options.UseNpgsql(databaseUrl, x => x.UseNetTopologySuite()));
         builder.Services.AddHttpContextAccessor();
+        builder.Services.AddMemoryCache();
         builder.Services.AddScoped<ITenantContext, HeaderTenantContext>();
         builder.Services.AddScoped<IGeoAreaQueryRepository, GeoAreaQueryRepository>();
         builder.Services.AddScoped<ILeadSourceRecordRepository, LeadSourceRecordRepository>();
-        builder.Services.AddScoped<IGeoLeadCatalog, SeededGeoLeadCatalog>();
+        builder.Services.AddScoped<ILeadSourceIngestionRunRepository, LeadSourceIngestionRunRepository>();
+        builder.Services.AddScoped<ISavedGeoAreaRepository, SavedGeoAreaRepository>();
+        builder.Configuration.AddJsonFile("Api/appsettings.json", optional: true, reloadOnChange: false);
+
+        builder.Services.AddScoped<IGeoLeadCatalog, PostGisGeoLeadCatalog>();
         builder.Services.AddScoped<IGeoLeadSourceAdapter, SeededGeoLeadSourceAdapter>();
+        builder.Services.AddScoped<IGeoLeadSourceAdapter, PublicDirectoryGeoLeadSourceAdapter>();
+        builder.Services.AddHttpClient<IBillingEntitlementsClient, BillingEntitlementsClient>(client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["BILLING_SERVICE_URL"] ?? "http://billing-service:8080/");
+        });
+        builder.Services.AddScoped<IFeatureGate, CachedFeatureGate>();
         builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
         builder.Services.AddHealthChecks();
-        builder.Services.AddControllers();
+        builder.Services.AddControllers(options => options.Filters.Add<GlobalExceptionFilter>());
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 
@@ -31,7 +44,7 @@ public sealed class Program
         using (var scope = app.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<GeoLeadsDbContext>();
-            db.Database.EnsureCreated();
+            db.Database.Migrate();
         }
         app.UseSwagger();
         app.UseSwaggerUI();

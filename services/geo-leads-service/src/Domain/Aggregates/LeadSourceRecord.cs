@@ -47,4 +47,27 @@ public sealed class LeadSourceRecord
     public string RawPayloadJson { get; private set; } = "{}";
     public DateTimeOffset FirstSeenAt { get; private set; }
     public DateTimeOffset LastSeenAt { get; private set; }
+
+    public void Refresh(
+        string rawName,
+        string rawCategory,
+        string? rawAddress,
+        string? rawPhone,
+        string? rawEmail,
+        string? rawWebsite,
+        decimal? rawLatitude,
+        decimal? rawLongitude,
+        string rawPayloadJson)
+    {
+        RawName = rawName;
+        RawCategory = rawCategory;
+        RawAddress = rawAddress;
+        RawPhone = rawPhone;
+        RawEmail = rawEmail;
+        RawWebsite = rawWebsite;
+        RawLatitude = rawLatitude;
+        RawLongitude = rawLongitude;
+        RawPayloadJson = rawPayloadJson;
+        LastSeenAt = DateTimeOffset.UtcNow;
+    }
 }

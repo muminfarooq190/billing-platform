@@ -1,4 +1,6 @@
 using GeoLeadsService.Domain.Enums;
+using GeoLeadsService.Infrastructure.Persistence.Spatial;
+using NetTopologySuite.Geometries;
 
 namespace GeoLeadsService.Domain.Aggregates;
 
@@ -8,13 +10,16 @@ public sealed class GeoAreaQuery
 
     private GeoAreaQuery() { }
 
-    public GeoAreaQuery(Guid tenantId, string geometryJson, IReadOnlyList<string> requestedLeadTypes, int requestedLimit)
+    public GeoAreaQuery(Guid tenantId, string geometryJson, IReadOnlyList<string> requestedLeadTypes, int requestedLimit, string? rankingMode)
     {
         Id = Guid.NewGuid();
         TenantId = tenantId;
         GeometryJson = geometryJson;
+        var polygon = System.Text.Json.JsonSerializer.Deserialize<GeoLeadsService.Application.Abstractions.GeoPolygon>(geometryJson);
+        Geometry = GeoSpatialConversions.TryToPolygon(polygon);
         RequestedLeadTypesJson = System.Text.Json.JsonSerializer.Serialize(requestedLeadTypes);
         RequestedLimit = requestedLimit;
+        RankingMode = GeoLeadsService.Application.GeoLeadRanking.NormalizeMode(rankingMode);
         Status = GeoAreaQueryStatus.Pending;
         CreatedAt = DateTimeOffset.UtcNow;
     }
@@ -22,8 +27,10 @@ public sealed class GeoAreaQuery
     public Guid Id { get; private set; }
     public Guid TenantId { get; private set; }
     public string GeometryJson { get; private set; } = string.Empty;
+    public Polygon? Geometry { get; private set; }
     public string RequestedLeadTypesJson { get; private set; } = "[]";
     public int RequestedLimit { get; private set; }
+    public string RankingMode { get; private set; } = "relevance";
     public GeoAreaQueryStatus Status { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset? CompletedAt { get; private set; }
