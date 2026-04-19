@@ -14,6 +14,8 @@ public sealed class FeatureEntitlementMiddlewareTests
     [InlineData("PUT", "/api/communication/templates/123", "communication.templates.manage")]
     [InlineData("GET", "/api/identity/audit/export", "identity.audit.export")]
     [InlineData("PUT", "/api/identity/users/11111111-1111-1111-1111-111111111111/roles", "identity.rbac.advanced")]
+    [InlineData("GET", "/api/geo-leads/queries", "geo-leads.read")]
+    [InlineData("POST", "/api/geo-leads/saved-areas", "geo-leads.manage")]
     public void MatchFeature_ShouldResolveMappedPremiumRoutes(string method, string path, string expected)
     {
         var routes = new[]
@@ -25,7 +27,9 @@ public sealed class FeatureEntitlementMiddlewareTests
             new ApiGateway.Configuration.FeatureRoutePolicy { Method = "GET", PathPrefix = "/api/communication/notifications/recipient", FeatureKey = "communication.logs.read" },
             new ApiGateway.Configuration.FeatureRoutePolicy { Method = "PUT", PathPrefix = "/api/communication/templates", FeatureKey = "communication.templates.manage" },
             new ApiGateway.Configuration.FeatureRoutePolicy { Method = "GET", PathPrefix = "/api/identity/audit/export", FeatureKey = "identity.audit.export" },
-            new ApiGateway.Configuration.FeatureRoutePolicy { Method = "PUT", PathPrefix = "/api/identity/users", FeatureKey = "identity.rbac.advanced" }
+            new ApiGateway.Configuration.FeatureRoutePolicy { Method = "PUT", PathPrefix = "/api/identity/users", FeatureKey = "identity.rbac.advanced" },
+            new ApiGateway.Configuration.FeatureRoutePolicy { Method = "GET", PathPrefix = "/api/geo-leads", FeatureKey = "geo-leads.read" },
+            new ApiGateway.Configuration.FeatureRoutePolicy { Method = "POST", PathPrefix = "/api/geo-leads", FeatureKey = "geo-leads.manage" }
         };
         var result = FeatureEntitlementMiddleware.MatchFeature(routes, method, new PathString(path));
         Assert.Equal(expected, result);

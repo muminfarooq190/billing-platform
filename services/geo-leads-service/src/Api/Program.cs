@@ -44,7 +44,7 @@ public sealed class Program
         using (var scope = app.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<GeoLeadsDbContext>();
-            db.Database.EnsureCreated();
+            db.Database.Migrate();
         }
         app.UseSwagger();
         app.UseSwaggerUI();
