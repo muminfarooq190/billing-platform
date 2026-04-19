@@ -47,6 +47,21 @@ public sealed class IngestLeadSourcesHandlerTests
     }
 
     [Fact]
+    public async Task IngestLeadSourcesCommandHandler_ShouldSkipDisabledAdapters()
+    {
+        var repository = new StubLeadSourceRecordRepository();
+        var runRepository = new StubLeadSourceIngestionRunRepository();
+        var handler = new IngestLeadSourcesCommandHandler([new DisabledStubAdapter(), new StubAdapter()], repository, runRepository);
+
+        var count = await handler.Handle(new IngestLeadSourcesCommand(), CancellationToken.None);
+
+        count.Should().Be(1);
+        repository.Stored.Should().ContainSingle();
+        runRepository.Stored.Should().ContainSingle();
+        runRepository.Stored[0].SourceName.Should().Be("stub-source");
+    }
+
+    [Fact]
     public async Task IngestLeadSourcesCommandHandler_ShouldUpsertDuplicateSourceRecords()
     {
         var repository = new StubLeadSourceRecordRepository();
@@ -62,9 +77,10 @@ public sealed class IngestLeadSourcesHandlerTests
         repository.Stored[0].RawCategory.Should().Be("tour_operator");
     }
 
-    private sealed class StubAdapter : IGeoLeadSourceAdapter
+    private sealed class StubAdapter : IConfigurableGeoLeadSourceAdapter
     {
         public string SourceName => "stub-source";
+        public bool IsEnabled => true;
 
         public Task<IReadOnlyList<GeoLeadSourceRecordInput>> FetchAsync(CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<GeoLeadSourceRecordInput>>(
@@ -73,14 +89,27 @@ public sealed class IngestLeadSourcesHandlerTests
             ]);
     }
 
-    private sealed class SecondStubAdapter : IGeoLeadSourceAdapter
+    private sealed class SecondStubAdapter : IConfigurableGeoLeadSourceAdapter
     {
         public string SourceName => "second-stub-source";
+        public bool IsEnabled => true;
 
         public Task<IReadOnlyList<GeoLeadSourceRecordInput>> FetchAsync(CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<GeoLeadSourceRecordInput>>(
             [
                 new("source-2", "Second Lead", "hotel", "Elsewhere", null, "stay@example.com", null, 18.94m, 72.84m, "{}")
+            ]);
+    }
+
+    private sealed class DisabledStubAdapter : IConfigurableGeoLeadSourceAdapter
+    {
+        public string SourceName => "disabled-source";
+        public bool IsEnabled => false;
+
+        public Task<IReadOnlyList<GeoLeadSourceRecordInput>> FetchAsync(CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<GeoLeadSourceRecordInput>>(
+            [
+                new("disabled-1", "Disabled Lead", "hotel", "Nowhere", null, null, null, null, null, "{}")
             ]);
     }
 

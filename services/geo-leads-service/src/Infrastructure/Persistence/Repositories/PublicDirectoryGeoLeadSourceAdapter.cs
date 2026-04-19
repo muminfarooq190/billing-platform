@@ -4,9 +4,10 @@ using Microsoft.Extensions.Configuration;
 
 namespace GeoLeadsService.Infrastructure.Persistence.Repositories;
 
-public sealed class PublicDirectoryGeoLeadSourceAdapter(IConfiguration configuration) : IGeoLeadSourceAdapter
+public sealed class PublicDirectoryGeoLeadSourceAdapter(IConfiguration configuration) : IConfigurableGeoLeadSourceAdapter
 {
     public string SourceName => "public-directory-snapshot";
+    public bool IsEnabled => configuration.GetValue<bool?>("GeoLeadSources:PublicDirectory:Enabled") ?? true;
 
     public Task<IReadOnlyList<GeoLeadSourceRecordInput>> FetchAsync(CancellationToken cancellationToken)
     {

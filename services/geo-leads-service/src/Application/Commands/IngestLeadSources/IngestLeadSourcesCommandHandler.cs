@@ -14,7 +14,7 @@ public sealed class IngestLeadSourcesCommandHandler(
     {
         var total = 0;
 
-        foreach (var adapter in geoLeadSourceAdapters)
+        foreach (var adapter in geoLeadSourceAdapters.Where(x => x is not IConfigurableGeoLeadSourceAdapter configurable || configurable.IsEnabled))
         {
             var run = new LeadSourceIngestionRun(adapter.SourceName);
             await leadSourceIngestionRunRepository.AddAsync(run, cancellationToken);
