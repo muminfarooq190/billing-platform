@@ -1,4 +1,6 @@
 using GeoLeadsService.Domain.Enums;
+using GeoLeadsService.Infrastructure.Persistence.Spatial;
+using NetTopologySuite.Geometries;
 
 namespace GeoLeadsService.Domain.Aggregates;
 
@@ -13,6 +15,8 @@ public sealed class GeoAreaQuery
         Id = Guid.NewGuid();
         TenantId = tenantId;
         GeometryJson = geometryJson;
+        var polygon = System.Text.Json.JsonSerializer.Deserialize<GeoLeadsService.Application.Abstractions.GeoPolygon>(geometryJson);
+        Geometry = GeoSpatialConversions.TryToPolygon(polygon);
         RequestedLeadTypesJson = System.Text.Json.JsonSerializer.Serialize(requestedLeadTypes);
         RequestedLimit = requestedLimit;
         RankingMode = GeoLeadsService.Application.GeoLeadRanking.NormalizeMode(rankingMode);
@@ -23,6 +27,7 @@ public sealed class GeoAreaQuery
     public Guid Id { get; private set; }
     public Guid TenantId { get; private set; }
     public string GeometryJson { get; private set; } = string.Empty;
+    public Polygon? Geometry { get; private set; }
     public string RequestedLeadTypesJson { get; private set; } = "[]";
     public int RequestedLimit { get; private set; }
     public string RankingMode { get; private set; } = "relevance";

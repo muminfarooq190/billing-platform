@@ -1,5 +1,6 @@
 using GeoLeadsService.Domain.Aggregates;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 
 namespace GeoLeadsService.Infrastructure.Persistence;
 
@@ -18,6 +19,7 @@ public sealed class GeoLeadsDbContext(DbContextOptions<GeoLeadsDbContext> option
             builder.ToTable("geo_area_queries");
             builder.HasKey(x => x.Id);
             builder.Property(x => x.GeometryJson).HasColumnName("geometry_json");
+            builder.Property(x => x.Geometry).HasColumnName("geometry").HasColumnType("geometry(Polygon,4326)");
             builder.Property(x => x.RequestedLeadTypesJson).HasColumnName("requested_lead_types_json");
             builder.Property(x => x.RequestedLimit).HasColumnName("requested_limit");
             builder.Property(x => x.RankingMode).HasColumnName("ranking_mode");
@@ -26,6 +28,7 @@ public sealed class GeoLeadsDbContext(DbContextOptions<GeoLeadsDbContext> option
             builder.Property(x => x.CompletedAt).HasColumnName("completed_at");
             builder.Navigation(x => x.Results).HasField("_results");
             builder.HasMany(x => x.Results).WithOne().HasForeignKey(x => x.GeoAreaQueryId);
+            builder.HasIndex(x => x.Geometry).HasMethod("GIST");
         });
 
         modelBuilder.Entity<GeoAreaQueryResult>(builder =>
@@ -66,9 +69,11 @@ public sealed class GeoLeadsDbContext(DbContextOptions<GeoLeadsDbContext> option
             builder.Property(x => x.RawLatitude).HasColumnName("raw_latitude");
             builder.Property(x => x.RawLongitude).HasColumnName("raw_longitude");
             builder.Property(x => x.RawPayloadJson).HasColumnName("raw_payload_json");
+            builder.Property<Point?>("Location").HasColumnName("location").HasColumnType("geometry(Point,4326)");
             builder.Property(x => x.FirstSeenAt).HasColumnName("first_seen_at");
             builder.Property(x => x.LastSeenAt).HasColumnName("last_seen_at");
             builder.HasIndex(x => new { x.SourceName, x.SourceRecordId }).IsUnique();
+            builder.HasIndex("Location").HasMethod("GIST");
         });
 
         modelBuilder.Entity<LeadSourceIngestionRun>(builder =>
@@ -90,8 +95,10 @@ public sealed class GeoLeadsDbContext(DbContextOptions<GeoLeadsDbContext> option
             builder.Property(x => x.TenantId).HasColumnName("tenant_id");
             builder.Property(x => x.Name).HasColumnName("name");
             builder.Property(x => x.GeometryJson).HasColumnName("geometry_json");
+            builder.Property(x => x.Geometry).HasColumnName("geometry").HasColumnType("geometry(Polygon,4326)");
             builder.Property(x => x.CreatedAt).HasColumnName("created_at");
             builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            builder.HasIndex(x => x.Geometry).HasMethod("GIST");
         });
     }
 }

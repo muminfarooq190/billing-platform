@@ -16,7 +16,7 @@ public sealed class Program
 
         var databaseUrl = builder.Configuration["DATABASE_URL"] ?? "Host=postgres;Port=5432;Database=geo_leads;Username=billing_user;Password=changeme";
 
-        builder.Services.AddDbContext<GeoLeadsDbContext>(options => options.UseNpgsql(databaseUrl));
+        builder.Services.AddDbContext<GeoLeadsDbContext>(options => options.UseNpgsql(databaseUrl, x => x.UseNetTopologySuite()));
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddMemoryCache();
         builder.Services.AddScoped<ITenantContext, HeaderTenantContext>();
@@ -26,7 +26,7 @@ public sealed class Program
         builder.Services.AddScoped<ISavedGeoAreaRepository, SavedGeoAreaRepository>();
         builder.Configuration.AddJsonFile("Api/appsettings.json", optional: true, reloadOnChange: false);
 
-        builder.Services.AddScoped<IGeoLeadCatalog, SeededGeoLeadCatalog>();
+        builder.Services.AddScoped<IGeoLeadCatalog, PostGisGeoLeadCatalog>();
         builder.Services.AddScoped<IGeoLeadSourceAdapter, SeededGeoLeadSourceAdapter>();
         builder.Services.AddScoped<IGeoLeadSourceAdapter, PublicDirectoryGeoLeadSourceAdapter>();
         builder.Services.AddHttpClient<IBillingEntitlementsClient, BillingEntitlementsClient>(client =>

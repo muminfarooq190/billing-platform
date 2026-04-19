@@ -1,5 +1,6 @@
 using GeoLeadsService.Domain.Aggregates;
 using GeoLeadsService.Domain.Repositories;
+using GeoLeadsService.Infrastructure.Persistence.Spatial;
 using Microsoft.EntityFrameworkCore;
 
 namespace GeoLeadsService.Infrastructure.Persistence.Repositories;
@@ -27,6 +28,10 @@ public sealed class LeadSourceRecordRepository(GeoLeadsDbContext dbContext) : IL
             var match = existing.SingleOrDefault(x => x.SourceName == record.SourceName && x.SourceRecordId == record.SourceRecordId);
             if (match is null)
             {
+                var entry = dbContext.Entry(record);
+                entry.Property("Location").CurrentValue = record.RawLatitude.HasValue && record.RawLongitude.HasValue
+                    ? GeoSpatialConversions.ToPoint(record.RawLongitude.Value, record.RawLatitude.Value)
+                    : null;
                 dbContext.Set<LeadSourceRecord>().Add(record);
                 continue;
             }
@@ -41,6 +46,9 @@ public sealed class LeadSourceRecordRepository(GeoLeadsDbContext dbContext) : IL
                 record.RawLatitude,
                 record.RawLongitude,
                 record.RawPayloadJson);
+            dbContext.Entry(match).Property("Location").CurrentValue = record.RawLatitude.HasValue && record.RawLongitude.HasValue
+                ? GeoSpatialConversions.ToPoint(record.RawLongitude.Value, record.RawLatitude.Value)
+                : null;
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);

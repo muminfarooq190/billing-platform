@@ -1,3 +1,6 @@
+using GeoLeadsService.Infrastructure.Persistence.Spatial;
+using NetTopologySuite.Geometries;
+
 namespace GeoLeadsService.Domain.Aggregates;
 
 public sealed class SavedGeoArea
@@ -10,6 +13,8 @@ public sealed class SavedGeoArea
         TenantId = tenantId;
         Name = name.Trim();
         GeometryJson = geometryJson;
+        var polygon = System.Text.Json.JsonSerializer.Deserialize<GeoLeadsService.Application.Abstractions.GeoPolygon>(geometryJson);
+        Geometry = GeoSpatialConversions.TryToPolygon(polygon);
         CreatedAt = DateTimeOffset.UtcNow;
         UpdatedAt = CreatedAt;
     }
@@ -18,6 +23,7 @@ public sealed class SavedGeoArea
     public Guid TenantId { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public string GeometryJson { get; private set; } = string.Empty;
+    public Polygon? Geometry { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
@@ -25,6 +31,8 @@ public sealed class SavedGeoArea
     {
         Name = name.Trim();
         GeometryJson = geometryJson;
+        var polygon = System.Text.Json.JsonSerializer.Deserialize<GeoLeadsService.Application.Abstractions.GeoPolygon>(geometryJson);
+        Geometry = GeoSpatialConversions.TryToPolygon(polygon);
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 }
