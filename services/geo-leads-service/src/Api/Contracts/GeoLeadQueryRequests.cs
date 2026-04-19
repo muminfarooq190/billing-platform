@@ -56,3 +56,4 @@ public sealed record GeoAreaQueryResponse(Guid QueryId, string Status, int Count
 
 public sealed record SaveGeoAreaRequest(string Name, GeometryPayload Geometry);
 public sealed record UpdateGeoAreaRequest(string Name, GeometryPayload Geometry);
+public sealed record RunSavedGeoAreaQueryRequest(IReadOnlyList<string>? LeadTypes, int? Limit, string? RankingMode);

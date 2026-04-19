@@ -49,6 +49,7 @@ This service is an honest starting point so frontend and product flow can be wir
 - `GET /geo-leads/saved-areas`
 - `GET /geo-leads/saved-areas/{areaId}`
 - `PUT /geo-leads/saved-areas/{areaId}`
+- `POST /geo-leads/saved-areas/{areaId}/run-query`
 - `DELETE /geo-leads/saved-areas/{areaId}`
 - `GET /health`
 

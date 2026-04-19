@@ -1,14 +1,16 @@
 using GeoLeadsService.Api.Contracts;
 using GeoLeadsService.Application.Abstractions;
+using GeoLeadsService.Application.Commands.SubmitGeoAreaQuery;
 using GeoLeadsService.Domain.Aggregates;
 using GeoLeadsService.Domain.Repositories;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GeoLeadsService.Api.Controllers;
 
 [ApiController]
 [Route("geo-leads/saved-areas")]
-public sealed class SavedGeoAreasController(ISavedGeoAreaRepository savedGeoAreaRepository, ITenantContext tenantContext) : ControllerBase
+public sealed class SavedGeoAreasController(ISavedGeoAreaRepository savedGeoAreaRepository, ITenantContext tenantContext, IMediator mediator) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] SaveGeoAreaRequest request, CancellationToken cancellationToken)
@@ -76,6 +78,30 @@ public sealed class SavedGeoAreasController(ISavedGeoAreaRepository savedGeoArea
 
         await savedGeoAreaRepository.UpdateAsync(area, cancellationToken);
         return Ok(ToResponse(area));
+    }
+
+    [HttpPost("{areaId:guid}/run-query")]
+    public async Task<IActionResult> RunQuery(Guid areaId, [FromBody] RunSavedGeoAreaQueryRequest request, CancellationToken cancellationToken)
+    {
+        if (tenantContext.TenantId == Guid.Empty)
+            return Unauthorized(new { error = "x-tenant-id header is required." });
+
+        var area = await savedGeoAreaRepository.GetByIdAsync(areaId, tenantContext.TenantId, cancellationToken);
+        if (area is null)
+            return NotFound();
+
+        var polygon = System.Text.Json.JsonSerializer.Deserialize<GeoPolygon>(area.GeometryJson);
+        if (polygon is null)
+            return BadRequest(new { error = "Saved area geometry is invalid." });
+
+        var (queryId, count) = await mediator.Send(new SubmitGeoAreaQueryCommand(
+            tenantContext.TenantId,
+            polygon,
+            request.LeadTypes?.ToList() ?? [],
+            Math.Clamp(request.Limit ?? 50, 1, 500),
+            request.RankingMode), cancellationToken);
+
+        return Ok(new GeoAreaQueryResponse(queryId, "Completed", count));
     }
 
     [HttpDelete("{areaId:guid}")]
