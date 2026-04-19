@@ -33,6 +33,14 @@ public sealed class SavedGeoAreaRepositoryTests
             return Task.CompletedTask;
         }
 
+        public Task UpdateAsync(SavedGeoArea area, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task DeleteAsync(SavedGeoArea area, CancellationToken cancellationToken)
+        {
+            stored.Remove(area);
+            return Task.CompletedTask;
+        }
+
         public Task<SavedGeoArea?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken cancellationToken)
             => Task.FromResult(stored.SingleOrDefault(x => x.Id == id && x.TenantId == tenantId));
 

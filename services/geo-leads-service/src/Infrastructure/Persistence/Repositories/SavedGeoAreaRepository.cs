@@ -12,6 +12,18 @@ public sealed class SavedGeoAreaRepository(GeoLeadsDbContext dbContext) : ISaved
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task UpdateAsync(SavedGeoArea area, CancellationToken cancellationToken)
+    {
+        dbContext.SavedGeoAreas.Update(area);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(SavedGeoArea area, CancellationToken cancellationToken)
+    {
+        dbContext.SavedGeoAreas.Remove(area);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public Task<SavedGeoArea?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken cancellationToken)
         => dbContext.SavedGeoAreas.SingleOrDefaultAsync(x => x.Id == id && x.TenantId == tenantId, cancellationToken);
 

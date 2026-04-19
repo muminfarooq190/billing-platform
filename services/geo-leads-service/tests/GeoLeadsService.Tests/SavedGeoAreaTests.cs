@@ -13,4 +13,18 @@ public sealed class SavedGeoAreaTests
 
         area.Name.Should().Be("South Mumbai");
     }
+
+    [Fact]
+    public void SavedGeoArea_ShouldUpdateNameGeometryAndTimestamp()
+    {
+        var area = new SavedGeoArea(Guid.NewGuid(), "Old Name", "{\"old\":true}");
+        var originalUpdatedAt = area.UpdatedAt;
+
+        Thread.Sleep(5);
+        area.Update("  New Name  ", "{\"new\":true}");
+
+        area.Name.Should().Be("New Name");
+        area.GeometryJson.Should().Be("{\"new\":true}");
+        area.UpdatedAt.Should().BeAfter(originalUpdatedAt);
+    }
 }

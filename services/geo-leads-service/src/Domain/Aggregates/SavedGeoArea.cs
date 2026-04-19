@@ -11,6 +11,7 @@ public sealed class SavedGeoArea
         Name = name.Trim();
         GeometryJson = geometryJson;
         CreatedAt = DateTimeOffset.UtcNow;
+        UpdatedAt = CreatedAt;
     }
 
     public Guid Id { get; private set; }
@@ -18,4 +19,12 @@ public sealed class SavedGeoArea
     public string Name { get; private set; } = string.Empty;
     public string GeometryJson { get; private set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; private set; }
+    public DateTimeOffset UpdatedAt { get; private set; }
+
+    public void Update(string name, string geometryJson)
+    {
+        Name = name.Trim();
+        GeometryJson = geometryJson;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
 }

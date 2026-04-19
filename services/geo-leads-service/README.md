@@ -48,6 +48,8 @@ This service is an honest starting point so frontend and product flow can be wir
 - `POST /geo-leads/saved-areas`
 - `GET /geo-leads/saved-areas`
 - `GET /geo-leads/saved-areas/{areaId}`
+- `PUT /geo-leads/saved-areas/{areaId}`
+- `DELETE /geo-leads/saved-areas/{areaId}`
 - `GET /health`
 
 ## Request notes

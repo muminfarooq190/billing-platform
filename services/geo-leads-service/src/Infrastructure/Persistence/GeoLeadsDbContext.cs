@@ -77,6 +77,7 @@ public sealed class GeoLeadsDbContext(DbContextOptions<GeoLeadsDbContext> option
             builder.Property(x => x.Name).HasColumnName("name");
             builder.Property(x => x.GeometryJson).HasColumnName("geometry_json");
             builder.Property(x => x.CreatedAt).HasColumnName("created_at");
+            builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         });
     }
 }
