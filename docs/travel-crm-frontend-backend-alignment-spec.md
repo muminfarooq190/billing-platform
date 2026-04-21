@@ -157,14 +157,16 @@ Keep `voyara-admin-prototype-real` as:
 - UX audit source
 - page and interaction reference
 - visual/style source to be carried forward rigorously
+- HTML/CSS/JS source reference for layout, page composition, interactions, copy patterns, and theme behavior
 
 Do **not** treat the prototype repo itself as the final production frontend codebase.
 
 ### What is now explicitly decided
 1. The real frontend will live in a **new dedicated repo**.
-2. The real frontend will **preserve the prototype's multi-page HTML/CSS/JS approach** for MVP implementation.
+2. The real frontend will use the **approved production tech stack**.
 3. The prototype will be used as a **strict implementation reference**, not as disposable inspiration.
 4. The new repo must align to backend workflow truth even when the current prototype does not.
+5. The frontend must be wired to real backend APIs and auth/session flows, not remain a static mock forever.
 
 ### Why this is the right call
 The current prototype is useful for:
@@ -173,22 +175,25 @@ The current prototype is useful for:
 - stakeholder demos
 - visual reference
 - reusable page structure and interaction patterns
+- concrete HTML/CSS/JS reference material for faithful UI implementation
 
 Creating a new repo still makes sense because it lets us:
 - start clean without dragging prototype-only artifacts/history straight into production
 - enforce corrected workflow and naming from day one
-- build a cleaner asset/data/layout structure
+- build a real frontend architecture that can handle routing, auth, backend integration, entitlement-aware rendering, and maintainability
 - keep the prototype as a reference baseline while building the real portal deliberately
 
 ### What should happen practically
 - keep `voyara-admin-prototype-real` as the source reference
-- create a new repo named `voyara-portal`
-- carry forward the prototype's HTML/CSS/JS structure and feel intentionally
+- create and use the new repo `voyara-portal`
+- implement the frontend in the approved stack
+- mirror the prototype's screens, layout logic, styling intent, and interaction flow rigorously
 - refactor and correct pages while porting them so they follow backend truth
+- connect the real frontend to backend APIs as the implementation progresses
 
 ### Important constraint
-The new repo should **not** be a random rewrite in a completely different frontend paradigm.
-It should remain understandable as the production evolution of the prototype.
+The new repo should **not** be a random rewrite that ignores the prototype.
+It should be the production implementation of the product the prototype is trying to express.
 
 ### Alternative acceptable option
 If we later decide repo sprawl is annoying, the second-best option remains:
@@ -198,7 +203,8 @@ If we later decide repo sprawl is annoying, the second-best option remains:
 But the approved plan right now is:
 - separate repo
 - name: `voyara-portal`
-- implementation style: HTML/CSS/JS, carried forward from the prototype
+- implementation stack: approved modern frontend stack
+- prototype HTML/CSS/JS must be followed thoroughly as the reference
 
 ---
 
@@ -206,88 +212,75 @@ But the approved plan right now is:
 
 ## Approved stack for production-ready MVP
 
-### Core runtime approach
-- **HTML**
-- **CSS**
-- **JavaScript**
-- multi-page application structure, carried forward from the prototype
+### Core
+- **React**
+- **TypeScript**
+- **Next.js** (App Router)
 
-## Important decision
-The approved implementation must stay aligned with the current prototype style:
-- plain HTML pages
-- shared CSS
-- shared JavaScript
-- reusable data/view helpers
-- no React/Next/Vite rewrite for this phase
-
-That is now intentional, not accidental.
-
-### Why we are keeping HTML/CSS/JS
-Because the user explicitly wants:
-- continuity with the prototype
-- the same implementation style as the prototype
-- rigorous carry-forward instead of a framework rewrite
-
-That means the job is not:
-- “replace the prototype with a SPA because frameworks are fashionable”
-
-The job is:
-- “turn the prototype approach into a cleaner, production-ready MVP front-end structure while preserving its implementation model”
-
-### What this means in practice
-We still need a serious frontend architecture, just without introducing React/Next right now.
-
-So the production repo should implement:
-- shared page shell/layout partial patterns via JavaScript/template includes or repeatable page scaffolding
-- disciplined CSS token system using CSS variables
-- modular JavaScript files by domain/page/ui concern
-- centralized auth/session/bootstrap logic
-- centralized route/page guard logic
-- centralized permission/entitlement/assignment evaluation helpers
-- deterministic mock-to-real API migration path
-
-### Styling/UI
+## Supporting stack
+- **Tailwind CSS**
 - **CSS variables** for tenant theme tokens
-- modular CSS split by tokens/components/pages/utilities
-- reusable component classes and page patterns
-- no dependency on a framework-specific component library
+- **shadcn/ui** or a lightweight headless component approach
+- **Radix UI** primitives where accessibility/state complexity matters
+- **TanStack Query** for server state
+- **React Hook Form** for forms
+- **Zod** for schema validation/parsing
+- **TanStack Table** for dense business tables
+- **Recharts** for MVP charts
+- **Lucide** icons
 
-### Data/state
-Use plain JavaScript modules with clear separation for:
-- API clients
-- session/bootstrap state
-- entitlement/permission evaluation
-- page view models
-- domain fixtures and mock seeds during prototype-aligned phases
+## Important implementation rule
+The frontend must use this approved production stack **while following the prototype's HTML/CSS/JS rigorously as the implementation reference**.
 
-### Charts / tables / interactions
-Use lightweight browser-friendly libraries only where genuinely helpful.
-Prefer minimal dependencies and integrate them into the HTML/CSS/JS structure cleanly.
+That means:
+- we are **not** shipping the prototype codebase as the final app
+- we **are** using the prototype as a strict blueprint for page inventory, layout hierarchy, interaction flow, visual tone, and content composition
+- we must preserve the good parts of the prototype while upgrading the implementation model
 
-### Auth/session
+### What “follow the prototype thoroughly” actually means
+The new frontend should faithfully carry forward:
+- page-level information architecture
+- layout composition
+- navigation patterns
+- card/table/filter hierarchy
+- dashboard storytelling
+- branding/theming behavior
+- page copy direction
+- workflow cues and CTA patterns
+
+### What must still change while porting
+We must correct places where the prototype conflicts with backend truth, including:
+- quote -> itinerary -> booking teaching
+- missing inquiry-first workflow root
+- missing draft concept layer
+- insufficient case/workspace-centered UX
+- incomplete subscription/assignment-aware access surfaces
+
+### Why this stack is still the right choice
+Because the real frontend has to support durable production concerns like:
+- auth/session handling
+- nested layouts and routing
+- backend data fetching/caching
+- entitlement-aware rendering
+- assignment-aware module gating
+- reusable case workspace composition
+- maintainable forms/state
+- long-term scalability
+
+The prototype HTML/CSS/JS is the **reference for what to build**.
+This approved stack is the **implementation vehicle for building it properly**.
+
+### Auth/session requirements
 Frontend must support:
 - tenant-aware auth session
 - permission claims
 - tenant entitlement/feature payload
 - user assignment payload or derived capability payload
+- authenticated backend API calls
 
-### Why this approach is still valid
-Because the main complexity here is not “which JavaScript framework do we worship.”
-The main complexity is:
-- workflow correctness
-- feature gating correctness
-- tenancy/branding correctness
-- page/system consistency
-
-Those can absolutely be done with well-structured HTML/CSS/JS if we stay disciplined.
-
-### Constraint
-If the plain HTML/CSS/JS approach later starts actively fighting us on maintainability, that can be revisited in a later phase.
-But for the approved MVP direction, the implementation stack is:
-- HTML
-- CSS
-- JavaScript
-- multi-page portal architecture
+### Backend connection expectation
+This frontend is expected to connect to real backend endpoints in `billing-platform`.
+It is not meant to stay a disconnected mock shell.
 
 ---
 
@@ -656,125 +649,118 @@ If a prototype page conflicts with backend truth, backend truth wins.
 
 ## 13. Proposed production frontend repo structure
 
-For the approved HTML/CSS/JS implementation style, recommended broad structure is:
+For the approved production stack, recommended broad structure is:
 
 ```text
 voyara-portal/
-  assets/
+  app/
+    (auth)/
+      login/
+        page.tsx
+      forgot-password/
+        page.tsx
+      reset-password/
+        page.tsx
+    (portal)/
+      layout.tsx
+      page.tsx
+      inquiries/
+        page.tsx
+        [inquiryId]/
+          page.tsx
+      cases/
+        page.tsx
+        [caseId]/
+          page.tsx
+      contacts/
+        page.tsx
+      quotations/
+        page.tsx
+        [quotationId]/
+          page.tsx
+      bookings/
+        page.tsx
+        [bookingId]/
+          page.tsx
+      itineraries/
+        page.tsx
+      follow-ups/
+        page.tsx
+      communications/
+        page.tsx
+      billing/
+        page.tsx
+      users/
+        page.tsx
+      settings/
+        page.tsx
+      webhooks/
+        page.tsx
+  components/
+    layout/
+    navigation/
+    dashboard/
+    cases/
+    inquiries/
+    quotations/
+    bookings/
+    itineraries/
+    billing/
+    users/
+    settings/
+    tables/
+    charts/
+    forms/
+    feedback/
+  features/
+    auth/
+    dashboard/
+    inquiries/
+    cases/
+    contacts/
+    quotations/
+    bookings/
+    itineraries/
+    follow-ups/
+    communications/
+    billing/
+    users/
+    settings/
+    webhooks/
+  lib/
+    api/
+      client.ts
+      auth.ts
+      inquiries.ts
+      quotations.ts
+      bookings.ts
+      itineraries.ts
+      billing.ts
+      users.ts
+      settings.ts
+    auth/
+    permissions/
+    entitlements/
+    assignments/
+    theme/
+    schemas/
+    utils/
+  styles/
+    globals.css
+    tokens.css
+  public/
     images/
     icons/
     branding/
-  styles/
-    tokens.css
-    base.css
-    layout.css
-    components.css
-    utilities.css
-    pages/
-      dashboard.css
-      inquiries.css
-      cases.css
-      quotations.css
-      bookings.css
-      itineraries.css
-      billing.css
-      users.css
-      settings.css
-  scripts/
-    app.js
-    bootstrap/
-      session.js
-      navigation.js
-      guards.js
-      theme.js
-    api/
-      http.js
-      auth.js
-      inquiries.js
-      quotations.js
-      bookings.js
-      itineraries.js
-      billing.js
-      users.js
-      settings.js
-    core/
-      config.js
-      routes.js
-      permissions.js
-      entitlements.js
-      assignments.js
-      formatting.js
-      storage.js
-    ui/
-      shell.js
-      sidebar.js
-      header.js
-      table.js
-      cards.js
-      modal.js
-      drawer.js
-      toast.js
-      states.js
-      charts.js
-    pages/
-      dashboard.js
-      inquiries.js
-      inquiry-detail.js
-      cases.js
-      case-workspace.js
-      contacts.js
-      quotations.js
-      quotation-detail.js
-      bookings.js
-      booking-detail.js
-      itineraries.js
-      follow-ups.js
-      communications.js
-      billing.js
-      users.js
-      settings.js
-      login.js
-      forgot-password.js
-      reset-password.js
-    data/
-      tenant.js
-      users.js
-      inquiries.js
-      concepts.js
-      quotations.js
-      bookings.js
-      itineraries.js
-      communications.js
-      billing.js
-  login.html
-  forgot-password.html
-  reset-password.html
-  index.html
-  inquiries.html
-  inquiry-detail.html
-  cases.html
-  case-workspace.html
-  contacts.html
-  quotations.html
-  quotation-detail.html
-  bookings.html
-  booking-detail.html
-  itineraries.html
-  follow-ups.html
-  communications.html
-  billing.html
-  users.html
-  settings.html
-  webhooks.html
   README.md
 ```
 
 ### Important architecture rules
-1. Do not build one giant `app.js` monster.
-2. Do not dump everything into one CSS file forever.
-3. Keep domain logic grouped by module.
-4. Keep shared shell/components separate from page scripts.
-5. Preserve the prototype's simplicity, but not its mess.
+1. Do not build one giant dumping ground of generic components.
+2. Keep domain logic grouped by product module.
+3. Keep layout/shell concerns separate from domain features.
+4. Implement the prototype faithfully, but not literally line-by-line as static files.
+5. Preserve prototype UX truth where correct; correct it where backend truth demands it.
 
 ---
 
@@ -842,9 +828,10 @@ That means the frontend must be ready for:
 - approve this spec
 - create real frontend repo `voyara-portal`
 - lock canonical lifecycle language
-- define page map and access model
+- define route map and access model
 - define theme token contract
-- define HTML/CSS/JS folder structure before page cloning starts
+- define backend integration/auth/session contract
+- map prototype pages to production routes/components before implementation starts
 
 ## Phase 2 - Build core shell and auth/session model
 - shared app shell
@@ -852,8 +839,8 @@ That means the frontend must be ready for:
 - tenant-aware layout
 - navigation model
 - permission/entitlement/assignment guards
-- theme bootstrap logic
-- reusable page bootstrap pattern for all HTML pages
+- theme provider
+- authenticated API client/bootstrap flow
 
 ## Phase 3 - Build workflow root correctly
 - inquiries
@@ -899,13 +886,17 @@ That means the frontend must be ready for:
 
 ## Tech stack decision
 **Approved:**
-- HTML
-- CSS
-- JavaScript
-- multi-page application architecture
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
 - CSS variables for tenant theming
-- modular scripts by domain/page/ui concern
-- lightweight library usage only where genuinely useful
+- TanStack Query
+- React Hook Form
+- Zod
+- TanStack Table
+- Recharts
+- Radix/shadcn-style primitives where useful
 
 ## Product rules decision
 Frontend must enforce and visually reflect:
@@ -939,9 +930,10 @@ It should be built as:
 
 The correct next move is:
 1. use this approved alignment direction
-2. create the new repo `voyara-portal`
+2. create and wire the new repo `voyara-portal`
 3. define exact access matrix per module/feature key
-4. port the prototype rigorously into the new HTML/CSS/JS production structure
-5. correct workflow mismatches while porting instead of copying mistakes forward
+4. port the prototype rigorously into the approved production stack
+5. connect pages to backend APIs/auth/session flows as they are implemented
+6. correct workflow mismatches while porting instead of copying mistakes forward
 
 That is how you avoid building the wrong shiny thing.
