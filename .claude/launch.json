@@ -1,0 +1,59 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "API Gateway",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "services/api-gateway/src/ApiGateway.csproj"],
+      "port": 51911
+    },
+    {
+      "name": "Identity Service",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "services/identity-service/src/IdentityService.csproj"],
+      "port": 51910
+    },
+    {
+      "name": "Billing Service",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "services/billing-service/src/BillingService.csproj"],
+      "port": 51909
+    },
+    {
+      "name": "Travel Service",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "services/travel-service/src/TravelService.csproj"],
+      "port": 57928
+    },
+    {
+      "name": "Communication Service",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "services/communication-service/src/CommunicationService.csproj"],
+      "port": 57929
+    },
+    {
+      "name": "Webhook Service",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start:dev", "--prefix", "services/webhook-service"],
+      "port": 3000
+    },
+    {
+      "name": "Frontend (Turbo - All Apps)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["run", "dev", "--prefix", "frontend"],
+      "port": 3000
+    },
+    {
+      "name": "Admin Portal",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["run", "dev", "--filter", "@voyara/admin-portal"],
+      "port": 3000
+    },
+    {
+      "name": "Customer Portal",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["run", "dev", "--filter", "@voyara/customer-portal"],
+      "port": 3001
+    }
+  ]
+}
