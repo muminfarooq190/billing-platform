@@ -53,7 +53,7 @@ public sealed class AuthController(IMediator mediator, JwtTokenService jwtTokenS
                    "PasswordHash" AS PasswordHash,
                    "Role" AS Role,
                    "Status" AS Status,
-                   "MustChangePassword" AS MustChangePassword
+                   must_change_password AS MustChangePassword
             FROM users
             WHERE "TenantId" = @TenantId AND "Email" = @Email AND deleted_at IS NULL;
             """;
