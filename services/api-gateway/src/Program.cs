@@ -58,6 +58,18 @@ var app = builder.Build();
 
 app.UseHttpMetrics();
 app.UseCors("FrontendClients");
+
+app.Use(async (context, next) =>
+{
+    if (HttpMethods.IsOptions(context.Request.Method))
+    {
+        context.Response.StatusCode = StatusCodes.Status204NoContent;
+        return;
+    }
+
+    await next();
+});
+
 app.UseMiddleware<JwtValidationMiddleware>();
 app.UseMiddleware<FeatureEntitlementMiddleware>();
 app.UseMiddleware<RateLimitMiddleware>();
