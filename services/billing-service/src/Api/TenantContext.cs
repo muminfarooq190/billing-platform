@@ -41,9 +41,15 @@ public sealed class HeaderTenantContext(IHttpContextAccessor httpContextAccessor
         get
         {
             var httpContext = httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HTTP context is not available.");
-            var raw = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
-                ?? httpContext.User.FindFirstValue("sub")
-                ?? httpContext.Request.Headers["x-user-id"].FirstOrDefault();
+            var raw = httpContext.Request.Headers["x-user-id"].FirstOrDefault();
+
+            if (Guid.TryParse(raw, out var headerUserId))
+            {
+                return headerUserId;
+            }
+
+            raw = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? httpContext.User.FindFirstValue("sub");
 
             return Guid.TryParse(raw, out var userId) ? userId : null;
         }

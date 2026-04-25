@@ -65,10 +65,32 @@ public sealed class JwtValidationMiddleware(RequestDelegate next, IConfiguration
                 RoleClaimType = ClaimTypes.Role
             }, out _);
 
-            var tenantId = principal.FindFirst("tenant_id")?.Value;
-            var userId = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
-            context.Items["tenant_id"] = tenantId ?? "anonymous";
-            context.Items["user_id"] = userId ?? "anonymous";
+            var tenantId = principal.FindFirst("tenant_id")?.Value
+                ?? principal.FindFirst("tenantId")?.Value
+                ?? principal.FindFirst("tid")?.Value;
+            var userId = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? principal.FindFirst("user_id")?.Value
+                ?? principal.FindFirst("uid")?.Value;
+
+            if (!string.IsNullOrWhiteSpace(tenantId))
+            {
+                context.Items["tenant_id"] = tenantId;
+            }
+            else
+            {
+                context.Items.Remove("tenant_id");
+            }
+
+            if (!string.IsNullOrWhiteSpace(userId))
+            {
+                context.Items["user_id"] = userId;
+            }
+            else
+            {
+                context.Items.Remove("user_id");
+            }
+
             context.User = principal;
 
             await next(context);

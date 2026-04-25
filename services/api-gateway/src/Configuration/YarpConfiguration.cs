@@ -1,3 +1,4 @@
+using System;
 using Yarp.ReverseProxy.Transforms;
 
 namespace ApiGateway.Configuration;
@@ -14,14 +15,18 @@ public static class YarpConfiguration
                 {
                     var tenantId = transformContext.HttpContext.Items["tenant_id"] as string;
                     var userId = transformContext.HttpContext.Items["user_id"] as string;
-                    if (!string.IsNullOrWhiteSpace(tenantId))
+
+                    transformContext.ProxyRequest.Headers.Remove("x-tenant-id");
+                    transformContext.ProxyRequest.Headers.Remove("x-user-id");
+
+                    if (Guid.TryParse(tenantId, out var parsedTenantId))
                     {
-                        transformContext.ProxyRequest.Headers.Add("x-tenant-id", tenantId);
+                        transformContext.ProxyRequest.Headers.TryAddWithoutValidation("x-tenant-id", parsedTenantId.ToString());
                     }
 
-                    if (!string.IsNullOrWhiteSpace(userId))
+                    if (Guid.TryParse(userId, out var parsedUserId))
                     {
-                        transformContext.ProxyRequest.Headers.Add("x-user-id", userId);
+                        transformContext.ProxyRequest.Headers.TryAddWithoutValidation("x-user-id", parsedUserId.ToString());
                     }
 
                     return ValueTask.CompletedTask;
