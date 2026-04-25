@@ -12,6 +12,7 @@ using TravelService.Infrastructure.Persistence;
 using TravelService.Infrastructure.Persistence.Outbox;
 using TravelService.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
+using System.IO;
 
 namespace TravelService.Api;
 
@@ -77,6 +78,8 @@ public sealed class Program
         builder.Services.AddHostedService<OutboxPublisherService>();
         builder.Services.AddHealthChecks();
 
+        ConfigureJwtCompatibility(builder);
+
         builder.Services.AddControllers(options => options.Filters.Add<GlobalExceptionFilter>());
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
@@ -93,5 +96,20 @@ public sealed class Program
         app.MapControllers();
         app.MapHealthChecks("/health");
         app.Run();
+    }
+
+    private static void ConfigureJwtCompatibility(WebApplicationBuilder builder)
+    {
+        var inlinePem = builder.Configuration["JWT_PUBLIC_KEY"];
+        if (!string.IsNullOrWhiteSpace(inlinePem))
+        {
+            return;
+        }
+
+        var pemPath = builder.Configuration["JWT_PUBLIC_KEY_PATH"];
+        if (!string.IsNullOrWhiteSpace(pemPath) && File.Exists(pemPath))
+        {
+            builder.Configuration["JWT_PUBLIC_KEY"] = File.ReadAllText(pemPath);
+        }
     }
 }
