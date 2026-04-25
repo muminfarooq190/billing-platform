@@ -15,8 +15,7 @@ public sealed class GetEffectiveEntitlementsQueryHandler(
 {
     public async Task<IReadOnlyList<FeatureEntitlementReadModel>> Handle(GetEffectiveEntitlementsQuery request, CancellationToken cancellationToken)
     {
-        _ = await subscriptionRepository.GetByTenantIdAsync(request.TenantId, cancellationToken)
-            ?? throw new InvalidOperationException("Subscription not found.");
+        _ = await subscriptionRepository.GetByTenantIdAsync(request.TenantId, cancellationToken);
 
         var overrides = await featureEntitlementRepository.ListByTenantIdAsync(request.TenantId, cancellationToken);
         var tenantOverrides = await tenantFeatureOverrideRepository.ListByTenantIdAsync(request.TenantId, cancellationToken);
