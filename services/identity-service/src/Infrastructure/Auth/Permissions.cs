@@ -27,6 +27,13 @@ public static class Permissions
         public const string InvoicesRead = "billing.invoices.read";
     }
 
+    public static class Communication
+    {
+        public const string LogsRead = "communication.logs.read";
+        public const string NotificationSend = "communication.notification.send";
+        public const string TemplatesManage = "communication.templates.manage";
+    }
+
     public static readonly string[] All =
     [
         Identity.UsersManage,
@@ -37,6 +44,9 @@ public static class Permissions
         Branding.ThemeManage,
         Travel.QuotationRead,
         Travel.QuotationWrite,
-        Billing.InvoicesRead
+        Billing.InvoicesRead,
+        Communication.LogsRead,
+        Communication.NotificationSend,
+        Communication.TemplatesManage
     ];
 }

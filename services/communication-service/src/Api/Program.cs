@@ -10,8 +10,12 @@ using CommunicationService.Infrastructure.Persistence;
 using CommunicationService.Infrastructure.Persistence.Outbox;
 using CommunicationService.Infrastructure.Persistence.Repositories;
 using CommunicationService.Infrastructure.Recipients;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using System.IO;
+using System.Security.Cryptography;
 
 namespace CommunicationService.Api;
 
@@ -121,6 +125,8 @@ public sealed class Program
         builder.Services.AddHostedService<BillingEventRelayService>();
         builder.Services.AddHealthChecks();
 
+        ConfigureAuth(builder);
+
         builder.Services.AddControllers(options => options.Filters.Add<GlobalExceptionFilter>());
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
@@ -134,8 +140,71 @@ public sealed class Program
 
         app.UseSwagger();
         app.UseSwaggerUI();
+        app.UseAuthentication();
+        app.UseAuthorization();
         app.MapControllers();
         app.MapHealthChecks("/health");
         app.Run();
+    }
+
+    private static void ConfigureAuth(WebApplicationBuilder builder)
+    {
+        var publicKeyPem = ResolvePublicKeyPem(builder.Configuration);
+        if (string.IsNullOrWhiteSpace(publicKeyPem))
+        {
+            return;
+        }
+
+        using var rsa = RSA.Create();
+        rsa.ImportFromPem(publicKeyPem);
+        var securityKey = new RsaSecurityKey(rsa);
+
+        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = securityKey
+                };
+            });
+
+        builder.Services.AddAuthorization();
+    }
+
+    private static string? ResolvePublicKeyPem(IConfiguration configuration)
+    {
+        var inlinePem = configuration["JWT_PUBLIC_KEY"];
+        if (!string.IsNullOrWhiteSpace(inlinePem))
+        {
+            if (LooksLikeCompletePem(inlinePem))
+            {
+                return inlinePem;
+            }
+
+            if (File.Exists(inlinePem))
+            {
+                return File.ReadAllText(inlinePem);
+            }
+        }
+
+        var pemPath = configuration["JWT_PUBLIC_KEY_PATH"];
+        if (!string.IsNullOrWhiteSpace(pemPath) && File.Exists(pemPath))
+        {
+            return File.ReadAllText(pemPath);
+        }
+
+        return null;
+    }
+
+    private static bool LooksLikeCompletePem(string value)
+    {
+        return (value.Contains("-----BEGIN PUBLIC KEY-----", StringComparison.Ordinal)
+                && value.Contains("-----END PUBLIC KEY-----", StringComparison.Ordinal))
+            || (value.Contains("-----BEGIN RSA PUBLIC KEY-----", StringComparison.Ordinal)
+                && value.Contains("-----END RSA PUBLIC KEY-----", StringComparison.Ordinal));
     }
 }

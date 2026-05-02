@@ -10,6 +10,7 @@ public sealed class TenantUserFeatureAssignmentConfiguration : IEntityTypeConfig
     {
         builder.ToTable("tenant_user_feature_assignments");
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasColumnName("id").IsRequired();
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
         builder.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(x => x.FeatureKey).HasColumnName("feature_key").HasMaxLength(200).IsRequired();

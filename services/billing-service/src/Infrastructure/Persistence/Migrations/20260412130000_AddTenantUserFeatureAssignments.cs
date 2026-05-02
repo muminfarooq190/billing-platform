@@ -9,20 +9,6 @@ namespace BillingService.Infrastructure.Persistence.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "assignment_mode",
-                table: "feature_catalog",
-                type: "character varying(50)",
-                maxLength: 50,
-                nullable: false,
-                defaultValue: "TenantWide");
-
-            migrationBuilder.AddColumn<int>(
-                name: "default_assignment_limit",
-                table: "feature_catalog",
-                type: "integer",
-                nullable: true);
-
             migrationBuilder.CreateTable(
                 name: "tenant_user_feature_assignments",
                 columns: table => new
@@ -58,8 +44,6 @@ namespace BillingService.Infrastructure.Persistence.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(name: "tenant_user_feature_assignments");
-            migrationBuilder.DropColumn(name: "assignment_mode", table: "feature_catalog");
-            migrationBuilder.DropColumn(name: "default_assignment_limit", table: "feature_catalog");
         }
     }
 }

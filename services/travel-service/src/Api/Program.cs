@@ -8,6 +8,7 @@ using TravelService.Infrastructure.Caching;
 using TravelService.Infrastructure.Communication;
 using TravelService.Infrastructure.Entitlements;
 using TravelService.Infrastructure.Files;
+using TravelService.Infrastructure.Http;
 using TravelService.Infrastructure.Persistence;
 using TravelService.Infrastructure.Persistence.Outbox;
 using TravelService.Infrastructure.Persistence.Repositories;
@@ -57,14 +58,15 @@ public sealed class Program
         builder.Services.AddScoped<IReadDbConnectionFactory, ReadDbConnectionFactory>();
         builder.Services.AddScoped<IFileStorage, LocalFileStorage>();
         builder.Services.AddScoped<ICacheService, RedisCacheService>();
+        builder.Services.AddTransient<ForwardAuthHeadersHandler>();
         builder.Services.AddHttpClient<IBillingFinanceClient, BillingFinanceClient>(client =>
         {
             client.BaseAddress = new Uri(builder.Configuration["BILLING_SERVICE_URL"] ?? "http://localhost:5080/");
-        });
+        }).AddHttpMessageHandler<ForwardAuthHeadersHandler>();
         builder.Services.AddHttpClient<IBillingEntitlementsClient, BillingEntitlementsClient>(client =>
         {
             client.BaseAddress = new Uri(builder.Configuration["BILLING_SERVICE_URL"] ?? "http://localhost:5080/");
-        });
+        }).AddHttpMessageHandler<ForwardAuthHeadersHandler>();
         builder.Services.AddHttpClient<ICommunicationWorkflowClient, CommunicationWorkflowClient>(client =>
         {
             client.BaseAddress = new Uri(builder.Configuration["COMMUNICATION_SERVICE_URL"] ?? "http://localhost:8080/");

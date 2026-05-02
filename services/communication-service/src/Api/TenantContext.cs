@@ -16,15 +16,23 @@ public sealed class HeaderTenantContext(IHttpContextAccessor httpContextAccessor
         {
             var httpContext = httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HTTP context is not available.");
             var headerValue = httpContext.Request.Headers["x-tenant-id"].FirstOrDefault();
+            var claimTenantId = httpContext.User.FindFirstValue("tenantId")
+                ?? httpContext.User.FindFirstValue("tenant_id");
 
-            if (!Guid.TryParse(headerValue, out var tenantId))
-                throw new InvalidOperationException("Missing or invalid x-tenant-id header.");
+            if (Guid.TryParse(headerValue, out var headerTenantId))
+            {
+                if (!string.IsNullOrWhiteSpace(claimTenantId) && !string.Equals(claimTenantId, headerTenantId.ToString(), StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("Tenant header does not match authenticated tenant.");
 
-            var claimTenantId = httpContext.User.FindFirstValue("tenantId");
-            if (!string.IsNullOrWhiteSpace(claimTenantId) && !string.Equals(claimTenantId, tenantId.ToString(), StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("Tenant header does not match authenticated tenant.");
+                return headerTenantId;
+            }
 
-            return tenantId;
+            if (Guid.TryParse(claimTenantId, out var claimTenantGuid))
+            {
+                return claimTenantGuid;
+            }
+
+            throw new InvalidOperationException("Missing tenant context.");
         }
     }
 
@@ -33,9 +41,16 @@ public sealed class HeaderTenantContext(IHttpContextAccessor httpContextAccessor
         get
         {
             var httpContext = httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HTTP context is not available.");
-            var raw = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+            var raw = httpContext.Request.Headers["x-user-id"].FirstOrDefault();
+
+            if (Guid.TryParse(raw, out var headerUserId))
+            {
+                return headerUserId;
+            }
+
+            raw = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
                 ?? httpContext.User.FindFirstValue("sub")
-                ?? httpContext.Request.Headers["x-user-id"].FirstOrDefault();
+                ?? httpContext.User.FindFirstValue("user_id");
 
             return Guid.TryParse(raw, out var userId) ? userId : null;
         }

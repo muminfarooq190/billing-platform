@@ -4,30 +4,32 @@ namespace TravelService.Application.Queries.GetBookingById;
 
 public sealed record GetBookingByIdQuery(Guid TenantId, Guid BookingId) : IRequest<BookingReadModel?>;
 
-public sealed record BookingReadModel(
-    Guid Id,
-    Guid TenantId,
-    Guid? QuotationId,
-    Guid? AcceptedRevisionId,
-    Guid PrimaryContactId,
-    string BookingNumber,
-    string Status,
-    string TripName,
-    string Destination,
-    DateTimeOffset StartDate,
-    DateTimeOffset EndDate,
-    int TravellersCount,
-    string Currency,
-    decimal TotalSellAmount,
-    decimal? TotalCostAmount,
-    decimal? MarginAmount,
-    Guid? AssignedToUserId,
-    string? CustomerReference,
-    string? InternalNotes,
-    Guid? ItineraryId,
-    bool HasItinerary,
-    string? ItineraryStatus,
-    DateTimeOffset? ItineraryUpdatedAt,
-    DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt,
-    DateTimeOffset? CancelledAt);
+public sealed class BookingReadModel
+{
+    public Guid Id { get; init; }
+    public Guid TenantId { get; init; }
+    public Guid? QuotationId { get; init; }
+    public Guid? AcceptedRevisionId { get; init; }
+    public Guid PrimaryContactId { get; init; }
+    public string BookingNumber { get; init; } = string.Empty;
+    public string Status { get; init; } = string.Empty;
+    public string TripName { get; init; } = string.Empty;
+    public string Destination { get; init; } = string.Empty;
+    public DateTimeOffset StartDate { get; init; }
+    public DateTimeOffset EndDate { get; init; }
+    public int TravellersCount { get; init; }
+    public string Currency { get; init; } = string.Empty;
+    public decimal TotalSellAmount { get; init; }
+    public decimal? TotalCostAmount { get; init; }
+    public decimal? MarginAmount { get; init; }
+    public Guid? AssignedToUserId { get; init; }
+    public string? CustomerReference { get; init; }
+    public string? InternalNotes { get; init; }
+    public Guid? ItineraryId { get; init; }
+    public bool HasItinerary { get; init; }
+    public string? ItineraryStatus { get; init; }
+    public DateTimeOffset? ItineraryUpdatedAt { get; init; }
+    public DateTimeOffset CreatedAt { get; init; }
+    public DateTimeOffset UpdatedAt { get; init; }
+    public DateTimeOffset? CancelledAt { get; init; }
+}

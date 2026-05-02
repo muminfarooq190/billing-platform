@@ -170,6 +170,8 @@ services:
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH}
       JWT_PUBLIC_KEY: |
         ${JWT_PUBLIC_KEY}
+      BILLING_SERVICE_URL: http://billing-service:8080/
+      COMMUNICATION_SERVICE_URL: http://communication-service:8080/
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
       OTEL_SERVICE_NAME: travel-service
     ports:
@@ -202,8 +204,13 @@ services:
       DATABASE_URL: ${COMMUNICATION_DATABASE_URL}
       RABBITMQ_URL: ${RABBITMQ_URL}
       REDIS_URL: ${REDIS_URL}
+      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH}
+      JWT_PUBLIC_KEY: |
+        ${JWT_PUBLIC_KEY}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
       OTEL_SERVICE_NAME: communication-service
+    volumes:
+      - ./docker/keys/jwt-public.pem:/run/secrets/jwt-public.pem:ro
     ports:
       - "5005:8080"
     networks:
