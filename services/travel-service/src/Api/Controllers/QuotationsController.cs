@@ -1,3 +1,4 @@
+using TravelService.Api.Auth;
 using TravelService.Api.Contracts;
 using TravelService.Application.Commands.AcceptQuotation;
 using TravelService.Application.Commands.ConvertQuotationToItinerary;
@@ -29,6 +30,7 @@ namespace TravelService.Api.Controllers;
 public sealed class QuotationsController(IMediator mediator, ITenantContext tenantContext) : ControllerBase
 {
     [HttpPost]
+    [RequirePermission(Permissions.Travel.QuotationWrite)]
     public async Task<IActionResult> Create([FromBody] CreateQuotationRequest request, CancellationToken cancellationToken)
     {
         var lineItems = request.LineItems.Select(x => new LineItemDto(x.Description, x.UnitPrice, x.Quantity, x.Currency)).ToList();
@@ -40,6 +42,7 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     }
 
     [HttpPost("{id:guid}/revisions")]
+    [RequirePermission(Permissions.Travel.QuotationWrite)]
     public async Task<IActionResult> CreateRevision(Guid id, [FromBody] CreateQuotationRevisionRequest request, CancellationToken cancellationToken)
     {
         var lineItems = request.LineItems.Select(x => new QuotationRevisionLineItemDto(x.Description, x.UnitPrice, x.Quantity, x.Currency)).ToList();
@@ -61,6 +64,7 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     }
 
     [HttpPost("{id:guid}/send")]
+    [RequirePermission(Permissions.Travel.QuotationWrite)]
     public async Task<IActionResult> Send(Guid id, [FromBody] SendQuotationRequest request, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new SendQuotationCommand(
@@ -76,6 +80,7 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     }
 
     [HttpPost("{id:guid}/approval-requests")]
+    [RequirePermission(Permissions.Travel.QuotationWrite)]
     public async Task<IActionResult> CreateApprovalRequest(Guid id, [FromBody] CreateQuotationApprovalRequestRequest request, CancellationToken cancellationToken)
     {
         var approvalRequestId = await mediator.Send(new CreateQuotationApprovalRequestCommand(tenantContext.TenantId, id, request.RevisionId, request.Reason, request.MarginPercent, request.DiscountPercent), cancellationToken);
@@ -83,6 +88,7 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     }
 
     [HttpPost("{id:guid}/approval-requests/{approvalRequestId:guid}/approve")]
+    [RequirePermission(Permissions.Travel.QuotationWrite)]
     public async Task<IActionResult> ApproveApprovalRequest(Guid id, Guid approvalRequestId, [FromBody] DecideQuotationApprovalRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(new ApproveQuotationApprovalRequestCommand(tenantContext.TenantId, id, approvalRequestId, request.Reason), cancellationToken);
@@ -90,6 +96,7 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     }
 
     [HttpPost("{id:guid}/approval-requests/{approvalRequestId:guid}/reject")]
+    [RequirePermission(Permissions.Travel.QuotationWrite)]
     public async Task<IActionResult> RejectApprovalRequest(Guid id, Guid approvalRequestId, [FromBody] DecideQuotationApprovalRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(new RejectQuotationApprovalRequestCommand(tenantContext.TenantId, id, approvalRequestId, request.Reason), cancellationToken);
@@ -97,6 +104,7 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     }
 
     [HttpPost("{id:guid}/accept")]
+    [RequirePermission(Permissions.Travel.QuotationWrite)]
     public async Task<IActionResult> Accept(Guid id, [FromBody] AcceptQuotationRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(new AcceptQuotationCommand(tenantContext.TenantId, id, request.RevisionId, request.Reason), cancellationToken);
@@ -104,6 +112,7 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     }
 
     [HttpPost("{id:guid}/reject")]
+    [RequirePermission(Permissions.Travel.QuotationWrite)]
     public async Task<IActionResult> Reject(Guid id, [FromBody] RejectQuotationRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(new RejectQuotationCommand(tenantContext.TenantId, id, request.Reason), cancellationToken);
@@ -111,6 +120,7 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     }
 
     [HttpPost("{id:guid}/expire")]
+    [RequirePermission(Permissions.Travel.QuotationWrite)]
     public async Task<IActionResult> Expire(Guid id, [FromBody] ExpireQuotationRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(new ExpireQuotationCommand(tenantContext.TenantId, id, request.Reason), cancellationToken);
@@ -118,6 +128,7 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     }
 
     [HttpGet("{id:guid}")]
+    [RequirePermission(Permissions.Travel.QuotationRead)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var model = await mediator.Send(new GetQuotationByIdQuery(id), cancellationToken);
@@ -125,6 +136,7 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     }
 
     [HttpGet("{id:guid}/history")]
+    [RequirePermission(Permissions.Travel.QuotationRead)]
     public async Task<IActionResult> GetHistory(Guid id, CancellationToken cancellationToken)
     {
         var model = await mediator.Send(new GetQuotationHistoryQuery(tenantContext.TenantId, id), cancellationToken);
@@ -132,6 +144,7 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     }
 
     [HttpGet("{id:guid}/revisions")]
+    [RequirePermission(Permissions.Travel.QuotationRead)]
     public async Task<IActionResult> ListRevisions(Guid id, CancellationToken cancellationToken)
     {
         var models = await mediator.Send(new ListQuotationRevisionsQuery(tenantContext.TenantId, id), cancellationToken);
@@ -139,6 +152,7 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     }
 
     [HttpGet("{id:guid}/revisions/{revisionId:guid}")]
+    [RequirePermission(Permissions.Travel.QuotationRead)]
     public async Task<IActionResult> GetRevisionById(Guid id, Guid revisionId, CancellationToken cancellationToken)
     {
         var model = await mediator.Send(new GetQuotationRevisionByIdQuery(tenantContext.TenantId, id, revisionId), cancellationToken);
@@ -146,6 +160,7 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     }
 
     [HttpPost("{id:guid}/attachments")]
+    [RequirePermission(Permissions.Travel.QuotationWrite)]
     [RequestSizeLimit(10 * 1024 * 1024)]
     public async Task<IActionResult> UploadAttachment(Guid id, [FromForm] UploadQuotationAttachmentRequest request, CancellationToken cancellationToken)
     {
@@ -172,6 +187,7 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     }
 
     [HttpGet("{id:guid}/attachments")]
+    [RequirePermission(Permissions.Travel.QuotationRead)]
     public async Task<IActionResult> ListAttachments(Guid id, [FromQuery] bool customerVisibleOnly = false, CancellationToken cancellationToken = default)
     {
         var model = await mediator.Send(new ListQuotationAttachmentsQuery(tenantContext.TenantId, id, customerVisibleOnly), cancellationToken);
@@ -179,6 +195,7 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     }
 
     [HttpDelete("{id:guid}/attachments/{attachmentId:guid}")]
+    [RequirePermission(Permissions.Travel.QuotationWrite)]
     public async Task<IActionResult> DeleteAttachment(Guid id, Guid attachmentId, CancellationToken cancellationToken)
     {
         await mediator.Send(new DeleteQuotationAttachmentCommand(tenantContext.TenantId, id, attachmentId), cancellationToken);
@@ -186,6 +203,7 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     }
 
     [HttpGet]
+    [RequirePermission(Permissions.Travel.QuotationRead)]
     public async Task<IActionResult> ListByTenant(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
@@ -228,6 +246,7 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     }
 
     [HttpPut("{id:guid}")]
+    [RequirePermission(Permissions.Travel.QuotationWrite)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateQuotationRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(new UpdateQuotationCommand(id, request.Title, request.Destination, request.TravelDate, request.ReturnDate, request.Travellers, request.Currency, request.Notes, request.ValidUntil, request.Action), cancellationToken);
@@ -238,6 +257,7 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
     // Preferred path: accepted quotation -> booking -> POST /travel/bookings/{id}/itinerary
     [Obsolete("Quotation-to-itinerary conversion is legacy. Prefer booking itinerary creation after accepted quote becomes booking.")]
     [HttpPost("{id:guid}/convert")]
+    [RequirePermission(Permissions.Travel.QuotationWrite)]
     public async Task<IActionResult> ConvertToItinerary(Guid id, CancellationToken cancellationToken)
     {
         var itineraryId = await mediator.Send(new ConvertQuotationToItineraryCommand(id), cancellationToken);

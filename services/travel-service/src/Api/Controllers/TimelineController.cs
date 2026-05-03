@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using TravelService.Api.Auth;
 using TravelService.Application.Abstractions;
 using TravelService.Application.Queries.GetTimeline;
 
@@ -7,6 +8,7 @@ namespace TravelService.Api.Controllers;
 
 [ApiController]
 [Route("travel")]
+[RequirePermission(Permissions.Travel.TimelineRead)]
 public sealed class TimelineController(IMediator mediator, ITenantContext tenantContext, IFeatureGate featureGate) : ControllerBase
 {
     [HttpGet("activity")]

@@ -1,3 +1,4 @@
+using TravelService.Api.Auth;
 using TravelService.Api.Contracts;
 using TravelService.Application.Commands.CreateFollowUp;
 using TravelService.Application.Commands.UpdateFollowUp;

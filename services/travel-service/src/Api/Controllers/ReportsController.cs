@@ -1,6 +1,7 @@
 using System.Text;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using TravelService.Api.Auth;
 using TravelService.Application.Queries.ReportBookings;
 using TravelService.Application.Queries.SearchTravel;
 
@@ -11,6 +12,7 @@ namespace TravelService.Api.Controllers;
 public sealed class ReportsController(IMediator mediator, ITenantContext tenantContext) : ControllerBase
 {
     [HttpGet("search")]
+    [RequirePermission(Permissions.Travel.InquiriesRead)]
     public async Task<IActionResult> Search([FromQuery] string q, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
         var results = await mediator.Send(new SearchTravelQuery(tenantContext.TenantId, q, page, pageSize), cancellationToken);
@@ -18,6 +20,7 @@ public sealed class ReportsController(IMediator mediator, ITenantContext tenantC
     }
 
     [HttpGet("reports/bookings")]
+    [RequirePermission(Permissions.Travel.BookingsRead)]
     public async Task<IActionResult> ReportBookings([FromQuery] string? status = null, [FromQuery] string? destination = null, CancellationToken cancellationToken = default)
     {
         var rows = await mediator.Send(new ReportBookingsQuery(tenantContext.TenantId, status, destination), cancellationToken);
@@ -25,6 +28,7 @@ public sealed class ReportsController(IMediator mediator, ITenantContext tenantC
     }
 
     [HttpGet("export/bookings.csv")]
+    [RequirePermission(Permissions.Travel.BookingsRead)]
     public async Task<IActionResult> ExportBookings([FromQuery] string? status = null, [FromQuery] string? destination = null, CancellationToken cancellationToken = default)
     {
         var rows = await mediator.Send(new ReportBookingsQuery(tenantContext.TenantId, status, destination), cancellationToken);

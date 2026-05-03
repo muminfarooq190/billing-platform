@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using TravelService.Api.Auth;
 using TravelService.Api.Contracts;
 using TravelService.Application.Commands.DraftTripConcepts;
 using TravelService.Application.Commands.TravelInquiries;
@@ -13,6 +14,7 @@ namespace TravelService.Api.Controllers;
 public sealed class InquiriesController(IMediator mediator, ITenantContext tenantContext) : ControllerBase
 {
     [HttpGet]
+    [RequirePermission(Permissions.Travel.InquiriesRead)]
     public async Task<IActionResult> List(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
@@ -28,6 +30,7 @@ public sealed class InquiriesController(IMediator mediator, ITenantContext tenan
     }
 
     [HttpGet("{id:guid}")]
+    [RequirePermission(Permissions.Travel.InquiriesRead)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var model = await mediator.Send(new GetTravelInquiryByIdQuery(tenantContext.TenantId, id), cancellationToken);
@@ -35,6 +38,7 @@ public sealed class InquiriesController(IMediator mediator, ITenantContext tenan
     }
 
     [HttpGet("{id:guid}/history")]
+    [RequirePermission(Permissions.Travel.InquiriesRead)]
     public async Task<IActionResult> GetHistory(Guid id, CancellationToken cancellationToken)
     {
         var model = await mediator.Send(new GetTravelInquiryHistoryQuery(tenantContext.TenantId, id), cancellationToken);
@@ -42,6 +46,7 @@ public sealed class InquiriesController(IMediator mediator, ITenantContext tenan
     }
 
     [HttpPost("{id:guid}/assign")]
+    [RequirePermission(Permissions.Travel.InquiriesWrite)]
     public async Task<IActionResult> Assign(Guid id, [FromBody] AssignInquiryRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(new AssignInquiryCommand(tenantContext.TenantId, id, request.AssignedToUserId), cancellationToken);
@@ -49,6 +54,7 @@ public sealed class InquiriesController(IMediator mediator, ITenantContext tenan
     }
 
     [HttpPost("{id:guid}/qualify")]
+    [RequirePermission(Permissions.Travel.InquiriesWrite)]
     public async Task<IActionResult> Qualify(Guid id, [FromBody] InquiryStatusReasonRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(new QualifyInquiryCommand(tenantContext.TenantId, id, request.Reason), cancellationToken);
@@ -56,6 +62,7 @@ public sealed class InquiriesController(IMediator mediator, ITenantContext tenan
     }
 
     [HttpPost("{id:guid}/disqualify")]
+    [RequirePermission(Permissions.Travel.InquiriesWrite)]
     public async Task<IActionResult> Disqualify(Guid id, [FromQuery] string status, [FromBody] InquiryStatusReasonRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(new DisqualifyInquiryCommand(tenantContext.TenantId, id, status, request.Reason), cancellationToken);
@@ -63,6 +70,7 @@ public sealed class InquiriesController(IMediator mediator, ITenantContext tenan
     }
 
     [HttpPost("{id:guid}/mark-contacted")]
+    [RequirePermission(Permissions.Travel.InquiriesWrite)]
     public async Task<IActionResult> MarkContacted(Guid id, [FromBody] InquiryStatusReasonRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(new MarkInquiryContactedCommand(tenantContext.TenantId, id, request.Reason), cancellationToken);
@@ -70,6 +78,7 @@ public sealed class InquiriesController(IMediator mediator, ITenantContext tenan
     }
 
     [HttpPost("{id:guid}/archive")]
+    [RequirePermission(Permissions.Travel.InquiriesWrite)]
     public async Task<IActionResult> Archive(Guid id, [FromBody] InquiryStatusReasonRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(new ArchiveInquiryCommand(tenantContext.TenantId, id, request.Reason), cancellationToken);
@@ -77,6 +86,7 @@ public sealed class InquiriesController(IMediator mediator, ITenantContext tenan
     }
 
     [HttpPost("{id:guid}/convert-to-quotation")]
+    [RequirePermission(Permissions.Travel.InquiriesWrite)]
     public async Task<IActionResult> ConvertToQuotation(Guid id, [FromBody] ConvertInquiryToQuotationRequest request, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new ConvertInquiryToQuotationCommand(
@@ -93,6 +103,7 @@ public sealed class InquiriesController(IMediator mediator, ITenantContext tenan
     }
 
     [HttpGet("{id:guid}/concepts")]
+    [RequirePermission(Permissions.Travel.InquiriesRead)]
     public async Task<IActionResult> ListConcepts(Guid id, CancellationToken cancellationToken)
     {
         var concepts = await mediator.Send(new ListDraftTripConceptsByInquiryQuery(tenantContext.TenantId, id), cancellationToken);
@@ -100,6 +111,7 @@ public sealed class InquiriesController(IMediator mediator, ITenantContext tenan
     }
 
     [HttpGet("{id:guid}/concepts/{conceptId:guid}")]
+    [RequirePermission(Permissions.Travel.InquiriesRead)]
     public async Task<IActionResult> GetConcept(Guid id, Guid conceptId, CancellationToken cancellationToken)
     {
         var concept = await mediator.Send(new GetDraftTripConceptByIdQuery(tenantContext.TenantId, id, conceptId), cancellationToken);
@@ -107,6 +119,7 @@ public sealed class InquiriesController(IMediator mediator, ITenantContext tenan
     }
 
     [HttpPost("{id:guid}/concepts")]
+    [RequirePermission(Permissions.Travel.InquiriesWrite)]
     public async Task<IActionResult> CreateConcept(Guid id, [FromBody] CreateDraftTripConceptRequest request, CancellationToken cancellationToken)
     {
         var days = request.Days?.Select(x => new CreateDraftTripConceptDayDto(x.DayNumber, x.Title, x.Description, x.Location, x.OvernightLocation)).ToList()
@@ -130,6 +143,7 @@ public sealed class InquiriesController(IMediator mediator, ITenantContext tenan
     }
 
     [HttpPost("{id:guid}/concepts/{conceptId:guid}/mark-primary")]
+    [RequirePermission(Permissions.Travel.InquiriesWrite)]
     public async Task<IActionResult> MarkPrimaryConcept(Guid id, Guid conceptId, CancellationToken cancellationToken)
     {
         await mediator.Send(new MarkPrimaryDraftTripConceptCommand(tenantContext.TenantId, id, conceptId), cancellationToken);
@@ -137,6 +151,7 @@ public sealed class InquiriesController(IMediator mediator, ITenantContext tenan
     }
 
     [HttpPost("{id:guid}/concepts/{conceptId:guid}/archive")]
+    [RequirePermission(Permissions.Travel.InquiriesWrite)]
     public async Task<IActionResult> ArchiveConcept(Guid id, Guid conceptId, CancellationToken cancellationToken)
     {
         await mediator.Send(new ArchiveDraftTripConceptCommand(tenantContext.TenantId, id, conceptId), cancellationToken);

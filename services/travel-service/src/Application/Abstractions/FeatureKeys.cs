@@ -2,6 +2,7 @@ namespace TravelService.Application.Abstractions;
 
 public static class FeatureKeys
 {
+    public const string TravelWorkflowHub = "travel.workflowHub";
     public const string TravelQuotationCreate = "travel.quotation.create";
     public const string TravelQuotationSend = "travel.quotation.send";
     public const string TravelQuotationAttachmentsUpload = "travel.quotation.attachments.upload";

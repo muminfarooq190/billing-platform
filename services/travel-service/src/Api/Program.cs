@@ -1,4 +1,6 @@
 using QuestPDF.Infrastructure;
+using Microsoft.AspNetCore.Authorization;
+using TravelService.Api.Auth;
 using TravelService.Api.Documents;
 using TravelService.Api.Filters;
 using TravelService.Application.Abstractions;
@@ -82,6 +84,8 @@ public sealed class Program
 
         ConfigureJwtCompatibility(builder);
 
+        builder.Services.AddAuthorization(options => options.AddPermissionPolicies());
+        builder.Services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
         builder.Services.AddControllers(options => options.Filters.Add<GlobalExceptionFilter>());
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
@@ -95,6 +99,7 @@ public sealed class Program
 
         app.UseSwagger();
         app.UseSwaggerUI();
+        app.UseAuthorization();
         app.MapControllers();
         app.MapHealthChecks("/health");
         app.Run();

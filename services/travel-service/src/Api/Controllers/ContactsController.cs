@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using TravelService.Api.Auth;
 using TravelService.Api.Contracts;
 using TravelService.Application.Commands.CreateContact;
 using TravelService.Application.Commands.DeleteContact;
@@ -13,6 +14,7 @@ namespace TravelService.Api.Controllers;
 public sealed class ContactsController(IMediator mediator, ITenantContext tenantContext) : ControllerBase
 {
     [HttpPost]
+    [RequirePermission(Permissions.Travel.ContactsWrite)]
     public async Task<IActionResult> Create([FromBody] CreateContactRequest request, CancellationToken cancellationToken)
     {
         var id = await mediator.Send(new CreateContactCommand(
@@ -29,6 +31,7 @@ public sealed class ContactsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpGet("{id:guid}")]
+    [RequirePermission(Permissions.Travel.ContactsRead)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var model = await mediator.Send(new GetContactByIdQuery(id), cancellationToken);
@@ -36,6 +39,7 @@ public sealed class ContactsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpGet]
+    [RequirePermission(Permissions.Travel.ContactsRead)]
     public async Task<IActionResult> ListByTenant([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
         var models = await mediator.Send(new ListContactsByTenantQuery(tenantContext.TenantId, page, pageSize), cancellationToken);
@@ -43,6 +47,7 @@ public sealed class ContactsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpGet("search")]
+    [RequirePermission(Permissions.Travel.ContactsRead)]
     public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
         var models = await mediator.Send(new SearchContactsQuery(tenantContext.TenantId, q, page, pageSize), cancellationToken);
@@ -50,6 +55,7 @@ public sealed class ContactsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpPut("{id:guid}")]
+    [RequirePermission(Permissions.Travel.ContactsWrite)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateContactRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(new UpdateContactCommand(
@@ -66,6 +72,7 @@ public sealed class ContactsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpDelete("{id:guid}")]
+    [RequirePermission(Permissions.Travel.ContactsWrite)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         await mediator.Send(new DeleteContactCommand(id), cancellationToken);

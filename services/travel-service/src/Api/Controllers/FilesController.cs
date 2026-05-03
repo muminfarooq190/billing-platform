@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TravelService.Api.Auth;
 using TravelService.Infrastructure.Persistence;
 
 namespace TravelService.Api.Controllers;
@@ -12,6 +13,7 @@ public sealed class FilesController(
     ITenantContext tenantContext) : ControllerBase
 {
     [HttpGet("{**storageKey}")]
+    [RequirePermission(Permissions.Travel.DocumentsRead)]
     public async Task<IActionResult> Read(string storageKey, CancellationToken cancellationToken)
     {
         var attachment = await dbContext.QuotationAttachments

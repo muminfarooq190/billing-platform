@@ -1,3 +1,4 @@
+using TravelService.Api.Auth;
 using TravelService.Api.Contracts;
 using TravelService.Application.Commands.CreateItinerary;
 using TravelService.Application.Commands.UpdateItinerary;

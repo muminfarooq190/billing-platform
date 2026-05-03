@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using TravelService.Api.Auth;
 using TravelService.Api.Documents;
 using TravelService.Application.Queries.GetBookingItinerary;
 using TravelService.Application.Queries.GetQuotationRevisionById;
@@ -11,6 +12,7 @@ namespace TravelService.Api.Controllers;
 public sealed class PdfDocumentsController(IMediator mediator, ITenantContext tenantContext, IPdfDocumentRenderer pdfDocumentRenderer) : ControllerBase
 {
     [HttpGet("quotations/{quotationId:guid}/revisions/{revisionId:guid}/pdf")]
+    [RequirePermission(Permissions.Travel.DocumentsRead)]
     public async Task<IActionResult> GetQuotationRevisionPdf(Guid quotationId, Guid revisionId, CancellationToken cancellationToken)
     {
         var revision = await mediator.Send(new GetQuotationRevisionByIdQuery(tenantContext.TenantId, quotationId, revisionId), cancellationToken);
@@ -22,6 +24,7 @@ public sealed class PdfDocumentsController(IMediator mediator, ITenantContext te
     }
 
     [HttpGet("bookings/{bookingId:guid}/itinerary/pdf")]
+    [RequirePermission(Permissions.Travel.DocumentsRead)]
     public async Task<IActionResult> GetBookingItineraryPdf(Guid bookingId, CancellationToken cancellationToken)
     {
         var itinerary = await mediator.Send(new GetBookingItineraryQuery(tenantContext.TenantId, bookingId), cancellationToken);

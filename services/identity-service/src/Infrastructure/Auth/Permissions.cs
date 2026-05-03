@@ -18,6 +18,7 @@ public static class Permissions
 
     public static class Travel
     {
+        public const string WorkflowHubRead = "travel.workflowhub.read";
         public const string QuotationRead = "travel.quotation.read";
         public const string QuotationWrite = "travel.quotation.write";
     }
@@ -42,6 +43,7 @@ public static class Permissions
         Identity.SettingsManage,
         Identity.TenantManage,
         Branding.ThemeManage,
+        Travel.WorkflowHubRead,
         Travel.QuotationRead,
         Travel.QuotationWrite,
         Billing.InvoicesRead,

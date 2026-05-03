@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using TravelService.Api.Auth;
 using TravelService.Api.Contracts;
 using TravelService.Application.Commands.AddBookingItem;
 using TravelService.Application.Commands.AddTraveler;
@@ -29,6 +30,7 @@ namespace TravelService.Api.Controllers;
 public sealed class BookingsController(IMediator mediator, ITenantContext tenantContext) : ControllerBase
 {
     [HttpPost("from-quotation/{quotationId:guid}")]
+    [RequirePermission(Permissions.Travel.BookingsWrite)]
     public async Task<IActionResult> CreateFromQuotation(Guid quotationId, [FromBody] CreateBookingFromQuotationRequest request, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new CreateBookingFromQuotationCommand(tenantContext.TenantId, quotationId, request.AssignedToUserId, request.InternalNotes), cancellationToken);
@@ -36,6 +38,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpGet]
+    [RequirePermission(Permissions.Travel.BookingsRead)]
     public async Task<IActionResult> List(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
@@ -52,6 +55,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpGet("{id:guid}")]
+    [RequirePermission(Permissions.Travel.BookingsRead)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var booking = await mediator.Send(new GetBookingByIdQuery(tenantContext.TenantId, id), cancellationToken);
@@ -59,6 +63,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpGet("{id:guid}/financial-summary")]
+    [RequirePermission(Permissions.Travel.BookingsRead)]
     public async Task<IActionResult> GetFinancialSummary(Guid id, CancellationToken cancellationToken)
     {
         var summary = await mediator.Send(new GetBookingFinancialSummaryQuery(tenantContext.TenantId, id), cancellationToken);
@@ -66,6 +71,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpGet("{id:guid}/itinerary")]
+    [RequirePermission(Permissions.Travel.BookingsRead)]
     public async Task<IActionResult> GetItinerary(Guid id, CancellationToken cancellationToken)
     {
         var itinerary = await mediator.Send(new GetBookingItineraryQuery(tenantContext.TenantId, id), cancellationToken);
@@ -73,6 +79,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpPost("{id:guid}/itinerary")]
+    [RequirePermission(Permissions.Travel.BookingsWrite)]
     public async Task<IActionResult> CreateItinerary(Guid id, [FromBody] CreateBookingItineraryRequest request, CancellationToken cancellationToken)
     {
         var items = request.Items.Select(x => new ItineraryItemDto(x.DayNumber, x.ItemType, x.Title, x.Description, x.Location, x.StartTime, x.EndTime, x.Cost, x.Currency)).ToList();
@@ -91,6 +98,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpPost("{id:guid}/travelers")]
+    [RequirePermission(Permissions.Travel.BookingsWrite)]
     public async Task<IActionResult> AddTraveler(Guid id, [FromBody] AddTravelerRequest request, CancellationToken cancellationToken)
     {
         var travelerId = await mediator.Send(new AddTravelerCommand(
@@ -115,6 +123,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpGet("{id:guid}/travelers")]
+    [RequirePermission(Permissions.Travel.BookingsRead)]
     public async Task<IActionResult> ListTravelers(Guid id, CancellationToken cancellationToken)
     {
         var travelers = await mediator.Send(new ListTravelersByBookingQuery(tenantContext.TenantId, id), cancellationToken);
@@ -122,6 +131,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpPut("{id:guid}/travelers/{travelerId:guid}")]
+    [RequirePermission(Permissions.Travel.BookingsWrite)]
     public async Task<IActionResult> UpdateTraveler(Guid id, Guid travelerId, [FromBody] UpdateTravelerRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(new UpdateTravelerCommand(
@@ -146,6 +156,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpDelete("{id:guid}/travelers/{travelerId:guid}")]
+    [RequirePermission(Permissions.Travel.BookingsWrite)]
     public async Task<IActionResult> DeleteTraveler(Guid id, Guid travelerId, CancellationToken cancellationToken)
     {
         await mediator.Send(new DeleteTravelerCommand(tenantContext.TenantId, id, travelerId), cancellationToken);
@@ -153,6 +164,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpPost("{id:guid}/items")]
+    [RequirePermission(Permissions.Travel.BookingsWrite)]
     public async Task<IActionResult> AddItem(Guid id, [FromBody] AddBookingItemRequest request, CancellationToken cancellationToken)
     {
         var itemId = await mediator.Send(new AddBookingItemCommand(
@@ -179,6 +191,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpGet("{id:guid}/items")]
+    [RequirePermission(Permissions.Travel.BookingsRead)]
     public async Task<IActionResult> ListItems(Guid id, CancellationToken cancellationToken)
     {
         var items = await mediator.Send(new ListBookingItemsQuery(tenantContext.TenantId, id), cancellationToken);
@@ -186,6 +199,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpPut("{id:guid}/items/{itemId:guid}")]
+    [RequirePermission(Permissions.Travel.BookingsWrite)]
     public async Task<IActionResult> UpdateItem(Guid id, Guid itemId, [FromBody] UpdateBookingItemRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(new UpdateBookingItemCommand(
@@ -212,6 +226,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpPatch("{id:guid}/items/{itemId:guid}/status")]
+    [RequirePermission(Permissions.Travel.BookingsWrite)]
     public async Task<IActionResult> UpdateItemStatus(Guid id, Guid itemId, [FromBody] UpdateBookingItemStatusRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(new UpdateBookingItemStatusCommand(tenantContext.TenantId, id, itemId, request.Status), cancellationToken);
@@ -219,6 +234,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpPost("{id:guid}/items/{itemId:guid}/request-confirmation")]
+    [RequirePermission(Permissions.Travel.BookingsWrite)]
     public async Task<IActionResult> RequestItemConfirmation(Guid id, Guid itemId, [FromBody] RequestBookingItemConfirmationRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(new RequestBookingItemConfirmationCommand(tenantContext.TenantId, id, itemId, request.ConfirmationDeadline, request.Notes), cancellationToken);
@@ -226,6 +242,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpPost("{id:guid}/items/{itemId:guid}/confirm")]
+    [RequirePermission(Permissions.Travel.BookingsWrite)]
     public async Task<IActionResult> ConfirmItem(Guid id, Guid itemId, [FromBody] ConfirmBookingItemRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(new ConfirmBookingItemCommand(tenantContext.TenantId, id, itemId, request.ConfirmationNumber, request.ConfirmedAt, request.Notes), cancellationToken);
@@ -233,6 +250,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpPost("{id:guid}/items/{itemId:guid}/issue")]
+    [RequirePermission(Permissions.Travel.BookingsWrite)]
     public async Task<IActionResult> IssueItem(Guid id, Guid itemId, [FromBody] IssueBookingItemRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(new IssueBookingItemCommand(tenantContext.TenantId, id, itemId, request.VoucherNumber, request.IssuedAt, request.Notes), cancellationToken);
@@ -240,6 +258,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpDelete("{id:guid}/items/{itemId:guid}")]
+    [RequirePermission(Permissions.Travel.BookingsWrite)]
     public async Task<IActionResult> DeleteItem(Guid id, Guid itemId, CancellationToken cancellationToken)
     {
         await mediator.Send(new DeleteBookingItemCommand(tenantContext.TenantId, id, itemId), cancellationToken);
@@ -247,6 +266,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpPost("{id:guid}/documents")]
+    [RequirePermission(Permissions.Travel.BookingsWrite)]
     [RequestSizeLimit(10 * 1024 * 1024)]
     public async Task<IActionResult> UploadDocument(Guid id, [FromForm] UploadBookingDocumentRequest request, CancellationToken cancellationToken)
     {
@@ -272,6 +292,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpGet("{id:guid}/documents")]
+    [RequirePermission(Permissions.Travel.BookingsRead)]
     public async Task<IActionResult> ListDocuments(Guid id, CancellationToken cancellationToken)
     {
         var documents = await mediator.Send(new ListBookingDocumentsQuery(tenantContext.TenantId, id), cancellationToken);
@@ -279,6 +300,7 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     }
 
     [HttpDelete("{id:guid}/documents/{documentId:guid}")]
+    [RequirePermission(Permissions.Travel.BookingsWrite)]
     public async Task<IActionResult> DeleteDocument(Guid id, Guid documentId, CancellationToken cancellationToken)
     {
         await mediator.Send(new DeleteBookingDocumentCommand(tenantContext.TenantId, id, documentId), cancellationToken);
