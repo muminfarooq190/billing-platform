@@ -7,4 +7,5 @@ public sealed record UpdateItineraryRequest(
     DateTimeOffset EndDate,
     int Travellers,
     string Currency,
-    string? Action);
+    string? Action,
+    IReadOnlyList<ItineraryItemRequest>? Items);

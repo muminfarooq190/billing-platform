@@ -5,6 +5,7 @@ namespace TravelService.Application.Queries.GetPublicQuotationByToken;
 public sealed record GetPublicQuotationByTokenQuery(string Token) : IRequest<PublicQuotationReadModel?>;
 
 public sealed record PublicQuotationReadModel(
+    Guid TenantId,
     Guid QuotationId,
     Guid RevisionId,
     string CustomerName,

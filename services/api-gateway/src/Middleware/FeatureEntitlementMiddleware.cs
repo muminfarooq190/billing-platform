@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text.RegularExpressions;
 using ApiGateway.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -48,14 +49,29 @@ public sealed class FeatureEntitlementMiddleware(RequestDelegate next, IHttpClie
         {
             if (!string.Equals(route.Method, method, StringComparison.OrdinalIgnoreCase))
                 continue;
-            if (string.IsNullOrWhiteSpace(route.PathPrefix) || string.IsNullOrWhiteSpace(route.FeatureKey))
+            if (string.IsNullOrWhiteSpace(route.FeatureKey))
                 continue;
 
-            if (value.StartsWith(route.PathPrefix, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(route.PathPattern) && PathPatternMatches(route.PathPattern, value))
+                return route.FeatureKey;
+
+            if (!string.IsNullOrWhiteSpace(route.PathPrefix) && value.StartsWith(route.PathPrefix, StringComparison.OrdinalIgnoreCase))
                 return route.FeatureKey;
         }
 
         return null;
+    }
+
+    private static bool PathPatternMatches(string pattern, string path)
+    {
+        if (string.IsNullOrWhiteSpace(pattern))
+            return false;
+
+        var regexPattern = Regex.Replace(pattern.Trim(), "\\{[^/]+\\}", "[^/]+")
+            .Replace("**catch-all", ".*");
+
+        regexPattern = $"^{regexPattern}$";
+        return Regex.IsMatch(path, regexPattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     }
 
     private async Task<IReadOnlyList<FeatureEntitlementDto>> GetEntitlementsAsync(Guid tenantId, CancellationToken cancellationToken)

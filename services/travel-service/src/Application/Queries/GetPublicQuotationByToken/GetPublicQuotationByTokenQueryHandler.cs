@@ -14,7 +14,8 @@ public sealed class GetPublicQuotationByTokenQueryHandler(
         var db = (System.Data.IDbConnection)connection!;
 
         const string quotationSql = @"
-SELECT q.id AS QuotationId,
+SELECT q.tenant_id AS TenantId,
+       q.id AS QuotationId,
        r.id AS RevisionId,
        r.customer_name AS CustomerName,
        r.title AS Title,
@@ -87,6 +88,7 @@ ORDER BY sort_order, created_at;";
         }
 
         return new PublicQuotationReadModel(
+            Guid.Parse(quotation.TenantId),
             Guid.Parse(quotation.QuotationId),
             Guid.Parse(quotation.RevisionId),
             quotation.CustomerName,
@@ -107,6 +109,7 @@ ORDER BY sort_order, created_at;";
 
     private sealed class PublicQuotationFlatRow
     {
+        public string TenantId { get; init; } = string.Empty;
         public string QuotationId { get; init; } = string.Empty;
         public string RevisionId { get; init; } = string.Empty;
         public string CustomerName { get; init; } = string.Empty;

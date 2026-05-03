@@ -125,6 +125,19 @@ public sealed class Itinerary : AggregateRoot
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
+    public void ReplaceItems(IEnumerable<(int DayNumber, ItineraryItemType ItemType, string Title, string Description, string Location, DateTimeOffset? StartTime, DateTimeOffset? EndTime, decimal Cost, string Currency)> items)
+    {
+        if (Status != ItineraryStatus.Draft)
+            throw new DomainException("Can only modify itinerary items while the itinerary is in draft.");
+
+        _items.Clear();
+        foreach (var item in items.OrderBy(x => x.DayNumber).ThenBy(x => x.StartTime))
+        {
+            AddItem(item.DayNumber, item.ItemType, item.Title, item.Description, item.Location, item.StartTime, item.EndTime, item.Cost, item.Currency);
+        }
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
     private static void ValidateIdentity(Guid tenantId, Guid customerContactId)
     {
         if (tenantId == Guid.Empty)

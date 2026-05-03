@@ -1,4 +1,5 @@
 using TravelService.Application.Abstractions;
+using TravelService.Domain.Enums;
 using TravelService.Domain.Exceptions;
 using TravelService.Domain.Repositories;
 using MediatR;
@@ -20,6 +21,20 @@ public sealed class UpdateItineraryCommandHandler(IItineraryRepository itinerary
             case "cancel": itinerary.Cancel(); break;
             default:
                 itinerary.Update(request.Title, request.Destination, request.StartDate, request.EndDate, request.Travellers, request.Currency);
+                if (request.Items is not null)
+                {
+                    itinerary.ReplaceItems(request.Items.Select(item => (
+                        item.DayNumber,
+                        Enum.TryParse<ItineraryItemType>(item.ItemType, true, out var itemType) ? itemType : ItineraryItemType.Activity,
+                        item.Title,
+                        item.Description ?? string.Empty,
+                        item.Location ?? string.Empty,
+                        item.StartTime,
+                        item.EndTime,
+                        item.Cost,
+                        item.Currency
+                    )).ToList());
+                }
                 break;
         }
 

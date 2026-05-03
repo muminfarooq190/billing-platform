@@ -2,6 +2,8 @@ using MediatR;
 
 namespace TravelService.Application.Commands.UpdateItinerary;
 
+using TravelService.Api.Contracts;
+
 public sealed record UpdateItineraryCommand(
     Guid Id,
     string Title,
@@ -10,4 +12,5 @@ public sealed record UpdateItineraryCommand(
     DateTimeOffset EndDate,
     int Travellers,
     string Currency,
-    string? Action) : IRequest;
+    string? Action,
+    IReadOnlyList<ItineraryItemRequest>? Items) : IRequest;

@@ -9,5 +9,6 @@ public sealed class FeatureRoutePolicy
 {
     public string Method { get; init; } = string.Empty;
     public string PathPrefix { get; init; } = string.Empty;
+    public string PathPattern { get; init; } = string.Empty;
     public string FeatureKey { get; init; } = string.Empty;
 }

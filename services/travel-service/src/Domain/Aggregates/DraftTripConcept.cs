@@ -108,6 +108,50 @@ public sealed class DraftTripConcept : AggregateRoot
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
+    public void Update(
+        string title,
+        string destination,
+        string? summary,
+        DateTimeOffset? startDate,
+        DateTimeOffset? endDate,
+        int? travellers,
+        string? currency,
+        decimal? budgetAmount,
+        string? optionLabel,
+        string? notes,
+        IReadOnlyCollection<(int DayNumber, string Title, string? Description, string? Location, string? OvernightLocation)> days)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            throw new DomainException("Concept title is required.");
+        if (string.IsNullOrWhiteSpace(destination))
+            throw new DomainException("Concept destination is required.");
+        if (startDate.HasValue && endDate.HasValue && endDate.Value < startDate.Value)
+            throw new DomainException("Concept end date must be on or after start date.");
+        if (travellers.HasValue && travellers.Value <= 0)
+            throw new DomainException("Travellers must be greater than zero when provided.");
+        if (budgetAmount.HasValue && budgetAmount.Value < 0)
+            throw new DomainException("Budget amount cannot be negative.");
+
+        Title = title.Trim();
+        Destination = destination.Trim();
+        Summary = Normalize(summary);
+        StartDate = startDate;
+        EndDate = endDate;
+        Travellers = travellers;
+        Currency = NormalizeCurrency(currency);
+        BudgetAmount = budgetAmount;
+        OptionLabel = Normalize(optionLabel);
+        Notes = Normalize(notes);
+
+        _days.Clear();
+        foreach (var day in days.OrderBy(x => x.DayNumber))
+        {
+            AddDay(day.DayNumber, day.Title, day.Description, day.Location, day.OvernightLocation);
+        }
+
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
     public void MarkPrimary()
     {
         if (ConceptStatus == DraftTripConceptStatus.Archived)

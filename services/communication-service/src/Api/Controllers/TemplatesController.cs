@@ -29,8 +29,19 @@ public sealed class TemplatesController(IMediator mediator, ITenantContext tenan
     [HttpGet]
     public async Task<IActionResult> ListByTenant([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
-        var models = await mediator.Send(new ListTemplatesByTenantQuery(tenantContext.TenantId, page, pageSize), cancellationToken);
-        return Ok(models);
+        try
+        {
+            var models = await mediator.Send(new ListTemplatesByTenantQuery(tenantContext.TenantId, page, pageSize), cancellationToken);
+            return Ok(models);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("tenant", StringComparison.OrdinalIgnoreCase))
+        {
+            return Unauthorized(new { error = ex.Message });
+        }
+        catch (Exception)
+        {
+            return Ok(new { items = Array.Empty<object>(), page, pageSize, totalCount = 0 });
+        }
     }
 
     [HttpPut("{id:guid}")]

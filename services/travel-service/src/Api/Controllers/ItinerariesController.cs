@@ -15,6 +15,7 @@ public sealed class ItinerariesController(IMediator mediator, ITenantContext ten
 {
     [Obsolete("Direct itinerary creation is legacy. Prefer POST /travel/bookings/{id}/itinerary so confirmed itinerary belongs to booking lifecycle.")]
     [HttpPost]
+    [RequirePermission(Permissions.Travel.ItinerariesWrite)]
     public async Task<IActionResult> Create([FromBody] CreateItineraryRequest request, CancellationToken cancellationToken)
     {
         var items = request.Items.Select(x => new ItineraryItemDto(x.DayNumber, x.ItemType, x.Title, x.Description, x.Location, x.StartTime, x.EndTime, x.Cost, x.Currency)).ToList();
@@ -26,6 +27,7 @@ public sealed class ItinerariesController(IMediator mediator, ITenantContext ten
     }
 
     [HttpGet("{id:guid}")]
+    [RequirePermission(Permissions.Travel.ItinerariesRead)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var model = await mediator.Send(new GetItineraryByIdQuery(id), cancellationToken);
@@ -33,6 +35,7 @@ public sealed class ItinerariesController(IMediator mediator, ITenantContext ten
     }
 
     [HttpGet]
+    [RequirePermission(Permissions.Travel.ItinerariesRead)]
     public async Task<IActionResult> ListByTenant(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
@@ -50,9 +53,10 @@ public sealed class ItinerariesController(IMediator mediator, ITenantContext ten
     }
 
     [HttpPut("{id:guid}")]
+    [RequirePermission(Permissions.Travel.ItinerariesWrite)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateItineraryRequest request, CancellationToken cancellationToken)
     {
-        await mediator.Send(new UpdateItineraryCommand(id, request.Title, request.Destination, request.StartDate, request.EndDate, request.Travellers, request.Currency, request.Action), cancellationToken);
+        await mediator.Send(new UpdateItineraryCommand(id, request.Title, request.Destination, request.StartDate, request.EndDate, request.Travellers, request.Currency, request.Action, request.Items), cancellationToken);
         return NoContent();
     }
 }

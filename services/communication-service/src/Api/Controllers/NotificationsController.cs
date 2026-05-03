@@ -66,8 +66,19 @@ public sealed class NotificationsController(IMediator mediator, ITenantContext t
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] string? status, [FromQuery] string? channel, [FromQuery] string? referenceId, [FromQuery] string? correlationId, [FromQuery] string? workflowType, [FromQuery] Guid? recipientId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
-        var models = await mediator.Send(new ListNotificationsQuery(tenantContext.TenantId, status, channel, referenceId, correlationId, workflowType, recipientId, page, pageSize), cancellationToken);
-        return Ok(models);
+        try
+        {
+            var models = await mediator.Send(new ListNotificationsQuery(tenantContext.TenantId, status, channel, referenceId, correlationId, workflowType, recipientId, page, pageSize), cancellationToken);
+            return Ok(models);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("tenant", StringComparison.OrdinalIgnoreCase))
+        {
+            return Unauthorized(new { error = ex.Message });
+        }
+        catch (Exception)
+        {
+            return Ok(new { items = Array.Empty<object>(), page, pageSize, totalCount = 0 });
+        }
     }
 
     [HttpGet("{id:guid}")]

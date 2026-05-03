@@ -51,6 +51,34 @@ public sealed class FeatureEntitlementMiddlewareTests
     }
 
     [Fact]
+    public void MatchFeature_ShouldPreferPathPattern_WhenConfigured()
+    {
+        var routes = new[]
+        {
+            new ApiGateway.Configuration.FeatureRoutePolicy { Method = "POST", PathPattern = "/api/travel/quotations/{id}/send", FeatureKey = "travel.quotation.send" },
+            new ApiGateway.Configuration.FeatureRoutePolicy { Method = "POST", PathPattern = "/api/travel/quotations/{id}/revisions", FeatureKey = "travel.quotation.write" },
+            new ApiGateway.Configuration.FeatureRoutePolicy { Method = "POST", PathPattern = "/api/travel/bookings/{id}/documents", FeatureKey = "travel.booking.documents.upload" },
+            new ApiGateway.Configuration.FeatureRoutePolicy { Method = "POST", PathPattern = "/api/travel/inquiries/{id}/assign", FeatureKey = "travel.inquiries.write" },
+            new ApiGateway.Configuration.FeatureRoutePolicy { Method = "PATCH", PathPattern = "/api/travel/bookings/{id}/items/{itemId}/status", FeatureKey = "travel.bookings.write" },
+            new ApiGateway.Configuration.FeatureRoutePolicy { Method = "PUT", PathPattern = "/api/travel/itineraries/{id}", FeatureKey = "travel.itineraries.write" }
+        };
+
+        var sendResult = FeatureEntitlementMiddleware.MatchFeature(routes, "POST", new PathString("/api/travel/quotations/123/send"));
+        var revisionResult = FeatureEntitlementMiddleware.MatchFeature(routes, "POST", new PathString("/api/travel/quotations/123/revisions"));
+        var docsResult = FeatureEntitlementMiddleware.MatchFeature(routes, "POST", new PathString("/api/travel/bookings/123/documents"));
+        var assignResult = FeatureEntitlementMiddleware.MatchFeature(routes, "POST", new PathString("/api/travel/inquiries/123/assign"));
+        var itemStatusResult = FeatureEntitlementMiddleware.MatchFeature(routes, "PATCH", new PathString("/api/travel/bookings/123/items/456/status"));
+        var itineraryUpdateResult = FeatureEntitlementMiddleware.MatchFeature(routes, "PUT", new PathString("/api/travel/itineraries/123"));
+
+        Assert.Equal("travel.quotation.send", sendResult);
+        Assert.Equal("travel.quotation.write", revisionResult);
+        Assert.Equal("travel.booking.documents.upload", docsResult);
+        Assert.Equal("travel.inquiries.write", assignResult);
+        Assert.Equal("travel.bookings.write", itemStatusResult);
+        Assert.Equal("travel.itineraries.write", itineraryUpdateResult);
+    }
+
+    [Fact]
     public void MatchFeature_ShouldIgnoreBrokenConfigEntries()
     {
         var routes = new[]

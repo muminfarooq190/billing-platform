@@ -73,6 +73,10 @@ public sealed class Program
         {
             client.BaseAddress = new Uri(builder.Configuration["COMMUNICATION_SERVICE_URL"] ?? "http://localhost:8080/");
         });
+        builder.Services.AddHttpClient<IPublicBrandingClient, PublicBrandingClient>(client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["IDENTITY_SERVICE_URL"] ?? "http://localhost:5090/");
+        });
         builder.Services.AddScoped<IFeatureGate, CachedFeatureGate>();
 
         builder.Services.AddStackExchangeRedisCache(options => options.Configuration = builder.Configuration["REDIS_URL"] ?? "redis:6379");

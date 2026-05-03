@@ -142,6 +142,30 @@ public sealed class InquiriesController(IMediator mediator, ITenantContext tenan
         return Created($"/travel/inquiries/{id}/concepts/{conceptId}", new { conceptId });
     }
 
+    [HttpPut("{id:guid}/concepts/{conceptId:guid}")]
+    [RequirePermission(Permissions.Travel.InquiriesWrite)]
+    public async Task<IActionResult> UpdateConcept(Guid id, Guid conceptId, [FromBody] UpdateDraftTripConceptRequest request, CancellationToken cancellationToken)
+    {
+        var days = request.Days?.Select(x => new UpdateDraftTripConceptDayDto(x.DayNumber, x.Title, x.Description, x.Location, x.OvernightLocation)).ToList()
+                   ?? [];
+        await mediator.Send(new UpdateDraftTripConceptCommand(
+            tenantContext.TenantId,
+            id,
+            conceptId,
+            request.Title,
+            request.Destination,
+            request.Summary,
+            request.StartDate,
+            request.EndDate,
+            request.Travellers,
+            request.Currency,
+            request.BudgetAmount,
+            request.OptionLabel,
+            request.Notes,
+            days), cancellationToken);
+        return NoContent();
+    }
+
     [HttpPost("{id:guid}/concepts/{conceptId:guid}/mark-primary")]
     [RequirePermission(Permissions.Travel.InquiriesWrite)]
     public async Task<IActionResult> MarkPrimaryConcept(Guid id, Guid conceptId, CancellationToken cancellationToken)
