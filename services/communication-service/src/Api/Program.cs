@@ -6,6 +6,7 @@ using CommunicationService.Infrastructure.Branding;
 using CommunicationService.Infrastructure.Caching;
 using CommunicationService.Infrastructure.Channels;
 using CommunicationService.Infrastructure.Entitlements;
+using CommunicationService.Infrastructure.Identity;
 using CommunicationService.Infrastructure.Persistence;
 using CommunicationService.Infrastructure.Persistence.Outbox;
 using CommunicationService.Infrastructure.Persistence.Repositories;
@@ -123,6 +124,7 @@ public sealed class Program
         builder.Services.AddHostedService<OutboxPublisherService>();
         builder.Services.AddHostedService<NotificationDispatcherService>();
         builder.Services.AddHostedService<BillingEventRelayService>();
+        builder.Services.AddHostedService<PasswordResetRequestedConsumerService>();
         builder.Services.AddHealthChecks();
 
         ConfigureAuth(builder);
