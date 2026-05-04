@@ -30,11 +30,18 @@ public sealed class ListBookingsQueryHandler(IReadDbConnectionFactory connection
                       b.travellers_count AS TravellersCount,
                       b.currency,
                       b.total_sell_amount AS TotalSellAmount,
+                      0::numeric AS TotalPaidAmount,
+                      b.total_sell_amount AS TotalOutstandingAmount,
                       b.total_cost_amount AS TotalCostAmount,
                       b.margin_amount AS MarginAmount,
                       b.assigned_to_user_id AS AssignedToUserId,
                       b.customer_reference AS CustomerReference,
                       b.internal_notes AS InternalNotes,
+                      c.first_name || CASE WHEN c.last_name IS NOT NULL AND c.last_name <> '' THEN ' ' || c.last_name ELSE '' END AS CustomerName,
+                      b.travellers_count AS TravelersRequired,
+                      COALESCE(t.complete_count, 0) AS TravelersComplete,
+                      b.travellers_count AS DocumentsRequired,
+                      COALESCE(d.uploaded_count, 0) AS DocumentsUploaded,
                       i.id AS ItineraryId,
                       CASE WHEN i.id IS NOT NULL THEN TRUE ELSE FALSE END AS HasItinerary,
                       i.status AS ItineraryStatus,
@@ -43,6 +50,21 @@ public sealed class ListBookingsQueryHandler(IReadDbConnectionFactory connection
                       b.updated_at AS UpdatedAt,
                       b.cancelled_at AS CancelledAt
                FROM bookings b
+               LEFT JOIN contacts c ON c.id = b.primary_contact_id AND c.deleted_at IS NULL
+               LEFT JOIN LATERAL (
+                    SELECT COUNT(*)::int AS uploaded_count
+                    FROM booking_documents bd
+                    WHERE bd.booking_id = b.id AND bd.deleted_at IS NULL
+               ) d ON TRUE
+               LEFT JOIN LATERAL (
+                    SELECT COUNT(*) FILTER (
+                        WHERE t.passport_number IS NOT NULL
+                          AND t.passport_expiry IS NOT NULL
+                          AND t.nationality IS NOT NULL
+                    )::int AS complete_count
+                    FROM travelers t
+                    WHERE t.booking_id = b.id AND t.deleted_at IS NULL
+               ) t ON TRUE
                LEFT JOIN LATERAL (
                     SELECT id, status, updated_at
                     FROM itineraries

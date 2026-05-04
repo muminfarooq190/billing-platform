@@ -20,11 +20,18 @@ public sealed class BookingReadModel
     public int TravellersCount { get; init; }
     public string Currency { get; init; } = string.Empty;
     public decimal TotalSellAmount { get; init; }
+    public decimal? TotalPaidAmount { get; init; }
+    public decimal? TotalOutstandingAmount { get; init; }
     public decimal? TotalCostAmount { get; init; }
     public decimal? MarginAmount { get; init; }
     public Guid? AssignedToUserId { get; init; }
     public string? CustomerReference { get; init; }
     public string? InternalNotes { get; init; }
+    public string? CustomerName { get; init; }
+    public int DocumentsRequired { get; init; }
+    public int DocumentsUploaded { get; init; }
+    public int TravelersRequired { get; init; }
+    public int TravelersComplete { get; init; }
     public Guid? ItineraryId { get; init; }
     public bool HasItinerary { get; init; }
     public string? ItineraryStatus { get; init; }
