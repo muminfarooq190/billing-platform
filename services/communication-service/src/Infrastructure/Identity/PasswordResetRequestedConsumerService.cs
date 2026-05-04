@@ -1,7 +1,7 @@
 using System.Text;
 using System.Text.Json;
-using CommunicationService.Application.Commands.SendNotification;
-using MediatR;
+using CommunicationService.Application.Abstractions;
+using CommunicationService.Domain.Enums;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -35,7 +35,7 @@ public sealed class PasswordResetRequestedConsumerService(
                     {
                         var payload = Encoding.UTF8.GetString(args.Body.ToArray());
                         using var scope = scopeFactory.CreateScope();
-                        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+                        var dispatchers = scope.ServiceProvider.GetServices<IChannelDispatcher>().ToDictionary(d => d.Channel, d => d);
                         var model = JsonSerializer.Deserialize<PasswordResetRequestedMessage>(payload, JsonOptions);
                         if (model is null)
                         {
@@ -43,34 +43,23 @@ public sealed class PasswordResetRequestedConsumerService(
                             return;
                         }
 
-                        var portalBaseUrl = (configuration["PORTAL_BASE_URL"] ?? configuration["NEXT_PUBLIC_PORTAL_URL"] ?? "http://localhost:3000").TrimEnd('/');
-                        var resetUrl = $"{portalBaseUrl}/reset-password?email={Uri.EscapeDataString(model.Email)}&token={Uri.EscapeDataString(model.Token)}";
-                        var placeholders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                        if (!dispatchers.TryGetValue(ChannelType.Email, out var emailDispatcher))
                         {
-                            ["ResetUrl"] = resetUrl,
-                            ["ResetToken"] = model.Token,
-                            ["UserEmail"] = model.Email,
-                            ["SupportEmail"] = "support@voyara.local"
-                        };
+                            throw new InvalidOperationException("Email dispatcher is not registered.");
+                        }
 
-                        var command = new SendNotificationCommand(
-                            model.TenantId,
-                            Guid.NewGuid(),
-                            "Admin",
-                            "Email",
-                            null,
-                            "Reset your password",
-                            $"We received a request to reset your password.\n\nReset your password: {resetUrl}\n\nIf you did not request this, you can ignore this email.",
-                            "High",
-                            model.UserId.ToString(),
-                            model.EventId.ToString(),
-                            $"password-reset:{model.EventId}",
-                            "identity.password-reset",
-                            "[]",
-                            "{}",
-                            placeholders);
+                        var portalBaseUrl = (configuration["PORTAL_BASE_URL"] ?? configuration["NEXT_PUBLIC_PORTAL_URL"] ?? "http://localhost:3000").TrimEnd('/');
+                        var supportEmail = configuration["EMAIL_DEFAULT_FROM_EMAIL"] ?? "support@voyara.local";
+                        var resetUrl = $"{portalBaseUrl}/reset-password?email={Uri.EscapeDataString(model.Email)}&token={Uri.EscapeDataString(model.Token)}";
+                        var subject = "Reset your password";
+                        var body = $"We received a request to reset your password.\n\nReset your password: {resetUrl}\n\nIf you did not request this, you can ignore this email or contact {supportEmail}.";
 
-                        mediator.Send(command, stoppingToken).GetAwaiter().GetResult();
+                        var result = emailDispatcher.SendAsync(model.Email, subject, body, stoppingToken).GetAwaiter().GetResult();
+                        if (!result.Success)
+                        {
+                            throw new InvalidOperationException(result.ErrorMessage ?? "Password reset email dispatch failed.");
+                        }
+
                         channel.BasicAck(args.DeliveryTag, false);
                     }
                     catch (Exception ex)
