@@ -20,6 +20,7 @@ public sealed class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
         builder.Property(x => x.Id).HasColumnName("Id");
         builder.Property(x => x.SubscriptionId).HasColumnName("SubscriptionId");
         builder.Property(x => x.TenantId).HasColumnName("TenantId");
+        builder.Property(x => x.InvoiceNumber).HasColumnName("invoice_number").HasMaxLength(40);
         builder.Property(x => x.Subtotal).HasConversion(moneyConverter).HasColumnName("subtotal");
         builder.Property(x => x.TaxAmount).HasConversion(moneyConverter).HasColumnName("tax_amount");
         builder.Property(x => x.Total).HasConversion(moneyConverter).HasColumnName("total");

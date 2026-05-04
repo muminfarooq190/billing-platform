@@ -16,7 +16,9 @@ public sealed class Subscription : AggregateRoot
         BillingCycle = billingCycle;
         Status = SubscriptionStatus.Active;
         StartDate = DateTimeOffset.UtcNow;
-        NextBillingDate = billingCycle == BillingCycle.Monthly ? StartDate.AddMonths(1) : StartDate.AddYears(1);
+        CurrentPeriodStart = StartDate;
+        CurrentPeriodEnd = billingCycle == BillingCycle.Monthly ? StartDate.AddMonths(1) : StartDate.AddYears(1);
+        NextBillingDate = CurrentPeriodEnd;
         CreatedAt = DateTimeOffset.UtcNow;
         UpdatedAt = DateTimeOffset.UtcNow;
         AddDomainEvent(new SubscriptionCreatedEvent(Id, TenantId));
@@ -28,6 +30,8 @@ public sealed class Subscription : AggregateRoot
     public BillingCycle BillingCycle { get; private set; }
     public SubscriptionStatus Status { get; private set; }
     public DateTimeOffset StartDate { get; private set; }
+    public DateTimeOffset CurrentPeriodStart { get; private set; }
+    public DateTimeOffset CurrentPeriodEnd { get; private set; }
     public DateTimeOffset NextBillingDate { get; private set; }
     public DateTimeOffset? CancelledAt { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
@@ -47,7 +51,9 @@ public sealed class Subscription : AggregateRoot
 
     public void RenewNextCycle()
     {
-        NextBillingDate = BillingCycle == BillingCycle.Monthly ? NextBillingDate.AddMonths(1) : NextBillingDate.AddYears(1);
+        CurrentPeriodStart = CurrentPeriodEnd;
+        CurrentPeriodEnd = BillingCycle == BillingCycle.Monthly ? CurrentPeriodEnd.AddMonths(1) : CurrentPeriodEnd.AddYears(1);
+        NextBillingDate = CurrentPeriodEnd;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 }
