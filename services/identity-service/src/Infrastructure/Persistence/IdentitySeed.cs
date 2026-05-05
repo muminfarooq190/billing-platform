@@ -8,39 +8,123 @@ public static class IdentitySeed
 {
     public static async Task SeedDefaultsAsync(IdentityDbContext dbContext, CancellationToken cancellationToken)
     {
-        if (!await dbContext.PermissionDefinitions.AnyAsync(cancellationToken))
+        var permissionDefinitions = new (string Key, string Category, string Description)[]
         {
-            var permissions = new[]
-            {
-                PermissionDefinition.Create(Permissions.Identity.UsersManage, "identity", "Manage users and lifecycle."),
-                PermissionDefinition.Create(Permissions.Identity.RolesManage, "identity", "Manage role definitions and assignments."),
-                PermissionDefinition.Create(Permissions.Identity.AuditRead, "identity", "Read identity audit and security events."),
-                PermissionDefinition.Create(Permissions.Identity.SettingsRead, "identity", "Read tenant settings."),
-                PermissionDefinition.Create(Permissions.Identity.SettingsManage, "identity", "Manage tenant settings."),
-                PermissionDefinition.Create(Permissions.Identity.TenantManage, "identity", "Manage tenant profile, plan and suspension controls."),
-                PermissionDefinition.Create(Permissions.Branding.ThemeRead, "branding", "Read tenant branding and theme details."),
-                PermissionDefinition.Create(Permissions.Branding.ThemeManage, "branding", "Manage tenant branding and template themes."),
-                PermissionDefinition.Create(Permissions.Travel.QuotationRead, "travel", "Read quotations."),
-                PermissionDefinition.Create(Permissions.Travel.QuotationWrite, "travel", "Create and update quotations."),
-                PermissionDefinition.Create(Permissions.Billing.InvoicesRead, "billing", "Read invoices and billing summaries."),
-                PermissionDefinition.Create(Permissions.Communication.LogsRead, "communication", "Read notification logs and communication activity."),
-                PermissionDefinition.Create(Permissions.Communication.NotificationSend, "communication", "Send notifications across supported channels."),
-                PermissionDefinition.Create(Permissions.Communication.TemplatesManage, "communication", "Manage communication templates.")
-            };
-            dbContext.PermissionDefinitions.AddRange(permissions);
+            (Permissions.Identity.UsersManage, "identity", "Manage users and lifecycle."),
+            (Permissions.Identity.RolesManage, "identity", "Manage role definitions and assignments."),
+            (Permissions.Identity.AuditRead, "identity", "Read identity audit and security events."),
+            (Permissions.Identity.SettingsRead, "identity", "Read tenant settings."),
+            (Permissions.Identity.SettingsManage, "identity", "Manage tenant settings."),
+            (Permissions.Identity.TenantManage, "identity", "Manage tenant profile, plan and suspension controls."),
+            (Permissions.Branding.ThemeRead, "branding", "Read tenant branding and theme details."),
+            (Permissions.Branding.ThemeManage, "branding", "Manage tenant branding and template themes."),
+            (Permissions.Travel.QuotationRead, "travel", "Read quotations."),
+            (Permissions.Travel.QuotationWrite, "travel", "Create and update quotations."),
+            (Permissions.Billing.InvoicesRead, "billing", "Read invoices and billing summaries."),
+            (Permissions.Communication.LogsRead, "communication", "Read notification logs and communication activity."),
+            (Permissions.Communication.NotificationSend, "communication", "Send notifications across supported channels."),
+            (Permissions.Communication.TemplatesManage, "communication", "Manage communication templates."),
+        };
+
+        var existingPermissionKeys = await dbContext.PermissionDefinitions
+            .AsNoTracking()
+            .Select(x => x.Key)
+            .ToListAsync(cancellationToken);
+
+        var missingPermissions = permissionDefinitions
+            .Where(def => !existingPermissionKeys.Contains(def.Key, StringComparer.OrdinalIgnoreCase))
+            .Select(def => PermissionDefinition.Create(def.Key, def.Category, def.Description))
+            .ToList();
+
+        if (missingPermissions.Count > 0)
+        {
+            dbContext.PermissionDefinitions.AddRange(missingPermissions);
         }
 
-        if (!await dbContext.RoleDefinitions.AnyAsync(x => x.TenantId == null, cancellationToken))
-        {
-            var owner = RoleDefinition.Create(null, "Owner", "System owner role.", true);
-            owner.SetPermissions(new[] { Permissions.Identity.UsersManage, Permissions.Identity.RolesManage, Permissions.Identity.AuditRead, Permissions.Identity.SettingsRead, Permissions.Identity.SettingsManage, Permissions.Identity.TenantManage, Permissions.Branding.ThemeRead, Permissions.Branding.ThemeManage, Permissions.Travel.QuotationRead, Permissions.Travel.QuotationWrite, Permissions.Billing.InvoicesRead, Permissions.Communication.LogsRead, Permissions.Communication.NotificationSend, Permissions.Communication.TemplatesManage });
-            var admin = RoleDefinition.Create(null, "Admin", "System admin role.", true);
-            admin.SetPermissions(new[] { Permissions.Identity.UsersManage, Permissions.Identity.AuditRead, Permissions.Identity.SettingsRead, Permissions.Identity.SettingsManage, Permissions.Identity.TenantManage, Permissions.Branding.ThemeRead, Permissions.Branding.ThemeManage, Permissions.Travel.QuotationRead, Permissions.Travel.QuotationWrite, Permissions.Billing.InvoicesRead, Permissions.Communication.LogsRead, Permissions.Communication.NotificationSend, Permissions.Communication.TemplatesManage });
-            var member = RoleDefinition.Create(null, "Member", "Standard member role.", true);
-            member.SetPermissions(new[] { Permissions.Identity.SettingsRead, Permissions.Branding.ThemeRead, Permissions.Travel.QuotationRead });
-            dbContext.RoleDefinitions.AddRange(owner, admin, member);
-        }
+        var systemRoles = await dbContext.RoleDefinitions
+            .Include(x => x.Permissions)
+            .Where(x => x.TenantId == null)
+            .ToListAsync(cancellationToken);
+
+        EnsureSystemRole(
+            systemRoles,
+            dbContext,
+            "Owner",
+            "System owner role.",
+            new[]
+            {
+                Permissions.Identity.UsersManage,
+                Permissions.Identity.RolesManage,
+                Permissions.Identity.AuditRead,
+                Permissions.Identity.SettingsRead,
+                Permissions.Identity.SettingsManage,
+                Permissions.Identity.TenantManage,
+                Permissions.Branding.ThemeRead,
+                Permissions.Branding.ThemeManage,
+                Permissions.Travel.QuotationRead,
+                Permissions.Travel.QuotationWrite,
+                Permissions.Billing.InvoicesRead,
+                Permissions.Communication.LogsRead,
+                Permissions.Communication.NotificationSend,
+                Permissions.Communication.TemplatesManage,
+            });
+
+        EnsureSystemRole(
+            systemRoles,
+            dbContext,
+            "Admin",
+            "System admin role.",
+            new[]
+            {
+                Permissions.Identity.UsersManage,
+                Permissions.Identity.AuditRead,
+                Permissions.Identity.SettingsRead,
+                Permissions.Identity.SettingsManage,
+                Permissions.Identity.TenantManage,
+                Permissions.Branding.ThemeRead,
+                Permissions.Branding.ThemeManage,
+                Permissions.Travel.QuotationRead,
+                Permissions.Travel.QuotationWrite,
+                Permissions.Billing.InvoicesRead,
+                Permissions.Communication.LogsRead,
+                Permissions.Communication.NotificationSend,
+                Permissions.Communication.TemplatesManage,
+            });
+
+        EnsureSystemRole(
+            systemRoles,
+            dbContext,
+            "Member",
+            "Standard member role.",
+            new[]
+            {
+                Permissions.Identity.SettingsRead,
+                Permissions.Branding.ThemeRead,
+                Permissions.Travel.QuotationRead,
+            });
 
         await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private static void EnsureSystemRole(
+        List<RoleDefinition> systemRoles,
+        IdentityDbContext dbContext,
+        string name,
+        string description,
+        IEnumerable<string> permissionKeys)
+    {
+        var normalizedName = name.Trim().ToUpperInvariant();
+        var existing = systemRoles.FirstOrDefault(x => x.NormalizedName == normalizedName);
+
+        if (existing is null)
+        {
+            var role = RoleDefinition.Create(null, name, description, true);
+            role.SetPermissions(permissionKeys);
+            dbContext.RoleDefinitions.Add(role);
+            systemRoles.Add(role);
+            return;
+        }
+
+        existing.SetPermissions(permissionKeys);
     }
 }
