@@ -81,52 +81,51 @@ public sealed class TenantBrandingController(IdentityDbContext dbContext, IBrand
             return BadRequest("Unsupported file type.");
         }
 
-        await using var stream = file.OpenReadStream();
+        if (file.Length > 10_000_000)
+        {
+            return BadRequest("File is too large.");
+        }
+
         var safeFileName = Path.GetFileName(file.FileName);
         var storageKey = $"tenant/{tenantId}/branding/{assetType.ToLowerInvariant()}/{Guid.NewGuid()}-{safeFileName}";
-        await storage.UploadAsync(storageKey, stream, file.ContentType, cancellationToken);
 
-        var asset = TenantBrandAsset.Create(
-            tenantId,
-            assetType,
-            storageKey,
-            safeFileName,
-            file.ContentType,
-            file.Length,
-            null,
-            null,
-            altText,
-            true);
+        await using var stream = file.OpenReadStream();
+        await storage.SaveAsync(storageKey, stream, cancellationToken);
 
+        var asset = TenantBrandAsset.Create(tenantId, assetType, storageKey, safeFileName, file.ContentType, file.Length, null, null, altText);
         dbContext.TenantBrandAssets.Add(asset);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Ok(new TenantBrandingAssetResponse(asset.Id, asset.AssetType, asset.StorageKey, asset.OriginalFileName, asset.ContentType, asset.SizeBytes, asset.Width, asset.Height, asset.AltText, asset.IsActive, asset.CreatedAt, asset.UpdatedAt));
     }
 
-    [HttpDelete("assets/{id:guid}")]
+    [HttpDelete("assets/{assetId:guid}")]
     [RequirePermission(Permissions.Branding.ThemeManage)]
-    public async Task<IActionResult> DeleteAsset(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> DeleteAsset(Guid assetId, CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();
         await featureGate.EnsureEnabledAsync(FeatureKeys.BrandingThemeManage, tenantId, tenantContext.UserId, cancellationToken);
-        var asset = await dbContext.TenantBrandAssets.FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Id == id, cancellationToken);
+        var asset = await dbContext.TenantBrandAssets.FirstOrDefaultAsync(x => x.Id == assetId && x.TenantId == tenantId, cancellationToken);
         if (asset is null)
         {
             return NotFound();
         }
 
-        asset.MarkDeleted();
+        asset.SoftDelete();
         await dbContext.SaveChangesAsync(cancellationToken);
         return NoContent();
     }
 
     private Guid ResolveTenantId()
     {
-        var raw = User.Claims.FirstOrDefault(x => x.Type == "tenantId" || x.Type == "tenant_id")?.Value
-            ?? Request.Headers["X-Tenant-Id"].FirstOrDefault()
-            ?? Request.Headers["x-tenant-id"].FirstOrDefault();
-        if (!Guid.TryParse(raw, out var tenantId)) throw new InvalidOperationException("Tenant context is missing.");
+        var raw = User.Claims.FirstOrDefault(x => x.Type == "tenantId")?.Value
+            ?? Request.Headers["X-Tenant-Id"].FirstOrDefault();
+
+        if (!Guid.TryParse(raw, out var tenantId))
+        {
+            throw new InvalidOperationException("Tenant context is missing.");
+        }
+
         return tenantId;
     }
 }
