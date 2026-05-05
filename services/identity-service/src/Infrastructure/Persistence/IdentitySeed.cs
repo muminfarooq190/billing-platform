@@ -39,15 +39,10 @@ public static class IdentitySeed
         if (missingPermissions.Count > 0)
         {
             dbContext.PermissionDefinitions.AddRange(missingPermissions);
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        var systemRoles = await dbContext.RoleDefinitions
-            .Include(x => x.Permissions)
-            .Where(x => x.TenantId == null)
-            .ToListAsync(cancellationToken);
-
-        EnsureSystemRole(
-            systemRoles,
+        await UpsertSystemRoleAsync(
             dbContext,
             "Owner",
             "System owner role.",
@@ -67,10 +62,10 @@ public static class IdentitySeed
                 Permissions.Communication.LogsRead,
                 Permissions.Communication.NotificationSend,
                 Permissions.Communication.TemplatesManage,
-            });
+            },
+            cancellationToken);
 
-        EnsureSystemRole(
-            systemRoles,
+        await UpsertSystemRoleAsync(
             dbContext,
             "Admin",
             "System admin role.",
@@ -89,10 +84,10 @@ public static class IdentitySeed
                 Permissions.Communication.LogsRead,
                 Permissions.Communication.NotificationSend,
                 Permissions.Communication.TemplatesManage,
-            });
+            },
+            cancellationToken);
 
-        EnsureSystemRole(
-            systemRoles,
+        await UpsertSystemRoleAsync(
             dbContext,
             "Member",
             "Standard member role.",
@@ -101,30 +96,33 @@ public static class IdentitySeed
                 Permissions.Identity.SettingsRead,
                 Permissions.Branding.ThemeRead,
                 Permissions.Travel.QuotationRead,
-            });
-
-        await dbContext.SaveChangesAsync(cancellationToken);
+            },
+            cancellationToken);
     }
 
-    private static void EnsureSystemRole(
-        List<RoleDefinition> systemRoles,
+    private static async Task UpsertSystemRoleAsync(
         IdentityDbContext dbContext,
         string name,
         string description,
-        IEnumerable<string> permissionKeys)
+        IEnumerable<string> permissionKeys,
+        CancellationToken cancellationToken)
     {
         var normalizedName = name.Trim().ToUpperInvariant();
-        var existing = systemRoles.FirstOrDefault(x => x.NormalizedName == normalizedName);
+        var role = await dbContext.RoleDefinitions
+            .Include(x => x.Permissions)
+            .FirstOrDefaultAsync(x => x.TenantId == null && x.NormalizedName == normalizedName, cancellationToken);
 
-        if (existing is null)
+        if (role is null)
         {
-            var role = RoleDefinition.Create(null, name, description, true);
+            role = RoleDefinition.Create(null, name, description, true);
             role.SetPermissions(permissionKeys);
             dbContext.RoleDefinitions.Add(role);
-            systemRoles.Add(role);
-            return;
+        }
+        else
+        {
+            role.SetPermissions(permissionKeys);
         }
 
-        existing.SetPermissions(permissionKeys);
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 }
