@@ -1,3 +1,4 @@
+using System.Linq;
 using IdentityService.Domain.Aggregates;
 using IdentityService.Infrastructure.Auth;
 using Microsoft.EntityFrameworkCore;
@@ -109,20 +110,31 @@ public static class IdentitySeed
     {
         var normalizedName = name.Trim().ToUpperInvariant();
         var role = await dbContext.RoleDefinitions
-            .Include(x => x.Permissions)
             .FirstOrDefaultAsync(x => x.TenantId == null && x.NormalizedName == normalizedName, cancellationToken);
 
         if (role is null)
         {
             role = RoleDefinition.Create(null, name, description, true);
-            role.SetPermissions(permissionKeys);
             dbContext.RoleDefinitions.Add(role);
-        }
-        else
-        {
-            role.SetPermissions(permissionKeys);
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
 
+        var existingAssignments = await dbContext.RolePermissionAssignments
+            .Where(x => x.RoleDefinitionId == role.Id)
+            .ToListAsync(cancellationToken);
+
+        if (existingAssignments.Count > 0)
+        {
+            dbContext.RolePermissionAssignments.RemoveRange(existingAssignments);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        var newAssignments = permissionKeys
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(permissionKey => RolePermissionAssignment.Create(role.Id, permissionKey))
+            .ToList();
+
+        dbContext.RolePermissionAssignments.AddRange(newAssignments);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 }
