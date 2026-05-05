@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using TravelService.Domain.Aggregates;
 using TravelService.Domain.Enums;
 
@@ -149,6 +150,11 @@ internal static class TravelTemplateSeedData
 
     public static async Task SeedAsync(TravelDbContext dbContext, CancellationToken cancellationToken)
     {
+        if (!await HasTableAsync(dbContext, "travel_templates", cancellationToken))
+        {
+            return;
+        }
+
         foreach (var record in BuiltIns)
         {
             var exists = await dbContext.TravelTemplates.AnyAsync(x => x.Id == record.Id, cancellationToken);
@@ -174,6 +180,26 @@ internal static class TravelTemplateSeedData
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task<bool> HasTableAsync(TravelDbContext dbContext, string tableName, CancellationToken cancellationToken)
+    {
+        await using var connection = (NpgsqlConnection)dbContext.Database.GetDbConnection();
+        if (connection.State != System.Data.ConnectionState.Open)
+        {
+            await connection.OpenAsync(cancellationToken);
+        }
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = @"
+            select 1
+            from information_schema.tables
+            where table_schema = 'public' and table_name = @tableName
+            limit 1;";
+        command.Parameters.AddWithValue("tableName", tableName);
+
+        var result = await command.ExecuteScalarAsync(cancellationToken);
+        return result is not null;
     }
 
     private static string SerializeSections(List<TemplateSectionSeed> sections)

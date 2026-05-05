@@ -2,6 +2,7 @@ using System.Text.Json;
 using BillingService.Domain.Aggregates;
 using BillingService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace BillingService.Infrastructure.Persistence;
 
@@ -9,10 +10,36 @@ public static class BillingSeed
 {
     public static async Task SeedFlexibleEntitlementsAsync(BillingDbContext dbContext, CancellationToken cancellationToken)
     {
+        if (!await HasColumnAsync(dbContext, "feature_catalog", "assignment_mode", cancellationToken))
+        {
+            return;
+        }
+
         await SeedFeatureCatalogAsync(dbContext, cancellationToken);
         await SeedPlanPackagesAsync(dbContext, cancellationToken);
         await BackfillTenantPlanAssignmentsAsync(dbContext, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task<bool> HasColumnAsync(BillingDbContext dbContext, string tableName, string columnName, CancellationToken cancellationToken)
+    {
+        await using var connection = (NpgsqlConnection)dbContext.Database.GetDbConnection();
+        if (connection.State != System.Data.ConnectionState.Open)
+        {
+            await connection.OpenAsync(cancellationToken);
+        }
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = @"
+            select 1
+            from information_schema.columns
+            where table_schema = 'public' and table_name = @tableName and column_name = @columnName
+            limit 1;";
+        command.Parameters.AddWithValue("tableName", tableName);
+        command.Parameters.AddWithValue("columnName", columnName);
+
+        var result = await command.ExecuteScalarAsync(cancellationToken);
+        return result is not null;
     }
 
     private static async Task SeedFeatureCatalogAsync(BillingDbContext dbContext, CancellationToken cancellationToken)
