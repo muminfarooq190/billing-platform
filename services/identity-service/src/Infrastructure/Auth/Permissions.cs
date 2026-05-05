@@ -7,12 +7,14 @@ public static class Permissions
         public const string UsersManage = "identity.users.manage";
         public const string RolesManage = "identity.roles.manage";
         public const string AuditRead = "identity.audit.read";
+        public const string SettingsRead = "identity.settings.read";
         public const string SettingsManage = "identity.settings.manage";
         public const string TenantManage = "identity.tenant.manage";
     }
 
     public static class Branding
     {
+        public const string ThemeRead = "branding.theme.read";
         public const string ThemeManage = "branding.theme.manage";
     }
 
@@ -40,8 +42,10 @@ public static class Permissions
         Identity.UsersManage,
         Identity.RolesManage,
         Identity.AuditRead,
+        Identity.SettingsRead,
         Identity.SettingsManage,
         Identity.TenantManage,
+        Branding.ThemeRead,
         Branding.ThemeManage,
         Travel.WorkflowHubRead,
         Travel.QuotationRead,

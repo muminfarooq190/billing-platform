@@ -125,3 +125,4 @@ public sealed class TenantBrandingController(IdentityDbContext dbContext, IBrand
         return tenantId;
     }
 }
+
