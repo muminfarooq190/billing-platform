@@ -4,7 +4,7 @@ namespace TravelService.Domain.Aggregates;
 
 public sealed class BookingDocument
 {
-    private static readonly HashSet<string> AllowedDocumentTypes = ["Voucher", "Ticket", "Confirmation", "Invoice", "Receipt", "PassportCopy", "Visa", "Insurance", "Other"];
+    private static readonly HashSet<string> AllowedDocumentTypes = ["Voucher", "Ticket", "Confirmation", "Invoice", "Receipt", "PassportCopy", "Visa", "Insurance", "Itinerary", "Other"];
 
     private BookingDocument() { }
 

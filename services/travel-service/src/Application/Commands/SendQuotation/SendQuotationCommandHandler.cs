@@ -1,6 +1,9 @@
 using System.Security.Cryptography;
 using MediatR;
+using TravelService.Api.Documents;
 using TravelService.Application.Abstractions;
+using TravelService.Application.Queries.GetQuotationRevisionById;
+using TravelService.Application.Queries.QuotationRevisions;
 using TravelService.Domain.Aggregates;
 using TravelService.Domain.Exceptions;
 using TravelService.Domain.Repositories;
@@ -13,6 +16,9 @@ public sealed class SendQuotationCommandHandler(
     IQuotationShareLinkRepository quotationShareLinkRepository,
     IQuotationStatusHistoryRepository quotationStatusHistoryRepository,
     IQuotationApprovalRequestRepository approvalRequestRepository,
+    IQuotationAttachmentRepository quotationAttachmentRepository,
+    IFileStorage fileStorage,
+    IPdfDocumentRenderer pdfDocumentRenderer,
     ICommunicationWorkflowClient communicationWorkflowClient,
     IFeatureGate featureGate,
     IActivityWriter activityWriter,
@@ -56,7 +62,27 @@ public sealed class SendQuotationCommandHandler(
         quotation.SetShareToken(token, request.ExpiresAt);
         quotation.Send();
 
+        var revisionReadModel = MapRevisionReadModel(quotation, revision);
+        var pdfBytes = pdfDocumentRenderer.RenderQuotationRevisionPdf(revisionReadModel);
+        var attachmentFileName = $"quotation-{revision.RevisionNumber}.pdf";
+        await using var pdfStream = new MemoryStream(pdfBytes);
+        var storageKey = await fileStorage.UploadAsync(pdfStream, $"quotations/{quotation.Id:D}/revisions/{revision.Id:D}/{attachmentFileName}", "application/pdf", cancellationToken);
+        var attachment = QuotationAttachment.Create(
+            quotation.Id,
+            revision.Id,
+            quotation.TenantId,
+            storageKey,
+            attachmentFileName,
+            "application/pdf",
+            pdfBytes.LongLength,
+            "Pdf",
+            $"Sent quotation PDF for revision {revision.RevisionNumber}",
+            true,
+            0,
+            actorContext.UserId == Guid.Empty ? null : actorContext.UserId);
+
         await quotationShareLinkRepository.AddAsync(shareLink, cancellationToken);
+        await quotationAttachmentRepository.AddAsync(attachment, cancellationToken);
         await quotationStatusHistoryRepository.AddAsync(
             QuotationStatusHistory.Create(quotation.Id, quotation.TenantId, previousStatus, quotation.Status.ToString(), request.Message),
             cancellationToken);
@@ -100,6 +126,35 @@ public sealed class SendQuotationCommandHandler(
 
         return new SendQuotationResult(shareLink.Id, token, shareLink.ExpiresAt, publicPath);
     }
+
+    private static QuotationRevisionReadModel MapRevisionReadModel(Quotation quotation, QuotationRevision revision)
+        => new(
+            revision.Id,
+            quotation.Id,
+            quotation.TenantId,
+            revision.RevisionNumber,
+            revision.Status.ToString(),
+            quotation.CustomerContactId,
+            quotation.CustomerName,
+            revision.Title,
+            revision.Destination,
+            revision.TravelDate,
+            revision.ReturnDate,
+            revision.Travellers,
+            revision.Currency,
+            quotation.Notes,
+            revision.VisibleNotes,
+            revision.InternalNotes,
+            revision.ValidUntil,
+            revision.SubtotalAmount,
+            revision.TaxAmount,
+            revision.TotalAmount,
+            revision.CreatedByUserId,
+            revision.CreatedAt,
+            revision.LineItems
+                .Select(x => new QuotationRevisionLineItemReadModel(x.Id, x.Description, x.Quantity, x.UnitPriceAmount, x.Currency, x.SortOrder, x.LineTotal))
+                .ToList(),
+            []);
 
     private static string GenerateToken()
     {
