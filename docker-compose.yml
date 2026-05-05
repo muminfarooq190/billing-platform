@@ -105,6 +105,7 @@ services:
         ${JWT_PUBLIC_KEY}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
       OTEL_SERVICE_NAME: billing-service
+      DISABLE_BILLING_JOBS: "true"
     ports:
       - "5002:8080"
     networks:
