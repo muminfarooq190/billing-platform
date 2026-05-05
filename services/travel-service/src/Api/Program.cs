@@ -102,6 +102,7 @@ public sealed class Program
         {
             var db = scope.ServiceProvider.GetRequiredService<TravelDbContext>();
             db.Database.Migrate();
+            TravelTemplateSeedData.SeedAsync(db, CancellationToken.None).GetAwaiter().GetResult();
         }
 
         app.UseSwagger();
