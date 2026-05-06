@@ -1,3 +1,4 @@
+using System.Globalization;
 using BillingService.Domain.Common;
 using BillingService.Domain.Enums;
 using BillingService.Domain.Events;
@@ -26,6 +27,7 @@ public sealed class Invoice : AggregateRoot
         SubscriptionId = subscriptionId;
         TenantId = tenantId;
         _lineItems.AddRange(lineItems);
+        InvoiceNumber = GenerateInvoiceNumber(tenantId);
         Subtotal = _lineItems.Select(x => x.LineTotal).Aggregate(new Money(0m, taxAmount.Currency), (acc, x) => acc.Add(x));
         TaxAmount = taxAmount;
         Total = Subtotal.Add(TaxAmount);
@@ -56,6 +58,7 @@ public sealed class Invoice : AggregateRoot
     public Guid Id { get; private set; }
     public Guid SubscriptionId { get; private set; }
     public Guid TenantId { get; private set; }
+    public string InvoiceNumber { get; private set; } = string.Empty;
     public IReadOnlyList<InvoiceLineItem> LineItems => _lineItems;
     public Money Subtotal { get; private set; }
     public Money TaxAmount { get; private set; }
@@ -136,5 +139,12 @@ public sealed class Invoice : AggregateRoot
 
         Status = InvoiceStatus.Overdue;
         UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    private static string GenerateInvoiceNumber(Guid tenantId)
+    {
+        var tenantPrefix = tenantId.ToString("N", CultureInfo.InvariantCulture)[..6].ToUpperInvariant();
+        var timestamp = DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture);
+        return $"INV-{tenantPrefix}-{timestamp}";
     }
 }

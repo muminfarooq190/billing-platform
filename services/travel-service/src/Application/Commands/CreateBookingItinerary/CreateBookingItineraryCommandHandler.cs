@@ -1,5 +1,7 @@
 using MediatR;
+using TravelService.Api.Documents;
 using TravelService.Application.Abstractions;
+using TravelService.Application.Queries.GetItineraryById;
 using TravelService.Domain.Aggregates;
 using TravelService.Domain.Enums;
 using TravelService.Domain.Exceptions;
@@ -10,6 +12,9 @@ namespace TravelService.Application.Commands.CreateBookingItinerary;
 public sealed class CreateBookingItineraryCommandHandler(
     IBookingRepository bookingRepository,
     IItineraryRepository itineraryRepository,
+    IBookingDocumentRepository bookingDocumentRepository,
+    IFileStorage fileStorage,
+    IPdfDocumentRenderer pdfDocumentRenderer,
     ICommunicationWorkflowClient communicationWorkflowClient,
     IActivityWriter activityWriter,
     IUnitOfWork unitOfWork) : IRequestHandler<CreateBookingItineraryCommand, Guid>
@@ -50,6 +55,44 @@ public sealed class CreateBookingItineraryCommandHandler(
         }
 
         await itineraryRepository.AddAsync(itinerary, cancellationToken);
+
+        var itineraryReadModel = new ItineraryReadModel(
+            itinerary.Id,
+            itinerary.TenantId,
+            itinerary.CustomerContactId,
+            booking.BookingNumber,
+            itinerary.Title,
+            itinerary.Destination,
+            itinerary.StartDate,
+            itinerary.EndDate,
+            itinerary.Travellers,
+            itinerary.Currency,
+            itinerary.QuotationId,
+            itinerary.BookingId,
+            itinerary.BookingId.HasValue,
+            itinerary.BookingId.HasValue ? "Booking" : "Standalone",
+            itinerary.Status.ToString(),
+            itinerary.TotalCost,
+            itinerary.CreatedAt,
+            itinerary.UpdatedAt);
+        var pdfBytes = pdfDocumentRenderer.RenderItineraryPdf(itineraryReadModel);
+        var documentFileName = $"itinerary-{itinerary.Id:D}.pdf";
+        await using var pdfStream = new MemoryStream(pdfBytes);
+        var storageKey = await fileStorage.UploadAsync(pdfStream, $"bookings/{booking.Id:D}/documents/{documentFileName}", "application/pdf", cancellationToken);
+        var bookingDocument = BookingDocument.Create(
+            booking.Id,
+            null,
+            booking.TenantId,
+            storageKey,
+            documentFileName,
+            "application/pdf",
+            pdfBytes.LongLength,
+            "Itinerary",
+            true,
+            "Confirmed itinerary PDF",
+            null);
+        await bookingDocumentRepository.AddAsync(bookingDocument, cancellationToken);
+
         await activityWriter.WriteAsync(
             ActivityEntry.Create(
                 booking.TenantId,

@@ -1,4 +1,6 @@
 using IdentityService.Domain.Common;
+using System.Security.Cryptography;
+using System.Text;
 using IdentityService.Domain.Enums;
 using IdentityService.Domain.Events;
 using IdentityService.Domain.Exceptions;
@@ -87,6 +89,25 @@ public sealed class User : AggregateRoot
         AddDomainEvent(new UserPasswordChangedEvent(Id, TenantId));
     }
 
+    public PasswordResetToken RequestPasswordReset(TimeSpan lifetime)
+    {
+        if (Status != UserStatus.Active)
+        {
+            throw new DomainException("Only active users can request password reset.");
+        }
+
+        if (lifetime <= TimeSpan.Zero)
+        {
+            throw new DomainException("Password reset lifetime must be greater than zero.");
+        }
+
+        var rawToken = Guid.NewGuid().ToString("N");
+        var token = PasswordResetToken.Create(Id, Email, Hash(rawToken), DateTimeOffset.UtcNow.Add(lifetime));
+        AddDomainEvent(new UserPasswordResetRequestedEvent(Id, TenantId, Email, rawToken));
+        UpdatedAt = DateTimeOffset.UtcNow;
+        return token;
+    }
+
     public void UpdateRole(UserRole newRole)
     {
         Role = newRole;
@@ -137,5 +158,11 @@ public sealed class User : AggregateRoot
         DeletedAt = DateTimeOffset.UtcNow;
         Status = UserStatus.Deleted;
         UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    private static string Hash(string token)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(token));
+        return Convert.ToHexString(bytes);
     }
 }

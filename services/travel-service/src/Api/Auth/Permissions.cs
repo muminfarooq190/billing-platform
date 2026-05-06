@@ -23,6 +23,8 @@ public static class Permissions
         public const string QuotationsRead = "travel.quotations.read";
         public const string QuotationWrite = "travel.quotation.write";
         public const string AuditRead = "travel.audit.read";
+        public const string TemplatesRead = "travel.templates.read";
+        public const string TemplatesWrite = "travel.templates.write";
     }
 
     public static readonly string[] All =
@@ -46,5 +48,7 @@ public static class Permissions
         Travel.QuotationsRead,
         Travel.QuotationWrite,
         Travel.AuditRead,
+        Travel.TemplatesRead,
+        Travel.TemplatesWrite,
     ];
 }

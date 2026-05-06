@@ -55,8 +55,11 @@ public sealed class Program
         builder.Services.AddSingleton<IStripeWebhookVerifier, StripeWebhookVerifier>();
 
         builder.Services.AddHostedService<OutboxPublisherService>();
-        builder.Services.AddHostedService<BillingSchedulerService>();
-        builder.Services.AddHostedService<OverdueInvoiceCheckerService>();
+        if (!string.Equals(builder.Configuration["DISABLE_BILLING_JOBS"], "true", StringComparison.OrdinalIgnoreCase))
+        {
+            builder.Services.AddHostedService<BillingSchedulerService>();
+            builder.Services.AddHostedService<OverdueInvoiceCheckerService>();
+        }
         builder.Services.AddHealthChecks();
 
         ConfigureJwtCompatibility(builder);

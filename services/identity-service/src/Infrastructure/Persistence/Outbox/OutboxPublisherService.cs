@@ -64,6 +64,7 @@ public sealed class OutboxPublisherService(
         "TenantSuspendedEvent" => "identity.tenant.suspended",
         "UserCreatedEvent" => "identity.user.created",
         "UserPasswordChangedEvent" => "identity.user.password.changed",
+        "UserPasswordResetRequestedEvent" => "identity.user.password-reset-requested",
         _ => eventType
     };
 }

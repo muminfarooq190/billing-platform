@@ -1,4 +1,5 @@
 using FluentAssertions;
+using TravelService.Api.Documents;
 using TravelService.Application.Abstractions;
 using TravelService.Application.Commands.CreateBookingItinerary;
 using TravelService.Application.Commands.CreateItinerary;
@@ -16,7 +17,16 @@ public sealed class BookingItineraryOwnershipTests
         var booking = Booking.CreateFromAcceptedQuotation(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "VOY-BKG-2026-000001", "Bali Escape", "Bali", DateTimeOffset.UtcNow.AddDays(20), DateTimeOffset.UtcNow.AddDays(25), 2, "USD", 1200m);
         var bookingRepository = new InMemoryBookingRepository(booking);
         var itineraryRepository = new InMemoryItineraryRepository();
-        var handler = new CreateBookingItineraryCommandHandler(bookingRepository, itineraryRepository, new NoOpCommunicationWorkflowClient(), new NoOpActivityWriter(), new NoOpUnitOfWork());
+        var bookingDocumentRepository = new InMemoryBookingDocumentRepository();
+        var handler = new CreateBookingItineraryCommandHandler(
+            bookingRepository,
+            itineraryRepository,
+            bookingDocumentRepository,
+            new InMemoryFileStorage(),
+            new StubPdfDocumentRenderer(),
+            new NoOpCommunicationWorkflowClient(),
+            new NoOpActivityWriter(),
+            new NoOpUnitOfWork());
 
         var itineraryId = await handler.Handle(new CreateBookingItineraryCommand(
             booking.TenantId,
@@ -32,6 +42,7 @@ public sealed class BookingItineraryOwnershipTests
         itineraryId.Should().NotBeEmpty();
         itineraryRepository.Items.Should().ContainSingle();
         itineraryRepository.Items[0].BookingId.Should().Be(booking.Id);
+        bookingDocumentRepository.Items.Should().ContainSingle(x => x.BookingId == booking.Id && x.DocumentType == "Itinerary");
     }
 
     [Fact]
@@ -80,14 +91,33 @@ public sealed class BookingItineraryOwnershipTests
     private sealed class InMemoryItineraryRepository : IItineraryRepository
     {
         public List<Itinerary> Items { get; } = [];
-        public Task AddAsync(Itinerary itinerary, CancellationToken cancellationToken)
-        {
-            Items.Add(itinerary);
-            return Task.CompletedTask;
-        }
+        public Task AddAsync(Itinerary itinerary, CancellationToken cancellationToken) { Items.Add(itinerary); return Task.CompletedTask; }
         public Task<Itinerary?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(Items.SingleOrDefault(x => x.Id == id));
         public Task<IReadOnlyList<Itinerary>> ListByTenantIdAsync(Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<Itinerary>>(Items.Where(x => x.TenantId == tenantId).ToList());
         public Task UpdateAsync(Itinerary itinerary, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class InMemoryBookingDocumentRepository : IBookingDocumentRepository
+    {
+        public List<BookingDocument> Items { get; } = [];
+        public Task AddAsync(BookingDocument document, CancellationToken cancellationToken) { Items.Add(document); return Task.CompletedTask; }
+        public Task<BookingDocument?> GetByIdAsync(Guid bookingId, Guid documentId, CancellationToken cancellationToken) => Task.FromResult(Items.SingleOrDefault(x => x.BookingId == bookingId && x.Id == documentId));
+        public Task<IReadOnlyList<BookingDocument>> ListByBookingIdAsync(Guid bookingId, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<BookingDocument>>(Items.Where(x => x.BookingId == bookingId).ToList());
+        public Task UpdateAsync(BookingDocument document, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class InMemoryFileStorage : IFileStorage
+    {
+        public Task<string> UploadAsync(Stream stream, string path, string contentType, CancellationToken cancellationToken) => Task.FromResult(path);
+        public Task DeleteAsync(string storageKey, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<string> GetReadUrlAsync(string storageKey, CancellationToken cancellationToken) => Task.FromResult(storageKey);
+        public Task<string> GetSignedReadUrlAsync(string storageKey, TimeSpan ttl, CancellationToken cancellationToken) => Task.FromResult(storageKey);
+    }
+
+    private sealed class StubPdfDocumentRenderer : IPdfDocumentRenderer
+    {
+        public byte[] RenderQuotationRevisionPdf(TravelService.Application.Queries.QuotationRevisions.QuotationRevisionReadModel revision) => [1, 2, 3];
+        public byte[] RenderItineraryPdf(TravelService.Application.Queries.GetItineraryById.ItineraryReadModel itinerary) => [4, 5, 6];
     }
 
     private sealed class NoOpActivityWriter : IActivityWriter

@@ -2,6 +2,8 @@ using System.Text.Json;
 using BillingService.Domain.Aggregates;
 using BillingService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using static BillingService.Infrastructure.Persistence.IdentitySeedBridge;
 
 namespace BillingService.Infrastructure.Persistence;
 
@@ -9,10 +11,164 @@ public static class BillingSeed
 {
     public static async Task SeedFlexibleEntitlementsAsync(BillingDbContext dbContext, CancellationToken cancellationToken)
     {
+        await EnsureFlexibleEntitlementSchemaAsync(dbContext, cancellationToken);
         await SeedFeatureCatalogAsync(dbContext, cancellationToken);
         await SeedPlanPackagesAsync(dbContext, cancellationToken);
+        await EnsureDemoTenantEnterpriseEntitlementsAsync(dbContext, cancellationToken);
         await BackfillTenantPlanAssignmentsAsync(dbContext, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task EnsureFlexibleEntitlementSchemaAsync(BillingDbContext dbContext, CancellationToken cancellationToken)
+    {
+        if (!await HasColumnAsync(dbContext, "feature_catalog", "assignment_mode", cancellationToken))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE feature_catalog ADD COLUMN assignment_mode character varying(50) NOT NULL DEFAULT 'TenantWide';",
+                cancellationToken);
+        }
+
+        if (!await HasColumnAsync(dbContext, "feature_catalog", "default_assignment_limit", cancellationToken))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE feature_catalog ADD COLUMN default_assignment_limit integer NULL;",
+                cancellationToken);
+        }
+
+        if (!await HasColumnAsync(dbContext, "commercial_package_features", "limit_merge_policy", cancellationToken))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE commercial_package_features ADD COLUMN limit_merge_policy character varying(50) NOT NULL DEFAULT 'Max';",
+                cancellationToken);
+        }
+
+        if (!await HasColumnAsync(dbContext, "subscriptions", "current_period_start", cancellationToken))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE subscriptions ADD COLUMN current_period_start timestamp with time zone NOT NULL DEFAULT NOW();",
+                cancellationToken);
+
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "UPDATE subscriptions SET current_period_start = start_date WHERE current_period_start IS NULL OR current_period_start = NOW();",
+                cancellationToken);
+        }
+
+        if (!await HasColumnAsync(dbContext, "subscriptions", "current_period_end", cancellationToken))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE subscriptions ADD COLUMN current_period_end timestamp with time zone NOT NULL DEFAULT NOW();",
+                cancellationToken);
+
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "UPDATE subscriptions SET current_period_end = next_billing_date WHERE current_period_end IS NULL OR current_period_end = NOW();",
+                cancellationToken);
+        }
+
+        if (!await HasColumnAsync(dbContext, "invoices", "invoice_number", cancellationToken))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE invoices ADD COLUMN invoice_number character varying(40) NOT NULL DEFAULT '';",
+                cancellationToken);
+        }
+
+        if (!await TableExistsAsync(dbContext, "tenant_feature_overrides", cancellationToken))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                @"CREATE TABLE tenant_feature_overrides (
+                    ""Id"" uuid NOT NULL,
+                    tenant_id uuid NOT NULL,
+                    feature_key character varying(200) NOT NULL,
+                    granted boolean NOT NULL,
+                    limit_value integer NULL,
+                    reason character varying(500) NOT NULL,
+                    source character varying(100) NOT NULL,
+                    created_by character varying(200) NULL,
+                    effective_from timestamp with time zone NOT NULL,
+                    effective_to timestamp with time zone NULL,
+                    metadata_json jsonb NULL,
+                    created_at timestamp with time zone NOT NULL,
+                    updated_at timestamp with time zone NOT NULL,
+                    deleted_at timestamp with time zone NULL,
+                    CONSTRAINT ""PK_tenant_feature_overrides"" PRIMARY KEY (""Id"")
+                );",
+                cancellationToken);
+
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "CREATE INDEX \"IX_tenant_feature_overrides_tenant_id_feature_key_deleted_at\" ON tenant_feature_overrides (tenant_id, feature_key, deleted_at);",
+                cancellationToken);
+        }
+
+        if (!await TableExistsAsync(dbContext, "tenant_user_feature_assignments", cancellationToken))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                @"CREATE TABLE tenant_user_feature_assignments (
+                    id uuid NOT NULL,
+                    tenant_id uuid NOT NULL,
+                    user_id uuid NOT NULL,
+                    feature_key character varying(200) NOT NULL,
+                    status character varying(50) NOT NULL,
+                    assigned_by_user_id uuid NULL,
+                    assigned_at timestamp with time zone NOT NULL,
+                    revoked_by_user_id uuid NULL,
+                    revoked_at timestamp with time zone NULL,
+                    effective_from timestamp with time zone NOT NULL,
+                    effective_to timestamp with time zone NULL,
+                    notes character varying(2000) NULL,
+                    metadata_json jsonb NULL,
+                    created_at timestamp with time zone NOT NULL,
+                    updated_at timestamp with time zone NOT NULL,
+                    deleted_at timestamp with time zone NULL,
+                    CONSTRAINT ""PK_tenant_user_feature_assignments"" PRIMARY KEY (id)
+                );",
+                cancellationToken);
+
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "CREATE INDEX ix_tenant_user_feature_assignments_lookup ON tenant_user_feature_assignments (tenant_id, user_id, feature_key, status);",
+                cancellationToken);
+        }
+    }
+
+    private static async Task<bool> TableExistsAsync(BillingDbContext dbContext, string tableName, CancellationToken cancellationToken)
+    {
+        var connection = (NpgsqlConnection)dbContext.Database.GetDbConnection();
+        if (connection.State != System.Data.ConnectionState.Open)
+        {
+            await connection.OpenAsync(cancellationToken);
+        }
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = @"
+            select exists (
+                select 1
+                from information_schema.tables
+                where table_schema = 'public'
+                  and table_name = @tableName
+            );";
+        command.Parameters.AddWithValue("tableName", tableName);
+
+        var result = await command.ExecuteScalarAsync(cancellationToken);
+        return result is bool exists && exists;
+    }
+
+    private static async Task<bool> HasColumnAsync(BillingDbContext dbContext, string tableName, string columnName, CancellationToken cancellationToken)
+    {
+        var connection = (NpgsqlConnection)dbContext.Database.GetDbConnection();
+        if (connection.State != System.Data.ConnectionState.Open)
+        {
+            await connection.OpenAsync(cancellationToken);
+        }
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = @"
+            select 1
+            from information_schema.columns
+            where table_schema = 'public' and table_name = @tableName and column_name = @columnName
+            limit 1;";
+        command.Parameters.AddWithValue("tableName", tableName);
+        command.Parameters.AddWithValue("columnName", columnName);
+
+        var result = await command.ExecuteScalarAsync(cancellationToken);
+        return result is not null;
     }
 
     private static async Task SeedFeatureCatalogAsync(BillingDbContext dbContext, CancellationToken cancellationToken)
@@ -101,6 +257,48 @@ public static class BillingSeed
                 await dbContext.SaveChangesAsync(cancellationToken);
             }
         }
+    }
+
+    private static async Task EnsureDemoTenantEnterpriseEntitlementsAsync(BillingDbContext dbContext, CancellationToken cancellationToken)
+    {
+        var enterprisePackage = await dbContext.CommercialPackages
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Code == "legacy.enterprise", cancellationToken);
+
+        if (enterprisePackage is null)
+        {
+            return;
+        }
+
+        var existingAssignment = await dbContext.TenantSubscriptionPackages
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.TenantId == DemoTenantId && x.CommercialPackageId == enterprisePackage.Id && x.DeletedAt == null, cancellationToken);
+
+        if (existingAssignment is not null)
+        {
+            await dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"""
+                update tenant_subscription_packages
+                set source = {"Seed"},
+                    status = {"Active"},
+                    effective_from = {DateTimeOffset.UtcNow.AddYears(-1)},
+                    effective_to = null,
+                    metadata_json = {"{\"source\":\"demo-seed\",\"email\":\"admin@example.com\"}"}::jsonb,
+                    updated_at = now(),
+                    deleted_at = null
+                where tenant_id = {DemoTenantId}
+                  and commercial_package_id = {enterprisePackage.Id};
+                """,
+                cancellationToken);
+            return;
+        }
+
+        await dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            insert into tenant_subscription_packages ("Id", tenant_id, commercial_package_id, source, status, effective_from, effective_to, metadata_json, created_at, updated_at, deleted_at)
+            values ({Guid.NewGuid()}, {DemoTenantId}, {enterprisePackage.Id}, {"Seed"}, {"Active"}, {DateTimeOffset.UtcNow.AddYears(-1)}, null, {"{\"source\":\"demo-seed\",\"email\":\"admin@example.com\"}"}::jsonb, now(), now(), null);
+            """,
+            cancellationToken);
     }
 
     private static async Task BackfillTenantPlanAssignmentsAsync(BillingDbContext dbContext, CancellationToken cancellationToken)

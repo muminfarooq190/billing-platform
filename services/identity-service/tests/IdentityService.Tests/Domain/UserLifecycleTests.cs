@@ -52,4 +52,17 @@ public sealed class UserLifecycleTests
         user.Reactivate();
         user.Status.Should().Be(UserStatus.Active);
     }
+
+    [Fact]
+    public void RequestPasswordReset_ShouldCreateTokenAndDomainEvent()
+    {
+        var user = User.Create(new TenantId(Guid.NewGuid()), new Email("active@example.com"), "hash", UserRole.Admin);
+
+        var token = user.RequestPasswordReset(TimeSpan.FromMinutes(15));
+
+        token.UserId.Should().Be(user.Id);
+        token.Email.Should().Be(user.Email);
+        token.TokenHash.Should().NotBeNullOrWhiteSpace();
+        user.DomainEvents.Should().ContainSingle(x => x is IdentityService.Domain.Events.UserPasswordResetRequestedEvent);
+    }
 }

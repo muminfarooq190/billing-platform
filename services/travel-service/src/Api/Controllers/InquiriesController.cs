@@ -13,6 +13,54 @@ namespace TravelService.Api.Controllers;
 [Route("travel/inquiries")]
 public sealed class InquiriesController(IMediator mediator, ITenantContext tenantContext) : ControllerBase
 {
+    [HttpPost]
+    [RequirePermission(Permissions.Travel.InquiriesWrite)]
+    public async Task<IActionResult> Create([FromBody] CreateTravelInquiryRequest request, CancellationToken cancellationToken)
+    {
+        var inquiryId = await mediator.Send(new CreateTravelInquiryCommand(
+            tenantContext.TenantId,
+            request.Source,
+            request.FullName,
+            request.Email,
+            request.Phone,
+            request.WhatsappNumber,
+            request.DepartureCity,
+            request.Destination,
+            request.TravelDate,
+            request.ReturnDate,
+            request.IsDateFlexible,
+            request.Travellers,
+            request.BudgetAmount,
+            request.BudgetCurrency,
+            request.CustomerMessage,
+            request.AssignedToUserId), cancellationToken);
+        return Created($"/travel/inquiries/{inquiryId}", new { inquiryId });
+    }
+
+    [HttpPut("{id:guid}")]
+    [RequirePermission(Permissions.Travel.InquiriesWrite)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTravelInquiryRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new UpdateTravelInquiryCommand(
+            tenantContext.TenantId,
+            id,
+            request.FullName,
+            request.Email,
+            request.Phone,
+            request.WhatsappNumber,
+            request.DepartureCity,
+            request.Destination,
+            request.TravelDate,
+            request.ReturnDate,
+            request.IsDateFlexible,
+            request.Travellers,
+            request.BudgetAmount,
+            request.BudgetCurrency,
+            request.CustomerMessage,
+            request.AssignedToUserId), cancellationToken);
+        return NoContent();
+    }
+
     [HttpGet]
     [RequirePermission(Permissions.Travel.InquiriesRead)]
     public async Task<IActionResult> List(

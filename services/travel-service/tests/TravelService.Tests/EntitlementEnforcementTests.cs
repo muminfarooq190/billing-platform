@@ -1,4 +1,5 @@
 using FluentAssertions;
+using TravelService.Api.Documents;
 using TravelService.Application.Abstractions;
 using TravelService.Application.Commands.CreateQuotation;
 using TravelService.Application.Commands.EntityNotes;
@@ -34,6 +35,9 @@ public sealed class EntitlementEnforcementTests
             new InMemoryShareLinkRepository(),
             new InMemoryStatusHistoryRepository(),
             new InMemoryApprovalRepository(),
+            new InMemoryQuotationAttachmentRepository(),
+            new InMemoryFileStorage(),
+            new StubPdfDocumentRenderer(),
             new NoOpCommunicationWorkflowClient(),
             new DenyFeatureGate(),
             new NoOpActivityWriter(),
@@ -123,6 +127,14 @@ public sealed class EntitlementEnforcementTests
         public Task UpdateAsync(QuotationShareLink shareLink, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
+    private sealed class InMemoryQuotationAttachmentRepository : IQuotationAttachmentRepository
+    {
+        public Task AddAsync(QuotationAttachment attachment, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<QuotationAttachment?> GetByIdAsync(Guid quotationId, Guid attachmentId, CancellationToken cancellationToken) => Task.FromResult<QuotationAttachment?>(null);
+        public Task<IReadOnlyList<QuotationAttachment>> ListByQuotationIdAsync(Guid quotationId, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<QuotationAttachment>>([]);
+        public Task UpdateAsync(QuotationAttachment attachment, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
     private sealed class InMemoryStatusHistoryRepository : IQuotationStatusHistoryRepository
     {
         public Task AddAsync(QuotationStatusHistory history, CancellationToken cancellationToken) => Task.CompletedTask;
@@ -135,6 +147,20 @@ public sealed class EntitlementEnforcementTests
         public Task<QuotationApprovalRequest?> GetByIdAsync(Guid quotationId, Guid approvalRequestId, CancellationToken cancellationToken) => Task.FromResult<QuotationApprovalRequest?>(null);
         public Task<IReadOnlyList<QuotationApprovalRequest>> ListByQuotationIdAsync(Guid quotationId, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<QuotationApprovalRequest>>([]);
         public Task UpdateAsync(QuotationApprovalRequest request, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class InMemoryFileStorage : IFileStorage
+    {
+        public Task<string> UploadAsync(Stream stream, string path, string contentType, CancellationToken cancellationToken) => Task.FromResult(path);
+        public Task DeleteAsync(string storageKey, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<string> GetReadUrlAsync(string storageKey, CancellationToken cancellationToken) => Task.FromResult(storageKey);
+        public Task<string> GetSignedReadUrlAsync(string storageKey, TimeSpan ttl, CancellationToken cancellationToken) => Task.FromResult(storageKey);
+    }
+
+    private sealed class StubPdfDocumentRenderer : IPdfDocumentRenderer
+    {
+        public byte[] RenderQuotationRevisionPdf(TravelService.Application.Queries.QuotationRevisions.QuotationRevisionReadModel revision) => [1, 2, 3];
+        public byte[] RenderItineraryPdf(TravelService.Application.Queries.GetItineraryById.ItineraryReadModel itinerary) => [4, 5, 6];
     }
 
     private sealed class InMemoryEntityNoteRepository : IEntityNoteRepository

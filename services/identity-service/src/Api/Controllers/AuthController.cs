@@ -5,6 +5,7 @@ using IdentityService.Domain.Aggregates;
 using IdentityService.Domain.Enums;
 using IdentityService.Domain.Repositories;
 using IdentityService.Application.Queries.GetTenantByEmail;
+using IdentityService.Domain.Exceptions;
 using IdentityService.Infrastructure.Auth;
 using IdentityService.Infrastructure.Persistence;
 using MediatR;
@@ -106,6 +107,65 @@ public sealed class AuthController(IMediator mediator, JwtTokenService jwtTokenS
         var accessToken = jwtTokenService.GenerateAccessToken(user.Id, user.TenantId, request.Email, user.Role, permissions, mfaVerified);
         var refreshToken = await refreshTokenService.IssueRefreshTokenAsync(user.Id, user.TenantId, cancellationToken);
         return Ok(new { accessToken, refreshToken, mustChangePassword = user.MustChangePassword, permissions, mfaVerified });
+    }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken cancellationToken)
+    {
+        var email = request.Email.Trim().ToLowerInvariant();
+        var tenant = await mediator.Send(new GetTenantByEmailQuery(email), cancellationToken);
+        if (tenant is null)
+        {
+            return Ok(new { accepted = true });
+        }
+
+        var user = await userRepository.GetByTenantAndEmailAsync(tenant.Id, email, cancellationToken);
+        if (user is null || user.Status != UserStatus.Active)
+        {
+            return Ok(new { accepted = true });
+        }
+
+        var existingTokens = await dbContext.PasswordResetTokens
+            .Where(x => x.UserId == user.Id && x.ConsumedAt == null)
+            .ToListAsync(cancellationToken);
+        foreach (var token in existingTokens)
+        {
+            if (token.ExpiresAt > DateTimeOffset.UtcNow)
+            {
+                token.Consume();
+            }
+        }
+
+        var resetToken = user.RequestPasswordReset(TimeSpan.FromHours(1));
+        dbContext.PasswordResetTokens.Add(resetToken);
+        await userRepository.UpdateAsync(user, cancellationToken);
+        return Ok(new { accepted = true });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
+    {
+        var email = request.Email.Trim().ToLowerInvariant();
+        var tokenHash = PasswordResetTokenHasher.Hash(request.Token);
+        var resetToken = await dbContext.PasswordResetTokens
+            .FirstOrDefaultAsync(x => x.Email == email && x.TokenHash == tokenHash, cancellationToken)
+            ?? throw new NotFoundException("Password reset token not found.");
+
+        resetToken.Consume();
+
+        var tenant = await mediator.Send(new GetTenantByEmailQuery(email), cancellationToken)
+            ?? throw new NotFoundException("Tenant not found for email.");
+        var user = await userRepository.GetByTenantAndEmailAsync(tenant.Id, email, cancellationToken)
+            ?? throw new NotFoundException("User not found for password reset.");
+
+        user.ChangePassword(BCrypt.Net.BCrypt.HashPassword(request.NewPassword));
+        await userRepository.UpdateAsync(user, cancellationToken);
+        await refreshTokenService.RevokeAllForUserAsync(user.Id, cancellationToken);
+
+        dbContext.SecurityEvents.Add(SecurityEvent.Create(user.TenantId, user.Id, "PasswordResetSucceeded", HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Headers.UserAgent.ToString(), null));
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return NoContent();
     }
 
     [HttpPost("refresh")]

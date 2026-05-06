@@ -5,6 +5,11 @@ using TravelService.Api.Contracts;
 using TravelService.Application.Commands.AddBookingItem;
 using TravelService.Application.Commands.AddTraveler;
 using TravelService.Application.Commands.BookingFulfillment;
+using TravelService.Application.Commands.BookingPayments.MarkBookingPaymentPaid;
+using TravelService.Application.Commands.BookingPayments.RefundBookingPayment;
+using TravelService.Application.Commands.BookingPayments.ScheduleBookingPayment;
+using TravelService.Application.Commands.BookingPayments.UpdateBookingPayment;
+using TravelService.Application.Commands.BookingPayments.WaiveBookingPayment;
 using TravelService.Application.Commands.CreateBookingFromQuotation;
 using TravelService.Application.Commands.CreateBookingItinerary;
 using TravelService.Application.Commands.CreateItinerary;
@@ -16,6 +21,7 @@ using TravelService.Application.Commands.UpdateBookingItemStatus;
 using TravelService.Application.Commands.UpdateTraveler;
 using TravelService.Application.Commands.UploadBookingDocument;
 using TravelService.Application.Queries.GetBookingById;
+using TravelService.Application.Queries.BookingPayments;
 using TravelService.Application.Queries.GetBookingFinancialSummary;
 using TravelService.Application.Queries.GetBookingItinerary;
 using TravelService.Application.Queries.ListBookingDocuments;
@@ -76,6 +82,58 @@ public sealed class BookingsController(IMediator mediator, ITenantContext tenant
     {
         var itinerary = await mediator.Send(new GetBookingItineraryQuery(tenantContext.TenantId, id), cancellationToken);
         return itinerary is null ? NotFound() : Ok(itinerary);
+    }
+
+    [HttpGet("{id:guid}/payments")]
+    [RequirePermission(Permissions.Travel.BookingsRead)]
+    public async Task<IActionResult> ListPayments(Guid id, CancellationToken cancellationToken)
+    {
+        var payments = await mediator.Send(new ListBookingPaymentsQuery(tenantContext.TenantId, id), cancellationToken);
+        return Ok(payments);
+    }
+
+    [HttpPost("{id:guid}/payments")]
+    [RequirePermission(Permissions.Travel.BookingsWrite)]
+    public async Task<IActionResult> SchedulePayment(Guid id, [FromBody] ScheduleBookingPaymentRequest request, CancellationToken cancellationToken)
+    {
+        var actorUserId = tenantContext.UserId == Guid.Empty ? null : tenantContext.UserId;
+        var paymentId = await mediator.Send(new ScheduleBookingPaymentCommand(tenantContext.TenantId, id, request.MilestoneLabel, request.DueDate, request.Amount, request.Currency, request.Notes, actorUserId), cancellationToken);
+        return Created($"/travel/bookings/{id}/payments/{paymentId}", new { paymentId });
+    }
+
+    [HttpPut("{id:guid}/payments/{paymentId:guid}")]
+    [RequirePermission(Permissions.Travel.BookingsWrite)]
+    public async Task<IActionResult> UpdatePayment(Guid id, Guid paymentId, [FromBody] UpdateBookingPaymentRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new UpdateBookingPaymentCommand(tenantContext.TenantId, id, paymentId, request.MilestoneLabel, request.DueDate, request.Amount, request.Currency, request.Notes), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/payments/{paymentId:guid}/mark-paid")]
+    [RequirePermission(Permissions.Travel.BookingsWrite)]
+    public async Task<IActionResult> MarkPaymentPaid(Guid id, Guid paymentId, [FromBody] MarkBookingPaymentPaidRequest request, CancellationToken cancellationToken)
+    {
+        var actorUserId = tenantContext.UserId == Guid.Empty ? null : tenantContext.UserId;
+        await mediator.Send(new MarkBookingPaymentPaidCommand(tenantContext.TenantId, id, paymentId, request.PaidAt, request.PaymentMethod, request.ProviderReference, request.Notes, actorUserId), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/payments/{paymentId:guid}/refund")]
+    [RequirePermission(Permissions.Travel.BookingsWrite)]
+    public async Task<IActionResult> RefundPayment(Guid id, Guid paymentId, [FromBody] RefundBookingPaymentRequest request, CancellationToken cancellationToken)
+    {
+        var actorUserId = tenantContext.UserId == Guid.Empty ? null : tenantContext.UserId;
+        await mediator.Send(new RefundBookingPaymentCommand(tenantContext.TenantId, id, paymentId, request.Notes, actorUserId), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/payments/{paymentId:guid}/waive")]
+    [RequirePermission(Permissions.Travel.BookingsWrite)]
+    public async Task<IActionResult> WaivePayment(Guid id, Guid paymentId, [FromBody] WaiveBookingPaymentRequest request, CancellationToken cancellationToken)
+    {
+        var actorUserId = tenantContext.UserId == Guid.Empty ? null : tenantContext.UserId;
+        await mediator.Send(new WaiveBookingPaymentCommand(tenantContext.TenantId, id, paymentId, request.Reason, actorUserId), cancellationToken);
+        return NoContent();
     }
 
     [HttpPost("{id:guid}/itinerary")]

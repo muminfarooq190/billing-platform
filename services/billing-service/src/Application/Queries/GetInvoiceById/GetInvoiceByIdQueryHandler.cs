@@ -14,7 +14,7 @@ public sealed class GetInvoiceByIdQueryHandler(IReadDbConnectionFactory connecti
         if (cached is not null) return cached;
 
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
-        const string sql = "SELECT \"Id\" AS Id, \"SubscriptionId\" AS SubscriptionId, \"TenantId\" AS TenantId, \"Status\" AS Status, (total::jsonb ->> 'Amount')::numeric AS TotalAmount, total::jsonb ->> 'Currency' AS Currency, due_date AS DueDate, paid_at AS PaidAt FROM invoices WHERE \"Id\"=@InvoiceId AND deleted_at IS NULL;";
+        const string sql = "SELECT \"Id\" AS Id, \"SubscriptionId\" AS SubscriptionId, \"TenantId\" AS TenantId, invoice_number AS InvoiceNumber, \"Status\" AS Status, (total::jsonb ->> 'Amount')::numeric AS TotalAmount, CASE WHEN \"Status\"='Paid' THEN (total::jsonb ->> 'Amount')::numeric ELSE 0 END AS PaidAmount, CASE WHEN \"Status\"='Paid' THEN 0 ELSE (total::jsonb ->> 'Amount')::numeric END AS DueAmount, total::jsonb ->> 'Currency' AS Currency, due_date AS DueDate, paid_at AS PaidAt FROM invoices WHERE \"Id\"=@InvoiceId AND deleted_at IS NULL;";
         var result = await connection.QuerySingleOrDefaultAsync<InvoiceReadModel>(new CommandDefinition(sql, new { request.InvoiceId }, cancellationToken: cancellationToken));
         if (result is not null)
         {

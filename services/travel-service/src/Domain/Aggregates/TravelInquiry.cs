@@ -109,6 +109,53 @@ public sealed class TravelInquiry : AggregateRoot
         string? customerMessage)
         => new(tenantId, source, fullName, email, phone, whatsappNumber, departureCity, destination, travelDate, returnDate, isDateFlexible, travellers, budgetAmount, budgetCurrency, customerMessage);
 
+    public void UpdateDetails(
+        string fullName,
+        string? email,
+        string? phone,
+        string? whatsappNumber,
+        string? departureCity,
+        string destination,
+        DateTimeOffset? travelDate,
+        DateTimeOffset? returnDate,
+        bool isDateFlexible,
+        int? travellers,
+        decimal? budgetAmount,
+        string? budgetCurrency,
+        string? customerMessage,
+        Guid? assignedToUserId)
+    {
+        EnsureNotClosed();
+        if (string.IsNullOrWhiteSpace(fullName))
+            throw new DomainException("Customer full name is required.");
+        if (string.IsNullOrWhiteSpace(destination))
+            throw new DomainException("Destination is required.");
+        if (travelDate.HasValue && returnDate.HasValue && returnDate.Value < travelDate.Value)
+            throw new DomainException("Return date must be on or after travel date.");
+        if (travellers.HasValue && travellers.Value <= 0)
+            throw new DomainException("Travellers must be greater than zero when provided.");
+        if (budgetAmount.HasValue && budgetAmount.Value < 0)
+            throw new DomainException("Budget amount cannot be negative.");
+        if (budgetAmount.HasValue && string.IsNullOrWhiteSpace(budgetCurrency))
+            throw new DomainException("Budget currency is required when budget amount is provided.");
+
+        FullName = fullName.Trim();
+        Email = NormalizeOptional(email);
+        Phone = NormalizeOptional(phone);
+        WhatsappNumber = NormalizeOptional(whatsappNumber);
+        DepartureCity = NormalizeOptional(departureCity);
+        Destination = destination.Trim();
+        TravelDate = travelDate;
+        ReturnDate = returnDate;
+        IsDateFlexible = isDateFlexible;
+        Travellers = travellers;
+        BudgetAmount = budgetAmount;
+        BudgetCurrency = NormalizeCurrencyOptional(budgetCurrency);
+        CustomerMessage = NormalizeOptional(customerMessage);
+        AssignedToUserId = assignedToUserId;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
     public void Assign(Guid? assignedToUserId)
     {
         EnsureNotClosed();

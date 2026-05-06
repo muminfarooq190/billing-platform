@@ -16,6 +16,8 @@ public sealed class SubscriptionConfiguration : IEntityTypeConfiguration<Subscri
         builder.Property(x => x.BillingCycle).HasConversion<string>().HasColumnName("billing_cycle");
         builder.Property(x => x.Status).HasConversion<string>().HasColumnName("Status");
         builder.Property(x => x.StartDate).HasColumnName("start_date");
+        builder.Property(x => x.CurrentPeriodStart).HasColumnName("current_period_start");
+        builder.Property(x => x.CurrentPeriodEnd).HasColumnName("current_period_end");
         builder.Property(x => x.NextBillingDate).HasColumnName("next_billing_date");
         builder.Property(x => x.CancelledAt).HasColumnName("cancelled_at");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");

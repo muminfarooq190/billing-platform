@@ -86,7 +86,7 @@ public sealed class AdditionalEntitlementEnforcementTests
     public async Task GetBookingFinancialSummary_ShouldFail_WhenFeatureDisabled()
     {
         var booking = Booking.CreateFromAcceptedQuotation(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "VOY-BKG-2026-0001", "Italy Trip", "Italy", DateTimeOffset.UtcNow.AddDays(10), DateTimeOffset.UtcNow.AddDays(15), 2, "USD", 5000m);
-        var handler = new GetBookingFinancialSummaryQueryHandler(new SingleBookingRepository(booking), new StubBillingFinanceClient([]), new DenyFeatureGate());
+        var handler = new GetBookingFinancialSummaryQueryHandler(new SingleBookingRepository(booking), new StubBookingPaymentRepository([]), new DenyFeatureGate());
 
         var act = async () => await handler.Handle(new GetBookingFinancialSummaryQuery(booking.TenantId, booking.Id), CancellationToken.None);
 
@@ -177,12 +177,13 @@ public sealed class AdditionalEntitlementEnforcementTests
         public Task UpdateAsync(Booking booking, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
-    private sealed class StubBillingFinanceClient(IReadOnlyList<BookingInvoiceDto> invoices) : IBillingFinanceClient
+    private sealed class StubBookingPaymentRepository(IReadOnlyList<BookingPayment> payments) : IBookingPaymentRepository
     {
-        public Task<IReadOnlyList<BookingInvoiceDto>> GetInvoicesAsync(Guid tenantId, CancellationToken cancellationToken)
-            => Task.FromResult(invoices.Where(x => x.TenantId == tenantId).ToList() as IReadOnlyList<BookingInvoiceDto>);
+        public Task AddAsync(BookingPayment payment, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<BookingPayment?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(payments.SingleOrDefault(x => x.Id == id));
+        public Task<IReadOnlyList<BookingPayment>> ListByBookingIdAsync(Guid bookingId, CancellationToken cancellationToken) => Task.FromResult(payments.Where(x => x.BookingId == bookingId).ToList() as IReadOnlyList<BookingPayment>);
+        public Task UpdateAsync(BookingPayment payment, CancellationToken cancellationToken) => Task.CompletedTask;
     }
-
 
     private sealed class FakeTenantContext : TravelService.Api.ITenantContext
     {

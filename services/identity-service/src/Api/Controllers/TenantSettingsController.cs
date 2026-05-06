@@ -10,10 +10,10 @@ namespace IdentityService.Api.Controllers;
 
 [ApiController]
 [Route("identity/tenant-settings")]
-[RequirePermission(Permissions.Identity.SettingsManage)]
 public sealed class TenantSettingsController(IdentityDbContext dbContext, IFeatureGate featureGate, ITenantContext tenantContext) : ControllerBase
 {
     [HttpGet]
+    [RequirePermission(Permissions.Identity.SettingsRead)]
     public async Task<IActionResult> Get(CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();
@@ -23,6 +23,7 @@ public sealed class TenantSettingsController(IdentityDbContext dbContext, IFeatu
     }
 
     [HttpPut]
+    [RequirePermission(Permissions.Identity.SettingsManage)]
     public async Task<IActionResult> Put([FromBody] UpdateTenantSettingsRequest request, CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();

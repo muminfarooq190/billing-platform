@@ -8,6 +8,7 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<User> Users => Set<User>();
     public DbSet<UserInvitation> UserInvitations => Set<UserInvitation>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<TenantSettings> TenantSettings => Set<TenantSettings>();
     public DbSet<IdentityAuditLog> IdentityAuditLogs => Set<IdentityAuditLog>();
     public DbSet<SecurityEvent> SecurityEvents => Set<SecurityEvent>();

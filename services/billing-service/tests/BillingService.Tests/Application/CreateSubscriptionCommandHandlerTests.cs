@@ -1,5 +1,6 @@
 using BillingService.Application.Abstractions;
 using BillingService.Application.Commands.CreateSubscription;
+using BillingService.Domain.Aggregates;
 using BillingService.Domain.Repositories;
 using FluentAssertions;
 using Moq;
@@ -18,5 +19,15 @@ public sealed class CreateSubscriptionCommandHandlerTests
         var id = await handler.Handle(new CreateSubscriptionCommand(Guid.NewGuid(), "Pro", "Monthly"), CancellationToken.None);
 
         id.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public void Subscription_Create_ShouldPopulateCurrentPeriodFields()
+    {
+        var subscription = Subscription.Create(Guid.NewGuid(), BillingService.Domain.Enums.PlanType.Pro, BillingService.Domain.Enums.BillingCycle.Monthly);
+
+        subscription.CurrentPeriodStart.Should().Be(subscription.StartDate);
+        subscription.CurrentPeriodEnd.Should().BeAfter(subscription.CurrentPeriodStart);
+        subscription.NextBillingDate.Should().Be(subscription.CurrentPeriodEnd);
     }
 }
