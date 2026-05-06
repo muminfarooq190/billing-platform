@@ -1,11 +1,12 @@
 using System.Net.Http.Json;
 using System.Text.RegularExpressions;
 using ApiGateway.Configuration;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace ApiGateway.Middleware;
 
-public sealed class FeatureEntitlementMiddleware(RequestDelegate next, IHttpClientFactory httpClientFactory, IOptions<FeatureEntitlementOptions> options, ILogger<FeatureEntitlementMiddleware> logger)
+public sealed class FeatureEntitlementMiddleware(RequestDelegate next, IHttpClientFactory httpClientFactory, IOptions<FeatureEntitlementOptions> options, ILogger<FeatureEntitlementMiddleware> logger, IHostEnvironment environment)
 {
 
     public async Task InvokeAsync(HttpContext context)
@@ -77,8 +78,24 @@ public sealed class FeatureEntitlementMiddleware(RequestDelegate next, IHttpClie
     private async Task<IReadOnlyList<FeatureEntitlementDto>> GetEntitlementsAsync(Guid tenantId, CancellationToken cancellationToken)
     {
         var client = httpClientFactory.CreateClient("billing-entitlements");
-        var response = await client.GetFromJsonAsync<IReadOnlyList<FeatureEntitlementDto>>($"billing/entitlements/{tenantId}", cancellationToken);
-        return response ?? [];
+
+        try
+        {
+            var response = await client.GetFromJsonAsync<IReadOnlyList<FeatureEntitlementDto>>($"billing/entitlements/{tenantId}", cancellationToken);
+            return response ?? [];
+        }
+        catch when (environment.IsDevelopment())
+        {
+            logger.LogWarning("Billing entitlement precheck failed for tenant {TenantId}; allowing local/dev fallback.", tenantId);
+            return [
+                new FeatureEntitlementDto("travel.inquiries.write", true),
+                new FeatureEntitlementDto("travel.concepts.write", true),
+                new FeatureEntitlementDto("travel.workflowHub", true),
+                new FeatureEntitlementDto("travel.timeline.read", true),
+                new FeatureEntitlementDto("travel.quotation.create", true),
+                new FeatureEntitlementDto("travel.booking.create", true)
+            ];
+        }
     }
 
     internal sealed record FeatureEntitlementDto(string FeatureKey, bool Granted);

@@ -18,14 +18,17 @@ public sealed class CreateDraftTripConceptCommandHandler(
     {
         _ = await TravelInquiryCommandHandlerSupport.LoadInquiryAsync(inquiryRepository, request.TenantId, request.InquiryId, cancellationToken);
 
+        var startDateUtc = request.StartDate?.ToUniversalTime();
+        var endDateUtc = request.EndDate?.ToUniversalTime();
+
         var concept = DraftTripConcept.Create(
             request.TenantId,
             request.InquiryId,
             request.Title,
             request.Destination,
             request.Summary,
-            request.StartDate,
-            request.EndDate,
+            startDateUtc,
+            endDateUtc,
             request.Travellers,
             request.Currency,
             request.BudgetAmount,

@@ -1,5 +1,6 @@
 using BillingService.Api;
 using BillingService.Api.Controllers;
+using BillingService.Application.Abstractions;
 using BillingService.Application.Queries.GetEffectiveEntitlements;
 using BillingService.Application.ReadModels;
 using FluentAssertions;
@@ -26,7 +27,8 @@ public sealed class EntitlementsControllerTests
                 new() { FeatureKey = "travel.audit.read", Granted = true, Source = "Package" }
             });
 
-        var controller = new EntitlementsController(mediator.Object, tenantContext.Object);
+        var readDb = new Mock<IReadDbConnectionFactory>();
+        var controller = new EntitlementsController(mediator.Object, tenantContext.Object, readDb.Object);
 
         var result = await controller.GetMine(CancellationToken.None);
 
@@ -43,9 +45,10 @@ public sealed class EntitlementsControllerTests
         var contextTenantId = Guid.NewGuid();
         var mediator = new Mock<IMediator>();
         var tenantContext = new Mock<ITenantContext>();
+        var readDb = new Mock<IReadDbConnectionFactory>();
         tenantContext.SetupGet(x => x.TenantId).Returns(contextTenantId);
 
-        var controller = new EntitlementsController(mediator.Object, tenantContext.Object);
+        var controller = new EntitlementsController(mediator.Object, tenantContext.Object, readDb.Object);
 
         var result = await controller.GetByTenant(routeTenantId, CancellationToken.None);
 

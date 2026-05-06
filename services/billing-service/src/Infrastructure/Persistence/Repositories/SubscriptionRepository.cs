@@ -10,7 +10,20 @@ public sealed class SubscriptionRepository(BillingDbContext dbContext) : ISubscr
 
     public Task<Subscription?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => dbContext.Subscriptions.SingleOrDefaultAsync(x => x.Id == id && x.DeletedAt == null, cancellationToken);
 
-    public Task<Subscription?> GetByTenantIdAsync(Guid tenantId, CancellationToken cancellationToken) => dbContext.Subscriptions.SingleOrDefaultAsync(x => x.TenantId == tenantId && x.DeletedAt == null, cancellationToken);
+    public async Task<Subscription?> GetByTenantIdAsync(Guid tenantId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await dbContext.Subscriptions
+                .Where(x => x.TenantId == tenantId && x.DeletedAt == null)
+                .OrderByDescending(x => x.CreatedAt)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     public async Task<IReadOnlyList<Subscription>> ListDueSubscriptionsAsync(DateOnly billingDate, CancellationToken cancellationToken)
     {
