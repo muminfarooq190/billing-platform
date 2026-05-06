@@ -70,6 +70,84 @@ public static class BillingSeed
                 "ALTER TABLE invoices ADD COLUMN invoice_number character varying(40) NOT NULL DEFAULT '';",
                 cancellationToken);
         }
+
+        if (!await TableExistsAsync(dbContext, "tenant_feature_overrides", cancellationToken))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                @"CREATE TABLE tenant_feature_overrides (
+                    ""Id"" uuid NOT NULL,
+                    tenant_id uuid NOT NULL,
+                    feature_key character varying(200) NOT NULL,
+                    granted boolean NOT NULL,
+                    limit_value integer NULL,
+                    reason character varying(500) NOT NULL,
+                    source character varying(100) NOT NULL,
+                    created_by character varying(200) NULL,
+                    effective_from timestamp with time zone NOT NULL,
+                    effective_to timestamp with time zone NULL,
+                    metadata_json jsonb NULL,
+                    created_at timestamp with time zone NOT NULL,
+                    updated_at timestamp with time zone NOT NULL,
+                    deleted_at timestamp with time zone NULL,
+                    CONSTRAINT ""PK_tenant_feature_overrides"" PRIMARY KEY (""Id"")
+                );",
+                cancellationToken);
+
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "CREATE INDEX \"IX_tenant_feature_overrides_tenant_id_feature_key_deleted_at\" ON tenant_feature_overrides (tenant_id, feature_key, deleted_at);",
+                cancellationToken);
+        }
+
+        if (!await TableExistsAsync(dbContext, "tenant_user_feature_assignments", cancellationToken))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                @"CREATE TABLE tenant_user_feature_assignments (
+                    id uuid NOT NULL,
+                    tenant_id uuid NOT NULL,
+                    user_id uuid NOT NULL,
+                    feature_key character varying(200) NOT NULL,
+                    status character varying(50) NOT NULL,
+                    assigned_by_user_id uuid NULL,
+                    assigned_at timestamp with time zone NOT NULL,
+                    revoked_by_user_id uuid NULL,
+                    revoked_at timestamp with time zone NULL,
+                    effective_from timestamp with time zone NOT NULL,
+                    effective_to timestamp with time zone NULL,
+                    notes character varying(2000) NULL,
+                    metadata_json jsonb NULL,
+                    created_at timestamp with time zone NOT NULL,
+                    updated_at timestamp with time zone NOT NULL,
+                    deleted_at timestamp with time zone NULL,
+                    CONSTRAINT ""PK_tenant_user_feature_assignments"" PRIMARY KEY (id)
+                );",
+                cancellationToken);
+
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "CREATE INDEX ix_tenant_user_feature_assignments_lookup ON tenant_user_feature_assignments (tenant_id, user_id, feature_key, status);",
+                cancellationToken);
+        }
+    }
+
+    private static async Task<bool> TableExistsAsync(BillingDbContext dbContext, string tableName, CancellationToken cancellationToken)
+    {
+        var connection = (NpgsqlConnection)dbContext.Database.GetDbConnection();
+        if (connection.State != System.Data.ConnectionState.Open)
+        {
+            await connection.OpenAsync(cancellationToken);
+        }
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = @"
+            select exists (
+                select 1
+                from information_schema.tables
+                where table_schema = 'public'
+                  and table_name = @tableName
+            );";
+        command.Parameters.AddWithValue("tableName", tableName);
+
+        var result = await command.ExecuteScalarAsync(cancellationToken);
+        return result is bool exists && exists;
     }
 
     private static async Task<bool> HasColumnAsync(BillingDbContext dbContext, string tableName, string columnName, CancellationToken cancellationToken)
