@@ -92,7 +92,6 @@ public sealed class Program
         builder.Services.AddHostedService<OutboxPublisherService>();
         builder.Services.AddHealthChecks();
 
-        ConfigureJwtCompatibility(builder);
         ConfigureAuthentication(builder);
 
         builder.Services.AddAuthorization(options => options.AddPermissionPolicies());
@@ -118,36 +117,22 @@ public sealed class Program
         app.Run();
     }
 
-    private static void ConfigureJwtCompatibility(WebApplicationBuilder builder)
-    {
-        var inlinePem = builder.Configuration["JWT_PUBLIC_KEY"];
-        if (!string.IsNullOrWhiteSpace(inlinePem))
-        {
-            return;
-        }
-
-        var pemPath = builder.Configuration["JWT_PUBLIC_KEY_PATH"];
-        if (!string.IsNullOrWhiteSpace(pemPath) && File.Exists(pemPath))
-        {
-            builder.Configuration["JWT_PUBLIC_KEY"] = File.ReadAllText(pemPath);
-        }
-    }
-
     private static void ConfigureAuthentication(WebApplicationBuilder builder)
     {
         var issuer = builder.Configuration["JWT_ISSUER"] ?? "billing-platform.identity";
         var audience = builder.Configuration["JWT_AUDIENCE"] ?? "billing-platform.clients";
-        var publicKeyPem = builder.Configuration["JWT_PUBLIC_KEY"];
+        var publicKeyPem = ResolvePublicKeyPem(builder.Configuration);
+
+        var authenticationBuilder = builder.Services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        });
 
         if (string.IsNullOrWhiteSpace(publicKeyPem))
         {
-            builder.Services.AddAuthentication();
+            AddFailClosedJwtBearer(authenticationBuilder);
             return;
-        }
-
-        if (!publicKeyPem.Contains("BEGIN", StringComparison.OrdinalIgnoreCase) && File.Exists(publicKeyPem))
-        {
-            publicKeyPem = File.ReadAllText(publicKeyPem);
         }
 
         try
@@ -156,26 +141,72 @@ public sealed class Program
             rsa.ImportFromPem(publicKeyPem);
             var signingKey = new RsaSecurityKey(rsa.ExportParameters(false));
 
-            builder.Services
-                .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(options =>
+            authenticationBuilder.AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuer = true,
-                        ValidIssuer = issuer,
-                        ValidateAudience = true,
-                        ValidAudience = audience,
-                        ValidateIssuerSigningKey = true,
-                        IssuerSigningKey = signingKey,
-                        ValidateLifetime = true,
-                        ClockSkew = TimeSpan.FromMinutes(1)
-                    };
-                });
+                    ValidateIssuer = true,
+                    ValidIssuer = issuer,
+                    ValidateAudience = true,
+                    ValidAudience = audience,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = signingKey,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.FromMinutes(1)
+                };
+            });
         }
         catch
         {
-            builder.Services.AddAuthentication();
+            AddFailClosedJwtBearer(authenticationBuilder);
         }
+    }
+
+    private static void AddFailClosedJwtBearer(AuthenticationBuilder authenticationBuilder)
+    {
+        authenticationBuilder.AddJwtBearer(options =>
+        {
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    context.NoResult();
+                    return Task.CompletedTask;
+                }
+            };
+        });
+    }
+
+    private static string? ResolvePublicKeyPem(IConfiguration configuration)
+    {
+        var inlinePem = configuration["JWT_PUBLIC_KEY"];
+        if (!string.IsNullOrWhiteSpace(inlinePem))
+        {
+            if (LooksLikeCompletePem(inlinePem))
+            {
+                return inlinePem;
+            }
+
+            if (File.Exists(inlinePem))
+            {
+                return File.ReadAllText(inlinePem);
+            }
+        }
+
+        var pemPath = configuration["JWT_PUBLIC_KEY_PATH"];
+        if (!string.IsNullOrWhiteSpace(pemPath) && File.Exists(pemPath))
+        {
+            return File.ReadAllText(pemPath);
+        }
+
+        return null;
+    }
+
+    private static bool LooksLikeCompletePem(string value)
+    {
+        return (value.Contains("-----BEGIN PUBLIC KEY-----", StringComparison.Ordinal)
+                && value.Contains("-----END PUBLIC KEY-----", StringComparison.Ordinal))
+            || (value.Contains("-----BEGIN RSA PUBLIC KEY-----", StringComparison.Ordinal)
+                && value.Contains("-----END RSA PUBLIC KEY-----", StringComparison.Ordinal));
     }
 }
