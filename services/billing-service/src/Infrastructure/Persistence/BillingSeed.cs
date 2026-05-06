@@ -11,11 +11,7 @@ public static class BillingSeed
 {
     public static async Task SeedFlexibleEntitlementsAsync(BillingDbContext dbContext, CancellationToken cancellationToken)
     {
-        if (!await HasColumnAsync(dbContext, "feature_catalog", "assignment_mode", cancellationToken))
-        {
-            return;
-        }
-
+        await EnsureFlexibleEntitlementSchemaAsync(dbContext, cancellationToken);
         await SeedFeatureCatalogAsync(dbContext, cancellationToken);
         await SeedPlanPackagesAsync(dbContext, cancellationToken);
         await EnsureDemoTenantEnterpriseEntitlementsAsync(dbContext, cancellationToken);
@@ -23,9 +19,33 @@ public static class BillingSeed
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    private static async Task EnsureFlexibleEntitlementSchemaAsync(BillingDbContext dbContext, CancellationToken cancellationToken)
+    {
+        if (!await HasColumnAsync(dbContext, "feature_catalog", "assignment_mode", cancellationToken))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE feature_catalog ADD COLUMN assignment_mode character varying(50) NOT NULL DEFAULT 'TenantWide';",
+                cancellationToken);
+        }
+
+        if (!await HasColumnAsync(dbContext, "feature_catalog", "default_assignment_limit", cancellationToken))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE feature_catalog ADD COLUMN default_assignment_limit integer NULL;",
+                cancellationToken);
+        }
+
+        if (!await HasColumnAsync(dbContext, "commercial_package_features", "limit_merge_policy", cancellationToken))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE commercial_package_features ADD COLUMN limit_merge_policy character varying(50) NOT NULL DEFAULT 'Max';",
+                cancellationToken);
+        }
+    }
+
     private static async Task<bool> HasColumnAsync(BillingDbContext dbContext, string tableName, string columnName, CancellationToken cancellationToken)
     {
-        await using var connection = (NpgsqlConnection)dbContext.Database.GetDbConnection();
+        var connection = (NpgsqlConnection)dbContext.Database.GetDbConnection();
         if (connection.State != System.Data.ConnectionState.Open)
         {
             await connection.OpenAsync(cancellationToken);
@@ -143,21 +163,35 @@ public static class BillingSeed
             return;
         }
 
-        var assignment = await dbContext.TenantSubscriptionPackages
+        var existingAssignment = await dbContext.TenantSubscriptionPackages
+            .AsNoTracking()
             .FirstOrDefaultAsync(x => x.TenantId == DemoTenantId && x.CommercialPackageId == enterprisePackage.Id && x.DeletedAt == null, cancellationToken);
 
-        if (assignment is null)
+        if (existingAssignment is not null)
         {
-            dbContext.TenantSubscriptionPackages.Add(TenantSubscriptionPackage.Create(
-                DemoTenantId,
-                enterprisePackage.Id,
-                "Seed",
-                "Active",
-                DateTimeOffset.UtcNow.AddYears(-1),
-                null,
-                "{\"source\":\"demo-seed\",\"email\":\"admin@example.com\"}"));
-            await dbContext.SaveChangesAsync(cancellationToken);
+            await dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"""
+                update tenant_subscription_packages
+                set source = {"Seed"},
+                    status = {"Active"},
+                    effective_from = {DateTimeOffset.UtcNow.AddYears(-1)},
+                    effective_to = null,
+                    metadata_json = {"{\"source\":\"demo-seed\",\"email\":\"admin@example.com\"}"}::jsonb,
+                    updated_at = now(),
+                    deleted_at = null
+                where tenant_id = {DemoTenantId}
+                  and commercial_package_id = {enterprisePackage.Id};
+                """,
+                cancellationToken);
+            return;
         }
+
+        await dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            insert into tenant_subscription_packages ("Id", tenant_id, commercial_package_id, source, status, effective_from, effective_to, metadata_json, created_at, updated_at, deleted_at)
+            values ({Guid.NewGuid()}, {DemoTenantId}, {enterprisePackage.Id}, {"Seed"}, {"Active"}, {DateTimeOffset.UtcNow.AddYears(-1)}, null, {"{\"source\":\"demo-seed\",\"email\":\"admin@example.com\"}"}::jsonb, now(), now(), null);
+            """,
+            cancellationToken);
     }
 
     private static async Task BackfillTenantPlanAssignmentsAsync(BillingDbContext dbContext, CancellationToken cancellationToken)
