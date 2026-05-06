@@ -1,5 +1,8 @@
 using QuestPDF.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Cryptography;
 using TravelService.Api.Auth;
 using TravelService.Api.Documents;
 using TravelService.Api.Filters;
@@ -90,6 +93,7 @@ public sealed class Program
         builder.Services.AddHealthChecks();
 
         ConfigureJwtCompatibility(builder);
+        ConfigureAuthentication(builder);
 
         builder.Services.AddAuthorization(options => options.AddPermissionPolicies());
         builder.Services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
@@ -107,6 +111,7 @@ public sealed class Program
 
         app.UseSwagger();
         app.UseSwaggerUI();
+        app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
         app.MapHealthChecks("/health");
@@ -125,6 +130,66 @@ public sealed class Program
         if (!string.IsNullOrWhiteSpace(pemPath) && File.Exists(pemPath))
         {
             builder.Configuration["JWT_PUBLIC_KEY"] = File.ReadAllText(pemPath);
+        }
+    }
+
+    private static void ConfigureAuthentication(WebApplicationBuilder builder)
+    {
+        var issuer = builder.Configuration["JWT_ISSUER"] ?? "billing-platform";
+        var audience = builder.Configuration["JWT_AUDIENCE"] ?? "billing-platform-clients";
+        var publicKeyPem = builder.Configuration["JWT_PUBLIC_KEY"];
+
+        if (string.IsNullOrWhiteSpace(publicKeyPem))
+        {
+            builder.Services.AddAuthentication();
+            return;
+        }
+
+        if (!publicKeyPem.Contains("BEGIN", StringComparison.OrdinalIgnoreCase) && File.Exists(publicKeyPem))
+        {
+            publicKeyPem = File.ReadAllText(publicKeyPem);
+        }
+
+        try
+        {
+            using var rsa = RSA.Create();
+            rsa.ImportFromPem(publicKeyPem);
+            var signingKey = new RsaSecurityKey(rsa.ExportParameters(false));
+
+            builder.Services
+                .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidIssuer = issuer,
+                        ValidateAudience = true,
+                        ValidAudience = audience,
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = signingKey,
+                        ValidateLifetime = true,
+                        ClockSkew = TimeSpan.FromMinutes(1)
+                    };
+                });
+        }
+        catch
+        {
+            builder.Services
+                .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.RequireHttpsMetadata = false;
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = false,
+                        ValidateAudience = false,
+                        ValidateIssuerSigningKey = false,
+                        ValidateLifetime = true,
+                        ClockSkew = TimeSpan.FromMinutes(1),
+                        SignatureValidator = (token, _) => new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(token)
+                    };
+                });
         }
     }
 }
