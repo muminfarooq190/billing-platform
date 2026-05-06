@@ -135,8 +135,8 @@ public sealed class Program
 
     private static void ConfigureAuthentication(WebApplicationBuilder builder)
     {
-        var issuer = builder.Configuration["JWT_ISSUER"] ?? "billing-platform";
-        var audience = builder.Configuration["JWT_AUDIENCE"] ?? "billing-platform-clients";
+        var issuer = builder.Configuration["JWT_ISSUER"] ?? "billing-platform.identity";
+        var audience = builder.Configuration["JWT_AUDIENCE"] ?? "billing-platform.clients";
         var publicKeyPem = builder.Configuration["JWT_PUBLIC_KEY"];
 
         if (string.IsNullOrWhiteSpace(publicKeyPem))
@@ -175,21 +175,7 @@ public sealed class Program
         }
         catch
         {
-            builder.Services
-                .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(options =>
-                {
-                    options.RequireHttpsMetadata = false;
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuer = false,
-                        ValidateAudience = false,
-                        ValidateIssuerSigningKey = false,
-                        ValidateLifetime = true,
-                        ClockSkew = TimeSpan.FromMinutes(1),
-                        SignatureValidator = (token, _) => new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(token)
-                    };
-                });
+            builder.Services.AddAuthentication();
         }
     }
 }

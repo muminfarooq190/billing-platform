@@ -175,6 +175,8 @@ services:
       COMMUNICATION_SERVICE_URL: http://communication-service:8080/
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
       OTEL_SERVICE_NAME: travel-service
+    volumes:
+      - ./docker/keys/jwt-public.pem:/run/secrets/jwt-public.pem:ro
     ports:
       - "5004:8080"
     networks:
