@@ -3,6 +3,7 @@ using BillingService.Domain.Aggregates;
 using BillingService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using static BillingService.Infrastructure.Persistence.IdentitySeedBridge;
 
 namespace BillingService.Infrastructure.Persistence;
 
@@ -17,6 +18,7 @@ public static class BillingSeed
 
         await SeedFeatureCatalogAsync(dbContext, cancellationToken);
         await SeedPlanPackagesAsync(dbContext, cancellationToken);
+        await EnsureDemoTenantEnterpriseEntitlementsAsync(dbContext, cancellationToken);
         await BackfillTenantPlanAssignmentsAsync(dbContext, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
@@ -127,6 +129,34 @@ public static class BillingSeed
                 dbContext.CommercialPackageFeatures.AddRange(CreateLegacyFeatures(package.Id, definition.Plan));
                 await dbContext.SaveChangesAsync(cancellationToken);
             }
+        }
+    }
+
+    private static async Task EnsureDemoTenantEnterpriseEntitlementsAsync(BillingDbContext dbContext, CancellationToken cancellationToken)
+    {
+        var enterprisePackage = await dbContext.CommercialPackages
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Code == "legacy.enterprise", cancellationToken);
+
+        if (enterprisePackage is null)
+        {
+            return;
+        }
+
+        var assignment = await dbContext.TenantSubscriptionPackages
+            .FirstOrDefaultAsync(x => x.TenantId == DemoTenantId && x.CommercialPackageId == enterprisePackage.Id && x.DeletedAt == null, cancellationToken);
+
+        if (assignment is null)
+        {
+            dbContext.TenantSubscriptionPackages.Add(TenantSubscriptionPackage.Create(
+                DemoTenantId,
+                enterprisePackage.Id,
+                "Seed",
+                "Active",
+                DateTimeOffset.UtcNow.AddYears(-1),
+                null,
+                "{\"source\":\"demo-seed\",\"email\":\"admin@example.com\"}"));
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
     }
 
