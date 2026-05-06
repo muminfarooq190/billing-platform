@@ -41,6 +41,35 @@ public static class BillingSeed
                 "ALTER TABLE commercial_package_features ADD COLUMN limit_merge_policy character varying(50) NOT NULL DEFAULT 'Max';",
                 cancellationToken);
         }
+
+        if (!await HasColumnAsync(dbContext, "subscriptions", "current_period_start", cancellationToken))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE subscriptions ADD COLUMN current_period_start timestamp with time zone NOT NULL DEFAULT NOW();",
+                cancellationToken);
+
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "UPDATE subscriptions SET current_period_start = start_date WHERE current_period_start IS NULL OR current_period_start = NOW();",
+                cancellationToken);
+        }
+
+        if (!await HasColumnAsync(dbContext, "subscriptions", "current_period_end", cancellationToken))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE subscriptions ADD COLUMN current_period_end timestamp with time zone NOT NULL DEFAULT NOW();",
+                cancellationToken);
+
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "UPDATE subscriptions SET current_period_end = next_billing_date WHERE current_period_end IS NULL OR current_period_end = NOW();",
+                cancellationToken);
+        }
+
+        if (!await HasColumnAsync(dbContext, "invoices", "invoice_number", cancellationToken))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE invoices ADD COLUMN invoice_number character varying(40) NOT NULL DEFAULT '';",
+                cancellationToken);
+        }
     }
 
     private static async Task<bool> HasColumnAsync(BillingDbContext dbContext, string tableName, string columnName, CancellationToken cancellationToken)
