@@ -1,6 +1,7 @@
 using MediatR;
 using TravelService.Application.Abstractions;
 using TravelService.Domain.Aggregates;
+using TravelService.Domain.Enums;
 using TravelService.Domain.Exceptions;
 using TravelService.Domain.Repositories;
 
@@ -97,7 +98,10 @@ public sealed class ConvertInquiryToQuotationCommandHandler(
         await quotationRepository.AddAsync(quotation, cancellationToken);
 
         var previousStatus = inquiry.Status.ToString();
-        inquiry.Assign(request.AssignedToUserId ?? inquiry.AssignedToUserId);
+        var requestedAssignee = request.AssignedToUserId ?? inquiry.AssignedToUserId;
+        var canUpdateInquiryAssignment = inquiry.Status is not (TravelInquiryStatus.Lost or TravelInquiryStatus.Spam or TravelInquiryStatus.Archived);
+        if (canUpdateInquiryAssignment)
+            inquiry.Assign(requestedAssignee);
         inquiry.MarkQuoted(contact.Id, quotation.Id);
         await inquiryRepository.UpdateAsync(inquiry, cancellationToken);
         await historyRepository.AddAsync(
