@@ -12,10 +12,20 @@ namespace TravelService.Api.Controllers;
 public sealed class TimelineController(IMediator mediator, ITenantContext tenantContext, IFeatureGate featureGate) : ControllerBase
 {
     [HttpGet("activity")]
-    public async Task<IActionResult> ListTenantActivity([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> ListTenantActivity(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? entityType = null,
+        [FromQuery] string? activityType = null,
+        [FromQuery] Guid? actorUserId = null,
+        [FromQuery] DateTimeOffset? fromDate = null,
+        [FromQuery] DateTimeOffset? toDate = null,
+        CancellationToken cancellationToken = default)
     {
         await featureGate.EnsureEnabledAsync(FeatureKeys.TravelTimelineRead, tenantContext.TenantId, tenantContext.UserId, cancellationToken);
-        var result = await mediator.Send(new ListTenantActivityQuery(tenantContext.TenantId, page, pageSize), cancellationToken);
+        var result = await mediator.Send(
+            new ListTenantActivityQuery(tenantContext.TenantId, page, pageSize, entityType, activityType, actorUserId, fromDate, toDate),
+            cancellationToken);
         return Ok(result);
     }
 

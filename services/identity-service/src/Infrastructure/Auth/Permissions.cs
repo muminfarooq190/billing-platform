@@ -10,6 +10,8 @@ public static class Permissions
         public const string SettingsRead = "identity.settings.read";
         public const string SettingsManage = "identity.settings.manage";
         public const string TenantManage = "identity.tenant.manage";
+        public const string WorkflowRead = "identity.workflow.read";
+        public const string WorkflowManage = "identity.workflow.manage";
     }
 
     public static class Branding
@@ -63,6 +65,8 @@ public static class Permissions
         Identity.SettingsRead,
         Identity.SettingsManage,
         Identity.TenantManage,
+        Identity.WorkflowRead,
+        Identity.WorkflowManage,
         Branding.ThemeRead,
         Branding.ThemeManage,
         Travel.WorkflowHubRead,

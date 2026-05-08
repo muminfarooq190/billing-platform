@@ -70,6 +70,33 @@ let WebhookController = class WebhookController {
         const tenantId = this.tenantContext.getTenantId(request);
         await this.webhookService.deactivateSubscription(id, tenantId);
     }
+    eventCatalog() {
+        return {
+            events: [
+                { key: 'billing.invoice.created', group: 'Billing', description: 'New invoice generated for tenant subscription or booking.' },
+                { key: 'billing.invoice.paid', group: 'Billing', description: 'Invoice marked paid via Stripe checkout or manual reconciliation.' },
+                { key: 'billing.invoice.failed', group: 'Billing', description: 'Invoice payment attempt failed (declined card, insufficient funds, etc.).' },
+                { key: 'billing.subscription.created', group: 'Billing', description: 'Tenant subscription activated.' },
+                { key: 'billing.subscription.cancelled', group: 'Billing', description: 'Tenant subscription cancelled or expired.' },
+                { key: 'travel.inquiry.created', group: 'Inquiries', description: 'New inquiry submitted (web form, email, partner channel).' },
+                { key: 'travel.inquiry.assigned', group: 'Inquiries', description: 'Inquiry assigned to a consultant.' },
+                { key: 'travel.inquiry.qualified', group: 'Inquiries', description: 'Inquiry marked qualified for quotation.' },
+                { key: 'travel.quotation.created', group: 'Quotations', description: 'New quotation drafted from inquiry.' },
+                { key: 'travel.quotation.sent', group: 'Quotations', description: 'Quotation emailed to customer with public share link.' },
+                { key: 'travel.quotation.accepted', group: 'Quotations', description: 'Customer accepted quotation (public token or portal action).' },
+                { key: 'travel.quotation.rejected', group: 'Quotations', description: 'Customer rejected quotation.' },
+                { key: 'travel.quotation.expired', group: 'Quotations', description: 'Quotation passed valid-until date without acceptance.' },
+                { key: 'travel.booking.confirmed', group: 'Bookings', description: 'Booking created from accepted quotation.' },
+                { key: 'travel.booking.payment_received', group: 'Bookings', description: 'Booking payment milestone marked paid.' },
+                { key: 'travel.booking.cancelled', group: 'Bookings', description: 'Booking cancelled before travel.' },
+                { key: 'communication.notification.sent', group: 'Communication', description: 'Outbound notification dispatched (email/SMS/in-app).' },
+                { key: 'communication.notification.delivered', group: 'Communication', description: 'Notification confirmed delivered by provider.' },
+                { key: 'communication.notification.failed', group: 'Communication', description: 'Notification dispatch or delivery failed.' },
+                { key: 'identity.user.invited', group: 'Identity', description: 'Team member invitation sent.' },
+                { key: 'identity.user.activated', group: 'Identity', description: 'Invited user accepted invitation.' },
+            ],
+        };
+    }
 };
 exports.WebhookController = WebhookController;
 __decorate([
@@ -120,6 +147,12 @@ __decorate([
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], WebhookController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Get)('event-catalog'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Object)
+], WebhookController.prototype, "eventCatalog", null);
 exports.WebhookController = WebhookController = __decorate([
     (0, common_1.Controller)('webhooks'),
     __metadata("design:paramtypes", [webhook_service_1.WebhookService,

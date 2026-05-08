@@ -21,6 +21,7 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
     public DbSet<TenantBranding> TenantBranding => Set<TenantBranding>();
     public DbSet<TenantBrandAsset> TenantBrandAssets => Set<TenantBrandAsset>();
     public DbSet<TenantTemplateTheme> TenantTemplateThemes => Set<TenantTemplateTheme>();
+    public DbSet<WorkflowStage> WorkflowStages => Set<WorkflowStage>();
     public DbSet<OutboxMessage> DomainEvents => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
