@@ -36,6 +36,7 @@ public sealed class Program
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
         builder.Services.AddScoped<IReadDbConnectionFactory, ReadDbConnectionFactory>();
         builder.Services.AddScoped<ICacheService, RedisCacheService>();
+        builder.Services.AddSingleton<BillingService.Api.Documents.IInvoicePdfRenderer, BillingService.Api.Documents.QuestPdfInvoiceRenderer>();
 
         builder.Services.AddStackExchangeRedisCache(options => options.Configuration = builder.Configuration["REDIS_URL"] ?? "redis:6379");
         builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));

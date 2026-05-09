@@ -203,14 +203,37 @@ public sealed class AuthController(IMediator mediator, JwtTokenService jwtTokenS
 
     private async Task<IReadOnlyList<string>> ResolvePermissionsAsync(Guid userId, Guid tenantId, CancellationToken cancellationToken)
     {
-        return await (from assignment in dbContext.UserRoleAssignments.AsNoTracking()
-                      join role in dbContext.RoleDefinitions.AsNoTracking() on assignment.RoleDefinitionId equals role.Id
-                      join permission in dbContext.RolePermissionAssignments.AsNoTracking() on role.Id equals permission.RoleDefinitionId
-                      where assignment.UserId == userId && assignment.TenantId == tenantId
-                      select permission.PermissionKey)
+        var rolePermissions = await (from assignment in dbContext.UserRoleAssignments.AsNoTracking()
+                                     join role in dbContext.RoleDefinitions.AsNoTracking() on assignment.RoleDefinitionId equals role.Id
+                                     join permission in dbContext.RolePermissionAssignments.AsNoTracking() on role.Id equals permission.RoleDefinitionId
+                                     where assignment.UserId == userId && assignment.TenantId == tenantId
+                                     select permission.PermissionKey)
             .Distinct()
-            .OrderBy(x => x)
             .ToListAsync(cancellationToken);
+
+        var effective = new HashSet<string>(rolePermissions, StringComparer.Ordinal);
+
+        // Defensive: overrides table may not exist yet on hosts that have not applied
+        // the AddUserPermissionOverrides migration. Fall back to role-only permissions.
+        try
+        {
+            var overrides = await dbContext.UserPermissionOverrides.AsNoTracking()
+                .Where(x => x.UserId == userId && x.TenantId == tenantId)
+                .Select(x => new { x.PermissionKey, x.Granted })
+                .ToListAsync(cancellationToken);
+
+            foreach (var ov in overrides)
+            {
+                if (ov.Granted) effective.Add(ov.PermissionKey);
+                else effective.Remove(ov.PermissionKey);
+            }
+        }
+        catch (Npgsql.PostgresException)
+        {
+            // Table missing — overrides feature not migrated yet. Skip silently.
+        }
+
+        return effective.OrderBy(x => x).ToList();
     }
 
     private sealed record UserAuthRow(Guid Id, Guid TenantId, string PasswordHash, string Role, string Status, bool MustChangePassword);

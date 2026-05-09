@@ -3,6 +3,7 @@ using System;
 using IdentityService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace IdentityService.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(IdentityDbContext))]
-    partial class IdentityDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260509054656_AddUserPermissionOverrides")]
+    partial class AddUserPermissionOverrides
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -432,106 +435,6 @@ namespace IdentityService.Infrastructure.Persistence.Migrations
                     b.HasKey("TenantId");
 
                     b.ToTable("tenant_branding", (string)null);
-                });
-
-            modelBuilder.Entity("IdentityService.Domain.Aggregates.TenantEmailTemplateStyle", b =>
-                {
-                    b.Property<Guid>("TenantId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<string>("AccentColor")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasColumnName("accent_color");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("CustomCssJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("custom_css_json");
-
-                    b.Property<string>("FontFamily")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("font_family");
-
-                    b.Property<string>("FooterHtml")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("footer_html");
-
-                    b.Property<string>("HeaderHtml")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("header_html");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("TenantId");
-
-                    b.ToTable("tenant_email_template_styles", (string)null);
-                });
-
-            modelBuilder.Entity("IdentityService.Domain.Aggregates.TenantPdfStyling", b =>
-                {
-                    b.Property<Guid>("TenantId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<string>("AccentColor")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasColumnName("accent_color");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("CustomCssJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("custom_css_json");
-
-                    b.Property<string>("FooterText")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("footer_text");
-
-                    b.Property<string>("HeaderLayout")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)")
-                        .HasColumnName("header_layout");
-
-                    b.Property<int>("MarginPx")
-                        .HasColumnType("integer")
-                        .HasColumnName("margin_px");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("WatermarkText")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)")
-                        .HasColumnName("watermark_text");
-
-                    b.HasKey("TenantId");
-
-                    b.ToTable("tenant_pdf_styling", (string)null);
                 });
 
             modelBuilder.Entity("IdentityService.Domain.Aggregates.TenantSettings", b =>
