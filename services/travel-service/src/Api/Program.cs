@@ -1,8 +1,10 @@
+using Dapper;
 using QuestPDF.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.Data;
 using System.Security.Cryptography;
 using TravelService.Api.Auth;
 using TravelService.Api.Documents;
@@ -28,6 +30,13 @@ public sealed class Program
     public static void Main(string[] args)
     {
         QuestPDF.Settings.License = LicenseType.Community;
+
+        // Npgsql 8 returns System.DateTime for timestamptz columns by default. Read-models
+        // declare DateTimeOffset, so Dapper fails to find a matching record constructor.
+        // Register a TypeHandler that converts the DateTime returned by the data reader
+        // into a UTC DateTimeOffset so positional record materialization succeeds.
+        SqlMapper.AddTypeHandler(new DateTimeOffsetHandler());
+        SqlMapper.AddTypeHandler(new NullableDateTimeOffsetHandler());
 
         var builder = WebApplication.CreateBuilder(args);
         var databaseUrl = builder.Configuration["DATABASE_URL"] ?? "Host=postgres;Port=5432;Database=billing_travel;Username=billing_user;Password=changeme";
@@ -210,4 +219,31 @@ public sealed class Program
             || (value.Contains("-----BEGIN RSA PUBLIC KEY-----", StringComparison.Ordinal)
                 && value.Contains("-----END RSA PUBLIC KEY-----", StringComparison.Ordinal));
     }
+}
+
+internal sealed class DateTimeOffsetHandler : SqlMapper.TypeHandler<DateTimeOffset>
+{
+    public override DateTimeOffset Parse(object value) => value switch
+    {
+        DateTimeOffset dto => dto,
+        DateTime dt => DateTime.SpecifyKind(dt, DateTimeKind.Utc),
+        _ => throw new DataException($"Cannot convert {value?.GetType().FullName ?? "null"} to DateTimeOffset.")
+    };
+
+    public override void SetValue(IDbDataParameter parameter, DateTimeOffset value) => parameter.Value = value;
+}
+
+internal sealed class NullableDateTimeOffsetHandler : SqlMapper.TypeHandler<DateTimeOffset?>
+{
+    public override DateTimeOffset? Parse(object value) => value switch
+    {
+        null => null,
+        DBNull => null,
+        DateTimeOffset dto => dto,
+        DateTime dt => DateTime.SpecifyKind(dt, DateTimeKind.Utc),
+        _ => throw new DataException($"Cannot convert {value.GetType().FullName} to DateTimeOffset?.")
+    };
+
+    public override void SetValue(IDbDataParameter parameter, DateTimeOffset? value)
+        => parameter.Value = value.HasValue ? value.Value : DBNull.Value;
 }

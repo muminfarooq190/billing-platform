@@ -13,23 +13,23 @@ public sealed record WorkflowHubItemReadModel(
     string? Email,
     string? Phone,
     string? Destination,
-    DateTime? TravelDate,
-    DateTime? ReturnDate,
+    DateTimeOffset? TravelDate,
+    DateTimeOffset? ReturnDate,
     int? Travellers,
     decimal? BudgetAmount,
     string? BudgetCurrency,
     Guid? AssignedToUserId,
-    DateTime CreatedAt,
-    DateTime UpdatedAt,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt,
     Guid? QuotationId,
     string? QuotationStatus,
     Guid? AcceptedRevisionId,
-    DateTime? QuotationUpdatedAt,
+    DateTimeOffset? QuotationUpdatedAt,
     Guid? BookingId,
     string? BookingStatus,
     Guid? ItineraryId,
     string? ItineraryStatus,
-    DateTime? BookingUpdatedAt
+    DateTimeOffset? BookingUpdatedAt
 );
 
 public sealed class ListWorkflowHubQueryHandler(IReadDbConnectionFactory connectionFactory) : IRequestHandler<ListWorkflowHubQuery, IReadOnlyList<WorkflowHubItemReadModel>>

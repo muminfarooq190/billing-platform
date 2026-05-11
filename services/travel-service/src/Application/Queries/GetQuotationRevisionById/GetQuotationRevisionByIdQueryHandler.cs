@@ -81,79 +81,87 @@ ORDER BY sort_order, created_at;";
         foreach (var attachment in attachmentRows)
         {
             var readUrl = await fileStorage.GetReadUrlAsync(attachment.StorageKey, cancellationToken);
-            attachments.Add(new QuotationRevisionAttachmentReadModel(
-                attachment.Id,
-                attachment.OriginalFileName,
-                attachment.ContentType,
-                attachment.SizeBytes,
-                attachment.AttachmentType,
-                attachment.Caption,
-                attachment.IsCustomerVisible,
-                attachment.SortOrder,
-                readUrl,
-                attachment.CreatedAt));
+            attachments.Add(new QuotationRevisionAttachmentReadModel
+            {
+                Id = attachment.Id,
+                OriginalFileName = attachment.OriginalFileName,
+                ContentType = attachment.ContentType,
+                SizeBytes = attachment.SizeBytes,
+                AttachmentType = attachment.AttachmentType,
+                Caption = attachment.Caption,
+                IsCustomerVisible = attachment.IsCustomerVisible,
+                SortOrder = attachment.SortOrder,
+                ReadUrl = readUrl,
+                CreatedAt = attachment.CreatedAt,
+            });
         }
 
-        return new QuotationRevisionReadModel(
-            revision.Id,
-            revision.QuotationId,
-            revision.TenantId,
-            revision.RevisionNumber,
-            revision.Status,
-            revision.CustomerContactId,
-            revision.CustomerName,
-            revision.Title,
-            revision.Destination,
-            revision.TravelDate,
-            revision.ReturnDate,
-            revision.Travellers,
-            revision.Currency,
-            revision.Notes,
-            revision.VisibleNotes,
-            revision.InternalNotes,
-            revision.ValidUntil,
-            revision.SubtotalAmount,
-            revision.TaxAmount,
-            revision.TotalAmount,
-            revision.CreatedByUserId,
-            revision.CreatedAt,
-            lineItems,
-            attachments.AsReadOnly());
+        return new QuotationRevisionReadModel
+        {
+            Id = revision.Id,
+            QuotationId = revision.QuotationId,
+            TenantId = revision.TenantId,
+            RevisionNumber = revision.RevisionNumber,
+            Status = revision.Status,
+            CustomerContactId = revision.CustomerContactId,
+            CustomerName = revision.CustomerName,
+            Title = revision.Title,
+            Destination = revision.Destination,
+            TravelDate = revision.TravelDate,
+            ReturnDate = revision.ReturnDate,
+            Travellers = revision.Travellers,
+            Currency = revision.Currency,
+            Notes = revision.Notes,
+            VisibleNotes = revision.VisibleNotes,
+            InternalNotes = revision.InternalNotes,
+            ValidUntil = revision.ValidUntil,
+            SubtotalAmount = revision.SubtotalAmount,
+            TaxAmount = revision.TaxAmount,
+            TotalAmount = revision.TotalAmount,
+            CreatedByUserId = revision.CreatedByUserId,
+            CreatedAt = revision.CreatedAt,
+            LineItems = lineItems,
+            Attachments = attachments.AsReadOnly(),
+        };
     }
 
-    private sealed record FlatQuotationRevisionReadModel(
-        Guid Id,
-        Guid QuotationId,
-        Guid TenantId,
-        int RevisionNumber,
-        string Status,
-        Guid CustomerContactId,
-        string CustomerName,
-        string Title,
-        string Destination,
-        DateTimeOffset TravelDate,
-        DateTimeOffset ReturnDate,
-        int Travellers,
-        string Currency,
-        string Notes,
-        string VisibleNotes,
-        string InternalNotes,
-        DateTimeOffset ValidUntil,
-        decimal SubtotalAmount,
-        decimal TaxAmount,
-        decimal TotalAmount,
-        Guid? CreatedByUserId,
-        DateTimeOffset CreatedAt);
+    private sealed class FlatQuotationRevisionReadModel
+    {
+        public Guid Id { get; set; }
+        public Guid QuotationId { get; set; }
+        public Guid TenantId { get; set; }
+        public int RevisionNumber { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public Guid CustomerContactId { get; set; }
+        public string CustomerName { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Destination { get; set; } = string.Empty;
+        public DateTimeOffset TravelDate { get; set; }
+        public DateTimeOffset ReturnDate { get; set; }
+        public int Travellers { get; set; }
+        public string Currency { get; set; } = string.Empty;
+        public string Notes { get; set; } = string.Empty;
+        public string VisibleNotes { get; set; } = string.Empty;
+        public string InternalNotes { get; set; } = string.Empty;
+        public DateTimeOffset ValidUntil { get; set; }
+        public decimal SubtotalAmount { get; set; }
+        public decimal TaxAmount { get; set; }
+        public decimal TotalAmount { get; set; }
+        public Guid? CreatedByUserId { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+    }
 
-    private sealed record FlatQuotationRevisionAttachmentReadModel(
-        Guid Id,
-        string OriginalFileName,
-        string ContentType,
-        long SizeBytes,
-        string AttachmentType,
-        string? Caption,
-        bool IsCustomerVisible,
-        int SortOrder,
-        string StorageKey,
-        DateTimeOffset CreatedAt);
+    private sealed class FlatQuotationRevisionAttachmentReadModel
+    {
+        public Guid Id { get; set; }
+        public string OriginalFileName { get; set; } = string.Empty;
+        public string ContentType { get; set; } = string.Empty;
+        public long SizeBytes { get; set; }
+        public string AttachmentType { get; set; } = string.Empty;
+        public string? Caption { get; set; }
+        public bool IsCustomerVisible { get; set; }
+        public int SortOrder { get; set; }
+        public string StorageKey { get; set; } = string.Empty;
+        public DateTimeOffset CreatedAt { get; set; }
+    }
 }

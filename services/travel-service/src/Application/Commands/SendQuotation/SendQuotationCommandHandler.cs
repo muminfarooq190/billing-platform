@@ -128,33 +128,35 @@ public sealed class SendQuotationCommandHandler(
     }
 
     private static QuotationRevisionReadModel MapRevisionReadModel(Quotation quotation, QuotationRevision revision)
-        => new(
-            revision.Id,
-            quotation.Id,
-            quotation.TenantId,
-            revision.RevisionNumber,
-            revision.Status.ToString(),
-            quotation.CustomerContactId,
-            quotation.CustomerName,
-            revision.Title,
-            revision.Destination,
-            revision.TravelDate,
-            revision.ReturnDate,
-            revision.Travellers,
-            revision.Currency,
-            quotation.Notes,
-            revision.VisibleNotes,
-            revision.InternalNotes,
-            revision.ValidUntil,
-            revision.SubtotalAmount,
-            revision.TaxAmount,
-            revision.TotalAmount,
-            revision.CreatedByUserId,
-            revision.CreatedAt,
-            revision.LineItems
+        => new()
+        {
+            Id = revision.Id,
+            QuotationId = quotation.Id,
+            TenantId = quotation.TenantId,
+            RevisionNumber = revision.RevisionNumber,
+            Status = revision.Status.ToString(),
+            CustomerContactId = quotation.CustomerContactId,
+            CustomerName = quotation.CustomerName,
+            Title = revision.Title,
+            Destination = revision.Destination,
+            TravelDate = revision.TravelDate,
+            ReturnDate = revision.ReturnDate,
+            Travellers = revision.Travellers,
+            Currency = revision.Currency,
+            Notes = quotation.Notes,
+            VisibleNotes = revision.VisibleNotes,
+            InternalNotes = revision.InternalNotes,
+            ValidUntil = revision.ValidUntil,
+            SubtotalAmount = revision.SubtotalAmount,
+            TaxAmount = revision.TaxAmount,
+            TotalAmount = revision.TotalAmount,
+            CreatedByUserId = revision.CreatedByUserId,
+            CreatedAt = revision.CreatedAt,
+            LineItems = revision.LineItems
                 .Select(x => new QuotationRevisionLineItemReadModel(x.Id, x.Description, x.Quantity, x.UnitPriceAmount, x.Currency, x.SortOrder, x.LineTotal))
                 .ToList(),
-            []);
+            Attachments = [],
+        };
 
     private static string GenerateToken()
     {

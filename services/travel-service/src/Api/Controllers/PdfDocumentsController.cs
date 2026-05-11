@@ -48,31 +48,33 @@ public sealed class PdfDocumentsController(IMediator mediator, ITenantContext te
         var tax = request.TaxAmount ?? Math.Round(subtotal * 0.07m, 2);
         var total = request.TotalAmount ?? subtotal + tax;
 
-        var revision = new QuotationRevisionReadModel(
-            Id: Guid.NewGuid(),
-            QuotationId: request.QuotationId ?? Guid.Empty,
-            TenantId: tenantContext.TenantId,
-            RevisionNumber: 0,
-            Status: "Preview",
-            CustomerContactId: Guid.Empty,
-            CustomerName: request.CustomerName ?? "Sample customer",
-            Title: request.Title,
-            Destination: request.Destination ?? "Destination TBD",
-            TravelDate: request.TravelDate ?? DateTimeOffset.UtcNow.AddDays(30),
-            ReturnDate: request.ReturnDate ?? DateTimeOffset.UtcNow.AddDays(37),
-            Travellers: request.Travellers <= 0 ? 1 : request.Travellers,
-            Currency: currency,
-            Notes: request.Notes ?? string.Empty,
-            VisibleNotes: request.VisibleNotes ?? request.Notes ?? string.Empty,
-            InternalNotes: request.InternalNotes ?? string.Empty,
-            ValidUntil: request.ValidUntil ?? DateTimeOffset.UtcNow.AddDays(14),
-            SubtotalAmount: subtotal,
-            TaxAmount: tax,
-            TotalAmount: total,
-            CreatedByUserId: tenantContext.UserId,
-            CreatedAt: DateTimeOffset.UtcNow,
-            LineItems: lineItems,
-            Attachments: Array.Empty<QuotationRevisionAttachmentReadModel>());
+        var revision = new QuotationRevisionReadModel
+        {
+            Id = Guid.NewGuid(),
+            QuotationId = request.QuotationId ?? Guid.Empty,
+            TenantId = tenantContext.TenantId,
+            RevisionNumber = 0,
+            Status = "Preview",
+            CustomerContactId = Guid.Empty,
+            CustomerName = request.CustomerName ?? "Sample customer",
+            Title = request.Title,
+            Destination = request.Destination ?? "Destination TBD",
+            TravelDate = request.TravelDate ?? DateTimeOffset.UtcNow.AddDays(30),
+            ReturnDate = request.ReturnDate ?? DateTimeOffset.UtcNow.AddDays(37),
+            Travellers = request.Travellers <= 0 ? 1 : request.Travellers,
+            Currency = currency,
+            Notes = request.Notes ?? string.Empty,
+            VisibleNotes = request.VisibleNotes ?? request.Notes ?? string.Empty,
+            InternalNotes = request.InternalNotes ?? string.Empty,
+            ValidUntil = request.ValidUntil ?? DateTimeOffset.UtcNow.AddDays(14),
+            SubtotalAmount = subtotal,
+            TaxAmount = tax,
+            TotalAmount = total,
+            CreatedByUserId = tenantContext.UserId,
+            CreatedAt = DateTimeOffset.UtcNow,
+            LineItems = lineItems,
+            Attachments = Array.Empty<QuotationRevisionAttachmentReadModel>(),
+        };
 
         var bytes = pdfDocumentRenderer.RenderQuotationRevisionPdf(revision);
         return File(bytes, "application/pdf", "quotation-preview.pdf");
