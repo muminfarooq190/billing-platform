@@ -115,6 +115,12 @@ public sealed class Program
         {
             var db = scope.ServiceProvider.GetRequiredService<TravelDbContext>();
             db.Database.Migrate();
+        }
+        // Fresh scope for seeding — Migrate() can leave the prior DbContext's
+        // connection in a disposed state, which breaks the next async query.
+        using (var seedScope = app.Services.CreateScope())
+        {
+            var db = seedScope.ServiceProvider.GetRequiredService<TravelDbContext>();
             TravelTemplateSeedData.SeedAsync(db, CancellationToken.None).GetAwaiter().GetResult();
         }
 

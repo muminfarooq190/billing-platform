@@ -184,22 +184,36 @@ internal static class TravelTemplateSeedData
 
     private static async Task<bool> HasTableAsync(TravelDbContext dbContext, string tableName, CancellationToken cancellationToken)
     {
-        await using var connection = (NpgsqlConnection)dbContext.Database.GetDbConnection();
+        // NOTE: do NOT `await using` the dbContext's connection — that disposes it
+        // and breaks all subsequent EF queries on this context.
+        var connection = (NpgsqlConnection)dbContext.Database.GetDbConnection();
+        var openedHere = false;
         if (connection.State != System.Data.ConnectionState.Open)
         {
             await connection.OpenAsync(cancellationToken);
+            openedHere = true;
         }
 
-        await using var command = connection.CreateCommand();
-        command.CommandText = @"
-            select 1
-            from information_schema.tables
-            where table_schema = 'public' and table_name = @tableName
-            limit 1;";
-        command.Parameters.AddWithValue("tableName", tableName);
+        try
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = @"
+                select 1
+                from information_schema.tables
+                where table_schema = 'public' and table_name = @tableName
+                limit 1;";
+            command.Parameters.AddWithValue("tableName", tableName);
 
-        var result = await command.ExecuteScalarAsync(cancellationToken);
-        return result is not null;
+            var result = await command.ExecuteScalarAsync(cancellationToken);
+            return result is not null;
+        }
+        finally
+        {
+            if (openedHere)
+            {
+                await connection.CloseAsync();
+            }
+        }
     }
 
     private static string SerializeSections(List<TemplateSectionSeed> sections)

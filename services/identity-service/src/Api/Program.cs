@@ -1,9 +1,12 @@
+using Dapper;
 using IdentityService.Api.Filters;
 using IdentityService.Application.Abstractions;
+using System.Data;
 using IdentityService.Domain.Repositories;
 using IdentityService.Infrastructure.Auth;
 using IdentityService.Infrastructure.Caching;
 using IdentityService.Infrastructure.Entitlements;
+using IdentityService.Infrastructure.Http;
 using IdentityService.Infrastructure.Persistence;
 using IdentityService.Infrastructure.Persistence.Outbox;
 using IdentityService.Infrastructure.Persistence.Repositories;
@@ -22,6 +25,11 @@ public sealed class Program
 {
     public static void Main(string[] args)
     {
+        // Npgsql 8 returns System.DateTime for timestamptz columns. Register a Dapper
+        // TypeHandler so DateTimeOffset properties on read-models bind correctly.
+        SqlMapper.AddTypeHandler(new DateTimeOffsetHandler());
+        SqlMapper.AddTypeHandler(new NullableDateTimeOffsetHandler());
+
         var builder = WebApplication.CreateBuilder(args);
 
         var databaseUrl = builder.Configuration["DATABASE_URL"] ?? "Host=postgres;Port=5432;Database=billing_identity;Username=billing_user;Password=changeme";
@@ -44,10 +52,12 @@ public sealed class Program
         });
         builder.Services.AddScoped<RefreshTokenService>();
         builder.Services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddTransient<ForwardAuthHeadersHandler>();
         builder.Services.AddHttpClient<IBillingEntitlementsClient, BillingEntitlementsClient>(client =>
         {
             client.BaseAddress = new Uri(builder.Configuration["BILLING_SERVICE_URL"] ?? "http://billing-service:8080/");
-        });
+        }).AddHttpMessageHandler<ForwardAuthHeadersHandler>();
 
         builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
         builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(IUnitOfWork).Assembly));
@@ -89,9 +99,12 @@ public sealed class Program
             return;
         }
 
+        // Detach RSA parameters so the SecurityKey survives RSA disposal at end of scope.
+        // Without ExportParameters, JwtBearerHandler hits ObjectDisposedException on every
+        // request and rejects the token with 401 "Bearer was not authenticated".
         using var rsa = RSA.Create();
         rsa.ImportFromPem(publicKeyPem);
-        var securityKey = new RsaSecurityKey(rsa);
+        var securityKey = new RsaSecurityKey(rsa.ExportParameters(false));
 
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -141,4 +154,31 @@ public sealed class Program
             || (value.Contains("-----BEGIN RSA PUBLIC KEY-----", StringComparison.Ordinal)
                 && value.Contains("-----END RSA PUBLIC KEY-----", StringComparison.Ordinal));
     }
+}
+
+internal sealed class DateTimeOffsetHandler : SqlMapper.TypeHandler<DateTimeOffset>
+{
+    public override DateTimeOffset Parse(object value) => value switch
+    {
+        DateTimeOffset dto => dto,
+        DateTime dt => DateTime.SpecifyKind(dt, DateTimeKind.Utc),
+        _ => throw new DataException($"Cannot convert {value?.GetType().FullName ?? "null"} to DateTimeOffset.")
+    };
+
+    public override void SetValue(IDbDataParameter parameter, DateTimeOffset value) => parameter.Value = value;
+}
+
+internal sealed class NullableDateTimeOffsetHandler : SqlMapper.TypeHandler<DateTimeOffset?>
+{
+    public override DateTimeOffset? Parse(object value) => value switch
+    {
+        null => null,
+        DBNull => null,
+        DateTimeOffset dto => dto,
+        DateTime dt => DateTime.SpecifyKind(dt, DateTimeKind.Utc),
+        _ => throw new DataException($"Cannot convert {value.GetType().FullName} to DateTimeOffset?.")
+    };
+
+    public override void SetValue(IDbDataParameter parameter, DateTimeOffset? value)
+        => parameter.Value = value.HasValue ? value.Value : DBNull.Value;
 }

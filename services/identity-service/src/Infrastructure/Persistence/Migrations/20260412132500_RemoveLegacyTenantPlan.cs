@@ -8,20 +8,14 @@ namespace IdentityService.Infrastructure.Persistence.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "Plan",
-                table: "Tenants");
+            // Raw SQL — table is "tenants" (lowercase, unquoted), column is "Plan" (quoted PascalCase).
+            // IF EXISTS guards against drift across environments.
+            migrationBuilder.Sql(@"ALTER TABLE IF EXISTS tenants DROP COLUMN IF EXISTS ""Plan"";");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "Plan",
-                table: "Tenants",
-                type: "character varying(50)",
-                maxLength: 50,
-                nullable: false,
-                defaultValue: "Free");
+            migrationBuilder.Sql(@"ALTER TABLE IF EXISTS tenants ADD COLUMN IF NOT EXISTS ""Plan"" character varying(50) NOT NULL DEFAULT 'Free';");
         }
     }
 }
