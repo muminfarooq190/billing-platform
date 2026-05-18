@@ -7,7 +7,13 @@ public sealed class BillingEntitlementsClient(HttpClient httpClient) : IBillingE
 {
     public async Task<IReadOnlyList<FeatureEntitlementDto>> GetEffectiveEntitlementsAsync(Guid tenantId, CancellationToken cancellationToken)
     {
-        var result = await httpClient.GetFromJsonAsync<IReadOnlyList<FeatureEntitlementDto>>($"billing/entitlements/{tenantId}", cancellationToken);
-        return result ?? [];
+        // billing-service requires `x-tenant-id` to resolve ITenantContext.
+        // Without it, the controller throws and we cascade as a 500 from the
+        // caller's FeatureGate. Forward the tenant id explicitly here.
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"billing/entitlements/{tenantId}");
+        request.Headers.TryAddWithoutValidation("x-tenant-id", tenantId.ToString());
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode) return Array.Empty<FeatureEntitlementDto>();
+        return await response.Content.ReadFromJsonAsync<IReadOnlyList<FeatureEntitlementDto>>(cancellationToken: cancellationToken) ?? Array.Empty<FeatureEntitlementDto>();
     }
 }

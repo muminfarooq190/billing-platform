@@ -36,8 +36,11 @@ public sealed class MeController(ITenantContext tenantContext, IdentityDbContext
             .Select(x => x.Name)
             .FirstOrDefaultAsync(cancellationToken);
 
+        // JWT issued by identity-service emits one "permission" (singular) claim
+        // per granted permission. Older callers also accepted a CSV "permissions"
+        // (plural) claim — handle both.
         var permissions = User.Claims
-            .Where(x => x.Type == "permissions")
+            .Where(x => x.Type == "permission" || x.Type == "permissions")
             .SelectMany(x => x.Value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => x)

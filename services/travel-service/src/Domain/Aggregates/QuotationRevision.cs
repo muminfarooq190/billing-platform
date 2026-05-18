@@ -26,7 +26,11 @@ public sealed class QuotationRevision
         string internalNotes,
         DateTimeOffset validUntil,
         Guid? createdByUserId,
-        IReadOnlyCollection<QuotationRevisionLineItem> lineItems)
+        IReadOnlyCollection<QuotationRevisionLineItem> lineItems,
+        string inclusionsJson,
+        string exclusionsJson,
+        string paymentTerms,
+        string cancellationPolicy)
     {
         if (quotationId == Guid.Empty)
             throw new DomainException("QuotationId is required.");
@@ -76,6 +80,10 @@ public sealed class QuotationRevision
         TotalAmount = SubtotalAmount + TaxAmount;
         CreatedByUserId = createdByUserId;
         CreatedAt = DateTimeOffset.UtcNow;
+        InclusionsJson = string.IsNullOrWhiteSpace(inclusionsJson) ? "[]" : inclusionsJson.Trim();
+        ExclusionsJson = string.IsNullOrWhiteSpace(exclusionsJson) ? "[]" : exclusionsJson.Trim();
+        PaymentTerms = paymentTerms?.Trim() ?? string.Empty;
+        CancellationPolicy = cancellationPolicy?.Trim() ?? string.Empty;
     }
 
     public Guid Id { get; private set; }
@@ -101,6 +109,14 @@ public sealed class QuotationRevision
     public Guid? CreatedByUserId { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public IReadOnlyList<QuotationRevisionLineItem> LineItems => _lineItems.AsReadOnly();
+    /// <summary>JSON array of inclusion strings. Empty array = none.</summary>
+    public string InclusionsJson { get; private set; } = "[]";
+    /// <summary>JSON array of exclusion strings. Empty array = none.</summary>
+    public string ExclusionsJson { get; private set; } = "[]";
+    /// <summary>Free-form payment terms shown on customer-facing PDF.</summary>
+    public string PaymentTerms { get; private set; } = string.Empty;
+    /// <summary>Free-form cancellation policy shown on customer-facing PDF.</summary>
+    public string CancellationPolicy { get; private set; } = string.Empty;
 
     public static QuotationRevision Create(
         Guid quotationId,
@@ -120,8 +136,12 @@ public sealed class QuotationRevision
         string internalNotes,
         DateTimeOffset validUntil,
         Guid? createdByUserId,
-        IReadOnlyCollection<QuotationRevisionLineItem> lineItems)
-        => new(quotationId, tenantId, revisionNumber, status, customerContactId, customerName, title, destination, travelDate, returnDate, travellers, currency, notes, visibleNotes, internalNotes, validUntil, createdByUserId, lineItems);
+        IReadOnlyCollection<QuotationRevisionLineItem> lineItems,
+        string inclusionsJson = "[]",
+        string exclusionsJson = "[]",
+        string paymentTerms = "",
+        string cancellationPolicy = "")
+        => new(quotationId, tenantId, revisionNumber, status, customerContactId, customerName, title, destination, travelDate, returnDate, travellers, currency, notes, visibleNotes, internalNotes, validUntil, createdByUserId, lineItems, inclusionsJson, exclusionsJson, paymentTerms, cancellationPolicy);
 
     private static string NormalizeCurrency(string currency)
     {

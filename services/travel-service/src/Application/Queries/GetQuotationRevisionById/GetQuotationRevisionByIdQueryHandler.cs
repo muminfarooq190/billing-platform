@@ -36,7 +36,11 @@ SELECT id,
        tax_amount AS TaxAmount,
        total_amount AS TotalAmount,
        created_by_user_id AS CreatedByUserId,
-       created_at AS CreatedAt
+       created_at AS CreatedAt,
+       COALESCE(inclusions_json, '[]'::jsonb)::text AS InclusionsJson,
+       COALESCE(exclusions_json, '[]'::jsonb)::text AS ExclusionsJson,
+       COALESCE(payment_terms, '') AS PaymentTerms,
+       COALESCE(cancellation_policy, '') AS CancellationPolicy
 FROM quotation_revisions
 WHERE tenant_id = @TenantId AND quotation_id = @QuotationId AND id = @RevisionId;";
 
@@ -120,6 +124,10 @@ ORDER BY sort_order, created_at;";
             TotalAmount = revision.TotalAmount,
             CreatedByUserId = revision.CreatedByUserId,
             CreatedAt = revision.CreatedAt,
+            InclusionsJson = revision.InclusionsJson,
+            ExclusionsJson = revision.ExclusionsJson,
+            PaymentTerms = revision.PaymentTerms,
+            CancellationPolicy = revision.CancellationPolicy,
             LineItems = lineItems,
             Attachments = attachments.AsReadOnly(),
         };
@@ -149,6 +157,10 @@ ORDER BY sort_order, created_at;";
         public decimal TotalAmount { get; set; }
         public Guid? CreatedByUserId { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
+        public string InclusionsJson { get; set; } = "[]";
+        public string ExclusionsJson { get; set; } = "[]";
+        public string PaymentTerms { get; set; } = string.Empty;
+        public string CancellationPolicy { get; set; } = string.Empty;
     }
 
     private sealed class FlatQuotationRevisionAttachmentReadModel

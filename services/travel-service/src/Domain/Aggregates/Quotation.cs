@@ -114,7 +114,14 @@ public sealed class Quotation : AggregateRoot
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
-    public QuotationRevision CreateRevision(string visibleNotes, string internalNotes, Guid? createdByUserId = null)
+    public QuotationRevision CreateRevision(
+        string visibleNotes,
+        string internalNotes,
+        Guid? createdByUserId = null,
+        string inclusionsJson = "[]",
+        string exclusionsJson = "[]",
+        string paymentTerms = "",
+        string cancellationPolicy = "")
     {
         if (_lineItems.Count == 0)
             throw new DomainException("Cannot create a quotation revision with no line items.");
@@ -137,7 +144,11 @@ public sealed class Quotation : AggregateRoot
             internalNotes,
             ValidUntil,
             createdByUserId,
-            _lineItems.Select((item, index) => QuotationRevisionLineItem.Create(item.Description, item.Quantity, item.UnitPrice, item.Currency, index + 1)).ToList());
+            _lineItems.Select((item, index) => QuotationRevisionLineItem.Create(item.Description, item.Quantity, item.UnitPrice, item.Currency, index + 1)).ToList(),
+            inclusionsJson,
+            exclusionsJson,
+            paymentTerms,
+            cancellationPolicy);
 
         CurrentRevisionNumber = revision.RevisionNumber;
         UpdatedAt = DateTimeOffset.UtcNow;

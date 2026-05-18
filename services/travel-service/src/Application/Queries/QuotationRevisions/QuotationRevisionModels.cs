@@ -32,6 +32,10 @@ public sealed class QuotationRevisionSummaryReadModel
     public decimal TaxAmount { get; set; }
     public decimal TotalAmount { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
+    public string InclusionsJson { get; set; } = "[]";
+    public string ExclusionsJson { get; set; } = "[]";
+    public string PaymentTerms { get; set; } = string.Empty;
+    public string CancellationPolicy { get; set; } = string.Empty;
 }
 
 public sealed class QuotationRevisionAttachmentReadModel
@@ -72,6 +76,10 @@ public sealed class QuotationRevisionReadModel
     public decimal TotalAmount { get; set; }
     public Guid? CreatedByUserId { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
+    public string InclusionsJson { get; set; } = "[]";
+    public string ExclusionsJson { get; set; } = "[]";
+    public string PaymentTerms { get; set; } = string.Empty;
+    public string CancellationPolicy { get; set; } = string.Empty;
     public IReadOnlyList<QuotationRevisionLineItemReadModel> LineItems { get; set; } = [];
     public IReadOnlyList<QuotationRevisionAttachmentReadModel> Attachments { get; set; } = [];
 }

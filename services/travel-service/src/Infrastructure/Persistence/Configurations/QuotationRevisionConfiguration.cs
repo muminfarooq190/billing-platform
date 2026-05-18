@@ -32,6 +32,10 @@ public sealed class QuotationRevisionConfiguration : IEntityTypeConfiguration<Qu
         builder.Property(x => x.TotalAmount).HasColumnName("total_amount").HasColumnType("decimal(18,2)");
         builder.Property(x => x.CreatedByUserId).HasColumnName("created_by_user_id");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
+        builder.Property(x => x.InclusionsJson).HasColumnName("inclusions_json").HasColumnType("jsonb").HasDefaultValue("[]");
+        builder.Property(x => x.ExclusionsJson).HasColumnName("exclusions_json").HasColumnType("jsonb").HasDefaultValue("[]");
+        builder.Property(x => x.PaymentTerms).HasColumnName("payment_terms").HasDefaultValue(string.Empty);
+        builder.Property(x => x.CancellationPolicy).HasColumnName("cancellation_policy").HasDefaultValue(string.Empty);
 
         builder.HasIndex(x => new { x.QuotationId, x.RevisionNumber }).IsUnique();
         builder.HasIndex(x => new { x.TenantId, x.QuotationId, x.RevisionNumber });

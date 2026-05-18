@@ -17,6 +17,10 @@ public sealed class JwtValidationMiddleware(RequestDelegate next, IConfiguration
             context.Request.Path.StartsWithSegments("/api/auth/login") ||
             context.Request.Path.StartsWithSegments("/api/auth/refresh") ||
             context.Request.Path.StartsWithSegments("/api/auth/logout") ||
+            context.Request.Path.StartsWithSegments("/api/auth/forgot-password") ||
+            context.Request.Path.StartsWithSegments("/api/auth/reset-password") ||
+            context.Request.Path.StartsWithSegments("/api/identity/invitations") ||
+            context.Request.Path.StartsWithSegments("/api/public") ||
             context.Request.Path.StartsWithSegments("/.well-known/jwks.json"))
         {
             await next(context);
@@ -49,12 +53,13 @@ public sealed class JwtValidationMiddleware(RequestDelegate next, IConfiguration
             return;
         }
 
+        System.Security.Claims.ClaimsPrincipal principal;
         try
         {
             var rsa = RSA.Create();
             rsa.ImportFromPem(keyPem);
             var handler = new JwtSecurityTokenHandler();
-            var principal = handler.ValidateToken(token, new TokenValidationParameters
+            principal = handler.ValidateToken(token, new TokenValidationParameters
             {
                 ValidateIssuer = false,
                 ValidateAudience = false,
@@ -64,41 +69,45 @@ public sealed class JwtValidationMiddleware(RequestDelegate next, IConfiguration
                 NameClaimType = ClaimTypes.NameIdentifier,
                 RoleClaimType = ClaimTypes.Role
             }, out _);
-
-            var tenantId = principal.FindFirst("tenant_id")?.Value
-                ?? principal.FindFirst("tenantId")?.Value
-                ?? principal.FindFirst("tid")?.Value;
-            var userId = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-                ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                ?? principal.FindFirst("user_id")?.Value
-                ?? principal.FindFirst("uid")?.Value;
-
-            if (!string.IsNullOrWhiteSpace(tenantId))
-            {
-                context.Items["tenant_id"] = tenantId;
-            }
-            else
-            {
-                context.Items.Remove("tenant_id");
-            }
-
-            if (!string.IsNullOrWhiteSpace(userId))
-            {
-                context.Items["user_id"] = userId;
-            }
-            else
-            {
-                context.Items.Remove("user_id");
-            }
-
-            context.User = principal;
-
-            await next(context);
         }
         catch
         {
+            // Only catch token-validation failures here. Letting downstream
+            // exceptions (e.g. feature-entitlement billing lookups) fall into
+            // this catch would mis-report 500s as "invalid_token" 401s.
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             context.Response.Headers.WWWAuthenticate = "Bearer error=\"invalid_token\"";
+            return;
         }
+
+        var tenantId = principal.FindFirst("tenant_id")?.Value
+            ?? principal.FindFirst("tenantId")?.Value
+            ?? principal.FindFirst("tid")?.Value;
+        var userId = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? principal.FindFirst("user_id")?.Value
+            ?? principal.FindFirst("uid")?.Value;
+
+        if (!string.IsNullOrWhiteSpace(tenantId))
+        {
+            context.Items["tenant_id"] = tenantId;
+        }
+        else
+        {
+            context.Items.Remove("tenant_id");
+        }
+
+        if (!string.IsNullOrWhiteSpace(userId))
+        {
+            context.Items["user_id"] = userId;
+        }
+        else
+        {
+            context.Items.Remove("user_id");
+        }
+
+        context.User = principal;
+
+        await next(context);
     }
 }

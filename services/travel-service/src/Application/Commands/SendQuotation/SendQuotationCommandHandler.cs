@@ -152,6 +152,10 @@ public sealed class SendQuotationCommandHandler(
             TotalAmount = revision.TotalAmount,
             CreatedByUserId = revision.CreatedByUserId,
             CreatedAt = revision.CreatedAt,
+            InclusionsJson = revision.InclusionsJson,
+            ExclusionsJson = revision.ExclusionsJson,
+            PaymentTerms = revision.PaymentTerms,
+            CancellationPolicy = revision.CancellationPolicy,
             LineItems = revision.LineItems
                 .Select(x => new QuotationRevisionLineItemReadModel(x.Id, x.Description, x.Quantity, x.UnitPriceAmount, x.Currency, x.SortOrder, x.LineTotal))
                 .ToList(),

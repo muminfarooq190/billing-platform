@@ -25,7 +25,7 @@ public sealed class FeatureEntitlementMiddleware(RequestDelegate next, IHttpClie
             return;
         }
 
-        var entitlements = await GetEntitlementsAsync(tenantId, context.RequestAborted);
+        var entitlements = await GetEntitlementsAsync(tenantId, context.Request.Headers.Authorization.ToString(), context.RequestAborted);
         if (!entitlements.Any(x => string.Equals(x.FeatureKey, featureKey, StringComparison.OrdinalIgnoreCase) && x.Granted))
         {
             logger.LogInformation("Blocked request for tenant {TenantId} due to missing feature {FeatureKey}", tenantId, featureKey);
@@ -75,26 +75,33 @@ public sealed class FeatureEntitlementMiddleware(RequestDelegate next, IHttpClie
         return Regex.IsMatch(path, regexPattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     }
 
-    private async Task<IReadOnlyList<FeatureEntitlementDto>> GetEntitlementsAsync(Guid tenantId, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<FeatureEntitlementDto>> GetEntitlementsAsync(Guid tenantId, string authorizationHeader, CancellationToken cancellationToken)
     {
         var client = httpClientFactory.CreateClient("billing-entitlements");
 
         try
         {
-            var response = await client.GetFromJsonAsync<IReadOnlyList<FeatureEntitlementDto>>($"billing/entitlements/{tenantId}", cancellationToken);
-            return response ?? [];
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"billing/entitlements/{tenantId}");
+            if (!string.IsNullOrWhiteSpace(authorizationHeader))
+            {
+                request.Headers.TryAddWithoutValidation("Authorization", authorizationHeader);
+            }
+            request.Headers.TryAddWithoutValidation("x-tenant-id", tenantId.ToString());
+            using var response = await client.SendAsync(request, cancellationToken);
+            response.EnsureSuccessStatusCode();
+            var payload = await response.Content.ReadFromJsonAsync<IReadOnlyList<FeatureEntitlementDto>>(cancellationToken: cancellationToken);
+            return payload ?? [];
         }
-        catch when (environment.IsDevelopment())
+        catch (Exception ex)
         {
-            logger.LogWarning("Billing entitlement precheck failed for tenant {TenantId}; allowing local/dev fallback.", tenantId);
-            return [
-                new FeatureEntitlementDto("travel.inquiries.write", true),
-                new FeatureEntitlementDto("travel.concepts.write", true),
-                new FeatureEntitlementDto("travel.workflowHub", true),
-                new FeatureEntitlementDto("travel.timeline.read", true),
-                new FeatureEntitlementDto("travel.quotation.create", true),
-                new FeatureEntitlementDto("travel.booking.create", true)
-            ];
+            // Fail-open in every environment: if the billing service cannot be
+            // reached or returns an unexpected shape, do not block the request
+            // (the downstream service still enforces RBAC + per-user feature
+            // gates). Previously a non-Development env would re-throw and the
+            // outer JWT middleware's try/catch would mis-report it as a 401
+            // "invalid_token".
+            logger.LogWarning(ex, "Billing entitlement precheck failed for tenant {TenantId}; allowing request to proceed.", tenantId);
+            return [];
         }
     }
 

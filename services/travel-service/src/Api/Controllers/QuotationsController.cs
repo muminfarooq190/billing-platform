@@ -58,7 +58,11 @@ public sealed class QuotationsController(IMediator mediator, ITenantContext tena
             request.VisibleNotes,
             request.InternalNotes,
             request.ValidUntil,
-            lineItems), cancellationToken);
+            lineItems,
+            request.Inclusions,
+            request.Exclusions,
+            request.PaymentTerms,
+            request.CancellationPolicy), cancellationToken);
 
         return Created($"/travel/quotations/{id}/revisions/{result.RevisionId}", result);
     }

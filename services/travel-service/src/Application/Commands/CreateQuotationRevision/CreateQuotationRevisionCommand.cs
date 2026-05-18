@@ -14,7 +14,11 @@ public sealed record CreateQuotationRevisionCommand(
     string VisibleNotes,
     string InternalNotes,
     DateTimeOffset ValidUntil,
-    List<QuotationRevisionLineItemDto> LineItems) : IRequest<CreateQuotationRevisionResult>;
+    List<QuotationRevisionLineItemDto> LineItems,
+    List<string>? Inclusions = null,
+    List<string>? Exclusions = null,
+    string? PaymentTerms = null,
+    string? CancellationPolicy = null) : IRequest<CreateQuotationRevisionResult>;
 
 public sealed record QuotationRevisionLineItemDto(string Description, decimal UnitPrice, int Quantity, string Currency);
 

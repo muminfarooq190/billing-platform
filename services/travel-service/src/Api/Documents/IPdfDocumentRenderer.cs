@@ -5,6 +5,6 @@ namespace TravelService.Api.Documents;
 
 public interface IPdfDocumentRenderer
 {
-    byte[] RenderQuotationRevisionPdf(QuotationRevisionReadModel revision);
-    byte[] RenderItineraryPdf(ItineraryReadModel itinerary);
+    byte[] RenderQuotationRevisionPdf(QuotationRevisionReadModel revision, PdfBranding? branding = null);
+    byte[] RenderItineraryPdf(ItineraryReadModel itinerary, PdfBranding? branding = null);
 }

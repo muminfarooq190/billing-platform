@@ -28,7 +28,11 @@ SELECT id,
        subtotal_amount AS SubtotalAmount,
        tax_amount AS TaxAmount,
        total_amount AS TotalAmount,
-       created_at AS CreatedAt
+       created_at AS CreatedAt,
+       COALESCE(inclusions_json, '[]'::jsonb)::text AS InclusionsJson,
+       COALESCE(exclusions_json, '[]'::jsonb)::text AS ExclusionsJson,
+       COALESCE(payment_terms, '') AS PaymentTerms,
+       COALESCE(cancellation_policy, '') AS CancellationPolicy
 FROM quotation_revisions
 WHERE tenant_id = @TenantId AND quotation_id = @QuotationId
 ORDER BY revision_number DESC;";

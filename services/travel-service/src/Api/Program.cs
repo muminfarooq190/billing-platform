@@ -16,6 +16,7 @@ using TravelService.Infrastructure.Caching;
 using TravelService.Infrastructure.Communication;
 using TravelService.Infrastructure.Entitlements;
 using TravelService.Infrastructure.Files;
+using TravelService.Infrastructure.FollowUps;
 using TravelService.Infrastructure.Http;
 using TravelService.Infrastructure.Persistence;
 using TravelService.Infrastructure.Persistence.Outbox;
@@ -96,10 +97,13 @@ public sealed class Program
         builder.Services.AddScoped<IFeatureGate, CachedFeatureGate>();
 
         builder.Services.AddStackExchangeRedisCache(options => options.Configuration = builder.Configuration["REDIS_URL"] ?? "redis:6379");
+        // Named HttpClient used by the PDF renderer to fetch template banner images.
+        builder.Services.AddHttpClient("pdf-assets");
         builder.Services.AddScoped<IPdfDocumentRenderer, QuestPdfDocumentRenderer>();
         builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 
         builder.Services.AddHostedService<OutboxPublisherService>();
+        builder.Services.AddHostedService<FollowUpAutoGenerator>();
         builder.Services.AddHealthChecks();
 
         ConfigureAuthentication(builder);

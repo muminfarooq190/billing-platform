@@ -39,12 +39,9 @@ public sealed class AuthController(IMediator mediator, JwtTokenService jwtTokenS
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
-        var tenant = await mediator.Send(new GetTenantByEmailQuery(request.Email), cancellationToken);
-        if (tenant is null)
-        {
-            return Unauthorized();
-        }
-
+        // Resolve the user (and therefore the tenant) directly from the users table.
+        // Tenant resolution by tenants.Email used to fail for any non-owner user because
+        // tenants.Email is the tenant *creator* email, not the per-user email.
         await using var connection = new NpgsqlConnection(configuration["DATABASE_URL"]);
         await connection.OpenAsync(cancellationToken);
 
@@ -56,14 +53,20 @@ public sealed class AuthController(IMediator mediator, JwtTokenService jwtTokenS
                    "Status" AS Status,
                    must_change_password AS MustChangePassword
             FROM users
-            WHERE "TenantId" = @TenantId AND "Email" = @Email AND deleted_at IS NULL;
+            WHERE "Email" = @Email AND deleted_at IS NULL
+            ORDER BY created_at ASC
+            LIMIT 1;
             """;
 
-        var user = await connection.QuerySingleOrDefaultAsync<UserAuthRow>(new CommandDefinition(sql, new { TenantId = tenant.Id, Email = request.Email.ToLowerInvariant() }, cancellationToken: cancellationToken));
+        var user = await connection.QuerySingleOrDefaultAsync<UserAuthRow>(new CommandDefinition(sql, new { Email = request.Email.ToLowerInvariant() }, cancellationToken: cancellationToken));
         if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
-            dbContext.SecurityEvents.Add(SecurityEvent.Create(tenant.Id, null, "LoginFailed", HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Headers.UserAgent.ToString(), $"{{\"email\":\"{request.Email.ToLowerInvariant()}\"}}"));
-            await dbContext.SaveChangesAsync(cancellationToken);
+            var tenantIdForLog = user?.TenantId ?? Guid.Empty;
+            if (tenantIdForLog != Guid.Empty)
+            {
+                dbContext.SecurityEvents.Add(SecurityEvent.Create(tenantIdForLog, null, "LoginFailed", HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Headers.UserAgent.ToString(), $"{{\"email\":\"{request.Email.ToLowerInvariant()}\"}}"));
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
             return Unauthorized();
         }
 
