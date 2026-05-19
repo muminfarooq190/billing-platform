@@ -57,3 +57,10 @@ public sealed record GeoAreaQueryResponse(Guid QueryId, string Status, int Count
 public sealed record SaveGeoAreaRequest(string Name, GeometryPayload Geometry);
 public sealed record UpdateGeoAreaRequest(string Name, GeometryPayload Geometry);
 public sealed record RunSavedGeoAreaQueryRequest(IReadOnlyList<string>? LeadTypes, int? Limit, string? RankingMode);
+
+/// <summary>
+/// Body of `POST /geo-leads/sources/ingest-area` — scope ingestion to a polygon
+/// so geography-aware adapters (Overpass, Google Places, etc.) only fetch
+/// what's inside the requested area. Static adapters ignore the polygon.
+/// </summary>
+public sealed record IngestAreaRequest(GeometryPayload Geometry);

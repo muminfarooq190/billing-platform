@@ -9,7 +9,7 @@ public sealed class PublicDirectoryGeoLeadSourceAdapter(IConfiguration configura
     public string SourceName => "public-directory-snapshot";
     public bool IsEnabled => configuration.GetValue<bool?>("GeoLeadSources:PublicDirectory:Enabled") ?? true;
 
-    public Task<IReadOnlyList<GeoLeadSourceRecordInput>> FetchAsync(CancellationToken cancellationToken)
+    public Task<IReadOnlyList<GeoLeadSourceRecordInput>> FetchAsync(CancellationToken cancellationToken, GeoBoundingBox? boundingBox = null)
     {
         var configured = configuration.GetSection("GeoLeadSources:PublicDirectory:Records").Get<List<PublicDirectoryRecord>>() ?? [];
         var records = configured.Select(record => new GeoLeadSourceRecordInput(

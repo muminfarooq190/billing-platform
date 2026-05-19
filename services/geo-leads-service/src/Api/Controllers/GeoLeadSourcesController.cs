@@ -1,3 +1,5 @@
+using GeoLeadsService.Api.Contracts;
+using GeoLeadsService.Application.Abstractions;
 using GeoLeadsService.Application.Commands.IngestLeadSources;
 using GeoLeadsService.Domain.Repositories;
 using MediatR;
@@ -61,5 +63,26 @@ public sealed class GeoLeadSourcesController(
     {
         var count = await mediator.Send(new IngestLeadSourcesCommand(), cancellationToken);
         return Ok(new { ingested = count });
+    }
+
+    /// <summary>
+    /// Scope-aware ingestion. Adapters that respect a bounding box hint
+    /// (Overpass etc.) restrict their fetch to the polygon; static adapters
+    /// return everything they know.
+    /// </summary>
+    [HttpPost("ingest-area")]
+    public async Task<IActionResult> IngestArea([FromBody] IngestAreaRequest request, CancellationToken cancellationToken)
+    {
+        if (!request.Geometry.IsValidPolygon(out var geometryError))
+            return BadRequest(new { error = geometryError });
+
+        var polygon = new GeoPolygon(request.Geometry.Coordinates.Select(x => new GeoCoordinate(x[0], x[1])).ToList());
+        var bbox = GeoBoundingBox.FromPolygon(polygon);
+        var count = await mediator.Send(new IngestLeadSourcesCommand(bbox), cancellationToken);
+        return Ok(new
+        {
+            ingested = count,
+            boundingBox = new { bbox.MinLongitude, bbox.MinLatitude, bbox.MaxLongitude, bbox.MaxLatitude },
+        });
     }
 }

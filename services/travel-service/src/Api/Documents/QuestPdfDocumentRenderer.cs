@@ -24,7 +24,11 @@ public sealed class QuestPdfDocumentRenderer : IPdfDocumentRenderer
     private const string DefaultMuted      = "#74777D";  // M3 outline
     private const string DefaultBgSubtle   = "#F3F4F5";  // surface-container-low
     private const string DefaultBgInverse  = "#FFFFFFCC";// overlay on hero
-    private const string DefaultFont       = "Inter";
+    // QuestPDF/Skia resolves font names against the container's installed
+    // fontconfig families. Alpine ships DejaVu/Liberation via apk; falling
+    // back to "Inter" silently substitutes an ugly default. Stick with a
+    // family that's actually installed in the runtime image.
+    private const string DefaultFont       = "Liberation Sans";
 
     private readonly IHttpClientFactory? httpClientFactory;
 

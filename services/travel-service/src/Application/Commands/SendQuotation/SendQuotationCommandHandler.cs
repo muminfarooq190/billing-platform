@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using TravelService.Api.Documents;
 using TravelService.Application.Abstractions;
 using TravelService.Application.Queries.GetQuotationRevisionById;
@@ -24,7 +25,8 @@ public sealed class SendQuotationCommandHandler(
     IActivityWriter activityWriter,
     IActorContext actorContext,
     IUnitOfWork unitOfWork,
-    Api.ITenantContext tenantContext) : IRequestHandler<SendQuotationCommand, SendQuotationResult>
+    Api.ITenantContext tenantContext,
+    ILogger<SendQuotationCommandHandler> logger) : IRequestHandler<SendQuotationCommand, SendQuotationResult>
 {
     public async Task<SendQuotationResult> Handle(SendQuotationCommand request, CancellationToken cancellationToken)
     {
@@ -104,25 +106,38 @@ public sealed class SendQuotationCommandHandler(
         var publicUrl = $"{publicBaseUrl}{publicPath}";
         var quotationPdfUrl = $"{publicBaseUrl}/travel/documents/quotations/{quotation.Id:D}/revisions/{revision.Id:D}/pdf";
 
-        await communicationWorkflowClient.SendQuotationAsync(request.TenantId, new QuotationCommunicationRequest(
-            quotation.CustomerContactId,
-            string.IsNullOrWhiteSpace(request.Channel) ? "Email" : request.Channel!,
-            $"Your quotation is ready - {quotation.Title}",
-            string.IsNullOrWhiteSpace(request.Message)
-                ? $"Your quotation for {quotation.Destination} is ready. You can review it using the attached/shared document link."
-                : request.Message!,
-            quotation.Id.ToString("D"),
-            revision.Id.ToString("D"),
-            $"quotation-sent:{quotation.Id:D}:{revision.Id:D}",
-            [
-                new CommunicationDocumentReference(
-                    $"quotation-{revision.RevisionNumber}.pdf",
-                    revision.Id.ToString("D"),
-                    quotationPdfUrl,
-                    "application/pdf",
-                    null,
-                    new Dictionary<string, string> { ["quotationId"] = quotation.Id.ToString("D"), ["revisionId"] = revision.Id.ToString("D") })
-            ]), cancellationToken);
+        // Best-effort delivery via communication-service. If SMTP/SendGrid/
+        // WhatsApp credentials aren't configured (common in dev), the workflow
+        // returns 5xx — but the quotation itself IS sent (domain status moved
+        // to Sent, share link issued, public URL ready). Swallow the comm-side
+        // failure so the user-facing send action succeeds; admins can resend
+        // via the share link or comm-service retry.
+        try
+        {
+            await communicationWorkflowClient.SendQuotationAsync(request.TenantId, new QuotationCommunicationRequest(
+                quotation.CustomerContactId,
+                string.IsNullOrWhiteSpace(request.Channel) ? "Email" : request.Channel!,
+                $"Your quotation is ready - {quotation.Title}",
+                string.IsNullOrWhiteSpace(request.Message)
+                    ? $"Your quotation for {quotation.Destination} is ready. You can review it using the attached/shared document link."
+                    : request.Message!,
+                quotation.Id.ToString("D"),
+                revision.Id.ToString("D"),
+                $"quotation-sent:{quotation.Id:D}:{revision.Id:D}",
+                [
+                    new CommunicationDocumentReference(
+                        $"quotation-{revision.RevisionNumber}.pdf",
+                        revision.Id.ToString("D"),
+                        quotationPdfUrl,
+                        "application/pdf",
+                        null,
+                        new Dictionary<string, string> { ["quotationId"] = quotation.Id.ToString("D"), ["revisionId"] = revision.Id.ToString("D") })
+                ]), cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Communication workflow failed for quotation {QuotationId}; status moved to Sent regardless.", quotation.Id);
+        }
 
         return new SendQuotationResult(shareLink.Id, token, shareLink.ExpiresAt, publicPath);
     }

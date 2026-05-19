@@ -15,34 +15,39 @@ public sealed class PdfDocumentRendererTests
     [Fact]
     public void RenderQuotationRevisionPdf_GeneratesValidPdf_WithMeaningfulQuoteContent()
     {
-        var revision = new QuotationRevisionReadModel(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            7,
-            "Draft",
-            Guid.NewGuid(),
-            "Ava Patel",
-            "Summer escape in Bali",
-            "Bali",
-            new DateTimeOffset(2026, 7, 10, 0, 0, 0, TimeSpan.Zero),
-            new DateTimeOffset(2026, 7, 18, 0, 0, 0, TimeSpan.Zero),
-            2,
-            "USD",
-            "Internal only",
-            "Includes breakfast and airport transfers.",
-            "Do not show",
-            new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero),
-            2400m,
-            120m,
-            2520m,
-            null,
-            new DateTimeOffset(2026, 4, 18, 0, 0, 0, TimeSpan.Zero),
-            [
+        // QuotationRevisionReadModel is a settable-property class now (Dapper-friendly),
+        // not a positional record — build with object initializer.
+        var revision = new QuotationRevisionReadModel
+        {
+            Id = Guid.NewGuid(),
+            QuotationId = Guid.NewGuid(),
+            TenantId = Guid.NewGuid(),
+            RevisionNumber = 7,
+            Status = "Draft",
+            CustomerContactId = Guid.NewGuid(),
+            CustomerName = "Ava Patel",
+            Title = "Summer escape in Bali",
+            Destination = "Bali",
+            TravelDate = new DateTimeOffset(2026, 7, 10, 0, 0, 0, TimeSpan.Zero),
+            ReturnDate = new DateTimeOffset(2026, 7, 18, 0, 0, 0, TimeSpan.Zero),
+            Travellers = 2,
+            Currency = "USD",
+            Notes = "Internal only",
+            VisibleNotes = "Includes breakfast and airport transfers.",
+            InternalNotes = "Do not show",
+            ValidUntil = new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero),
+            SubtotalAmount = 2400m,
+            TaxAmount = 120m,
+            TotalAmount = 2520m,
+            CreatedByUserId = null,
+            CreatedAt = new DateTimeOffset(2026, 4, 18, 0, 0, 0, TimeSpan.Zero),
+            LineItems = new[]
+            {
                 new QuotationRevisionLineItemReadModel(Guid.NewGuid(), "Beach resort stay", 1, 1800m, "USD", 1, 1800m),
-                new QuotationRevisionLineItemReadModel(Guid.NewGuid(), "Private transfer", 2, 300m, "USD", 2, 600m)
-            ],
-            Array.Empty<QuotationRevisionAttachmentReadModel>());
+                new QuotationRevisionLineItemReadModel(Guid.NewGuid(), "Private transfer", 2, 300m, "USD", 2, 600m),
+            },
+            Attachments = Array.Empty<QuotationRevisionAttachmentReadModel>(),
+        };
 
         var bytes = _renderer.RenderQuotationRevisionPdf(revision);
 
@@ -90,7 +95,8 @@ public sealed class PdfDocumentRendererTests
             text.Should().Contain(Normalize("Paris anniversary"));
             text.Should().Contain(Normalize("Noah Fernandes"));
             text.Should().Contain(Normalize("Paris"));
-            text.Should().Contain("booking ownership booking");
+            text.Should().Contain(Normalize("Trip summary"));
+            text.Should().Contain(Normalize("Travel window"));
             text.Should().Contain(Normalize("EUR 3899.50"));
             text.Should().Contain("status");
         });

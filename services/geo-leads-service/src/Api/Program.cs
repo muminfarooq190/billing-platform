@@ -29,6 +29,10 @@ public sealed class Program
         builder.Services.AddScoped<IGeoLeadCatalog, PostGisGeoLeadCatalog>();
         builder.Services.AddScoped<IGeoLeadSourceAdapter, SeededGeoLeadSourceAdapter>();
         builder.Services.AddScoped<IGeoLeadSourceAdapter, PublicDirectoryGeoLeadSourceAdapter>();
+        builder.Services.AddScoped<IGeoLeadSourceAdapter, OverpassGeoLeadSourceAdapter>();
+        // Overpass HTTP client. Endpoint can be overridden via
+        // `GeoLeadSources:Overpass:Endpoint` (e.g. self-hosted overpass instance).
+        builder.Services.AddHttpClient("overpass", c => c.Timeout = TimeSpan.FromSeconds(60));
         builder.Services.AddHttpClient<IBillingEntitlementsClient, BillingEntitlementsClient>(client =>
         {
             client.BaseAddress = new Uri(builder.Configuration["BILLING_SERVICE_URL"] ?? "http://billing-service:8080/");

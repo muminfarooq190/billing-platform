@@ -25,7 +25,7 @@ public sealed class IngestLeadSourcesCommandHandler(
 
             try
             {
-                var fetched = await adapter.FetchAsync(cancellationToken);
+                var fetched = await adapter.FetchAsync(cancellationToken, request.BoundingBox);
                 var records = fetched.Select(x => new LeadSourceRecord(
                     adapter.SourceName,
                     x.SourceRecordId,

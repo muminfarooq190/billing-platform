@@ -48,7 +48,7 @@ public sealed class QuotationApprovalTests
             new NoOpActivityWriter(),
             new FakeActorContext(quotation.TenantId),
             new NoOpUnitOfWork(),
-            new FakeTenantContext());
+            new FakeTenantContext(), new Microsoft.Extensions.Logging.Abstractions.NullLogger<TravelService.Application.Commands.SendQuotation.SendQuotationCommandHandler>());
 
         var act = async () => await handler.Handle(new SendQuotationCommand(quotation.TenantId, quotation.Id, revision.Id, "Email", "traveler@example.com", null, DateTimeOffset.UtcNow.AddDays(3)), CancellationToken.None);
 
@@ -111,8 +111,8 @@ public sealed class QuotationApprovalTests
 
     private sealed class StubPdfDocumentRenderer : IPdfDocumentRenderer
     {
-        public byte[] RenderQuotationRevisionPdf(TravelService.Application.Queries.QuotationRevisions.QuotationRevisionReadModel revision) => [1, 2, 3];
-        public byte[] RenderItineraryPdf(TravelService.Application.Queries.GetItineraryById.ItineraryReadModel itinerary) => [4, 5, 6];
+        public byte[] RenderQuotationRevisionPdf(TravelService.Application.Queries.QuotationRevisions.QuotationRevisionReadModel revision, TravelService.Api.Documents.PdfBranding? branding = null) => [1, 2, 3];
+        public byte[] RenderItineraryPdf(TravelService.Application.Queries.GetItineraryById.ItineraryReadModel itinerary, TravelService.Api.Documents.PdfBranding? branding = null) => [4, 5, 6];
     }
 
     private sealed class AllowAllFeatureGate : IFeatureGate

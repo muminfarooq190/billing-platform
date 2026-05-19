@@ -9,7 +9,7 @@ public sealed class SeededGeoLeadSourceAdapter(IConfiguration configuration) : I
     public string SourceName => "seeded-public-tourism";
     public bool IsEnabled => configuration.GetValue<bool?>("GeoLeadSources:Seeded:Enabled") ?? true;
 
-    public Task<IReadOnlyList<GeoLeadSourceRecordInput>> FetchAsync(CancellationToken cancellationToken)
+    public Task<IReadOnlyList<GeoLeadSourceRecordInput>> FetchAsync(CancellationToken cancellationToken, GeoBoundingBox? boundingBox = null)
     {
         IReadOnlyList<GeoLeadSourceRecordInput> records =
         [

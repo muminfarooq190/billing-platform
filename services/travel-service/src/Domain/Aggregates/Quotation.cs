@@ -157,8 +157,11 @@ public sealed class Quotation : AggregateRoot
 
     public void Send()
     {
-        if (Status != QuotationStatus.Draft)
-            throw new DomainException("Only draft quotations can be sent.");
+        // Allow send from Draft (first send) AND from Sent (resend).
+        // Resend just bumps LastSentAt + re-emits the event so the
+        // follow-up auto-generator restarts its 2h-no-reply clock.
+        if (Status != QuotationStatus.Draft && Status != QuotationStatus.Sent)
+            throw new DomainException("Only draft or already-sent quotations can be (re-)sent.");
         if (_lineItems.Count == 0)
             throw new DomainException("Cannot send a quotation with no line items.");
         if (ValidUntil < DateTimeOffset.UtcNow)

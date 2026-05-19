@@ -116,8 +116,8 @@ public sealed class BookingItineraryOwnershipTests
 
     private sealed class StubPdfDocumentRenderer : IPdfDocumentRenderer
     {
-        public byte[] RenderQuotationRevisionPdf(TravelService.Application.Queries.QuotationRevisions.QuotationRevisionReadModel revision) => [1, 2, 3];
-        public byte[] RenderItineraryPdf(TravelService.Application.Queries.GetItineraryById.ItineraryReadModel itinerary) => [4, 5, 6];
+        public byte[] RenderQuotationRevisionPdf(TravelService.Application.Queries.QuotationRevisions.QuotationRevisionReadModel revision, TravelService.Api.Documents.PdfBranding? branding = null) => [1, 2, 3];
+        public byte[] RenderItineraryPdf(TravelService.Application.Queries.GetItineraryById.ItineraryReadModel itinerary, TravelService.Api.Documents.PdfBranding? branding = null) => [4, 5, 6];
     }
 
     private sealed class NoOpActivityWriter : IActivityWriter

@@ -98,7 +98,7 @@ public sealed class IngestLeadSourcesHandlerTests
         public string SourceName => "stub-source";
         public bool IsEnabled => true;
 
-        public Task<IReadOnlyList<GeoLeadSourceRecordInput>> FetchAsync(CancellationToken cancellationToken)
+        public Task<IReadOnlyList<GeoLeadSourceRecordInput>> FetchAsync(CancellationToken cancellationToken, GeoBoundingBox? boundingBox = null)
             => Task.FromResult<IReadOnlyList<GeoLeadSourceRecordInput>>(
             [
                 new("source-1", "Sample Lead", "tour_operator", "Somewhere", null, "hello@example.com", null, 18.92m, 72.83m, "{}")
@@ -110,7 +110,7 @@ public sealed class IngestLeadSourcesHandlerTests
         public string SourceName => "second-stub-source";
         public bool IsEnabled => true;
 
-        public Task<IReadOnlyList<GeoLeadSourceRecordInput>> FetchAsync(CancellationToken cancellationToken)
+        public Task<IReadOnlyList<GeoLeadSourceRecordInput>> FetchAsync(CancellationToken cancellationToken, GeoBoundingBox? boundingBox = null)
             => Task.FromResult<IReadOnlyList<GeoLeadSourceRecordInput>>(
             [
                 new("source-2", "Second Lead", "hotel", "Elsewhere", null, "stay@example.com", null, 18.94m, 72.84m, "{}")
@@ -122,7 +122,7 @@ public sealed class IngestLeadSourcesHandlerTests
         public string SourceName => "disabled-source";
         public bool IsEnabled => false;
 
-        public Task<IReadOnlyList<GeoLeadSourceRecordInput>> FetchAsync(CancellationToken cancellationToken)
+        public Task<IReadOnlyList<GeoLeadSourceRecordInput>> FetchAsync(CancellationToken cancellationToken, GeoBoundingBox? boundingBox = null)
             => Task.FromResult<IReadOnlyList<GeoLeadSourceRecordInput>>(
             [
                 new("disabled-1", "Disabled Lead", "hotel", "Nowhere", null, null, null, null, null, "{}")
