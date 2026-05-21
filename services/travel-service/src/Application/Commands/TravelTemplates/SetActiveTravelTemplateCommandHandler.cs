@@ -29,13 +29,24 @@ public sealed class SetActiveTravelTemplateCommandHandler(
         active.SetTemplate(request.TemplateId);
         await activeTemplateRepository.UpsertAsync(active, cancellationToken);
 
+        // Activity/audit rows have a NOT-NULL entity_id and the aggregate rejects
+        // Guid.Empty ("Entity id is required."). When the user is *clearing*
+        // the active template the request.TemplateId is null, so we fall back
+        // to the tenant id as the audit-trail anchor — there's no other natural
+        // entity to point at (TenantActiveTemplate uses a composite PK with no
+        // single id of its own).
+        var auditEntityId = request.TemplateId ?? request.TenantId;
+        var auditSummary = request.TemplateId.HasValue
+            ? $"Active {context} template updated"
+            : $"Active {context} template cleared";
+
         await activityWriter.WriteAsync(
             ActivityEntry.Create(
                 request.TenantId,
                 "TravelTemplate",
-                request.TemplateId ?? Guid.Empty,
+                auditEntityId,
                 "TravelTemplateSetActive",
-                $"Active {context} template updated",
+                auditSummary,
                 new { Context = context.ToString(), request.TemplateId },
                 actorContext.UserId),
             cancellationToken);
@@ -43,7 +54,7 @@ public sealed class SetActiveTravelTemplateCommandHandler(
             AuditLog.Create(
                 request.TenantId,
                 "TenantActiveTemplate",
-                request.TemplateId ?? Guid.Empty,
+                auditEntityId,
                 "TravelTemplateSetActive",
                 actorContext.UserId,
                 actorContext.IpAddress,
