@@ -104,6 +104,7 @@ public sealed class Program
 
         builder.Services.AddHostedService<OutboxPublisherService>();
         builder.Services.AddHostedService<FollowUpAutoGenerator>();
+        builder.Services.AddHostedService<TravelService.Infrastructure.Identity.UserAnonymizedConsumerService>();
         builder.Services.AddHealthChecks();
 
         ConfigureAuthentication(builder);

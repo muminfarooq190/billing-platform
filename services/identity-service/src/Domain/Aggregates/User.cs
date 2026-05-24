@@ -160,6 +160,23 @@ public sealed class User : AggregateRoot
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
+    /// <summary>
+    /// GDPR right-to-erasure. Blanks PII while keeping the row + FKs intact
+    /// for audit / legal retention. Emits <c>UserAnonymizedEvent</c> for
+    /// cross-service cascade. Idempotent — second call is a no-op.
+    /// </summary>
+    public void Anonymize()
+    {
+        if (Status == UserStatus.Deleted) return;
+        var originalEmail = Email;
+        Email = $"deleted+{Id:N}@anonymized.invalid";
+        PasswordHash = string.Empty;
+        Status = UserStatus.Deleted;
+        DeletedAt = DateTimeOffset.UtcNow;
+        UpdatedAt = DateTimeOffset.UtcNow;
+        AddDomainEvent(new UserAnonymizedEvent(Id, TenantId, originalEmail));
+    }
+
     private static string Hash(string token)
     {
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(token));

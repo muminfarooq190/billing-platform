@@ -146,6 +146,7 @@ public sealed class MvpPassTests
 
         public Task<Notification?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(_notifications.SingleOrDefault(x => x.Id == id));
         public Task<Notification?> GetByIdempotencyKeyAsync(Guid tenantId, string idempotencyKey, CancellationToken cancellationToken) => Task.FromResult(_notifications.SingleOrDefault(x => x.TenantId == tenantId && x.IdempotencyKey == idempotencyKey));
+        public Task<Notification?> GetByProviderMessageIdAsync(string providerMessageId, CancellationToken cancellationToken) => Task.FromResult(_notifications.SingleOrDefault(x => x.ProviderMessageId == providerMessageId));
         public Task<IReadOnlyList<Notification>> ListByRecipientIdAsync(Guid recipientId, CancellationToken cancellationToken) => Task.FromResult((IReadOnlyList<Notification>)_notifications.Where(x => x.RecipientId == recipientId).ToList());
         public Task<IReadOnlyList<Notification>> ListPendingAsync(int batchSize, CancellationToken cancellationToken) => Task.FromResult((IReadOnlyList<Notification>)_notifications.Where(x => x.Status == NotificationStatus.Queued).Take(batchSize).ToList());
         public Task<IReadOnlyList<Notification>> ListRetryableAsync(int maxRetries, int batchSize, CancellationToken cancellationToken) => Task.FromResult((IReadOnlyList<Notification>)_notifications.Where(x => x.Status == NotificationStatus.Failed && x.RetryCount < maxRetries).Take(batchSize).ToList());
@@ -165,6 +166,7 @@ public sealed class MvpPassTests
     {
         public Task AddAsync(RecipientPreferences preferences, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task<RecipientPreferences?> GetByRecipientIdAsync(Guid recipientId, Guid tenantId, CancellationToken cancellationToken) => Task.FromResult<RecipientPreferences?>(null);
+        public Task<IReadOnlyList<RecipientPreferences>> ListByPhoneAsync(string phone, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<RecipientPreferences>>(Array.Empty<RecipientPreferences>());
         public Task UpdateAsync(RecipientPreferences preferences, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 

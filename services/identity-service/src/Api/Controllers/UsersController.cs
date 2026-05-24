@@ -1,4 +1,5 @@
 using IdentityService.Api.Contracts;
+using IdentityService.Application.Commands.AnonymizeUser;
 using IdentityService.Application.Commands.CreateUser;
 using IdentityService.Application.Commands.DeleteUser;
 using IdentityService.Application.Commands.UpdateUser;
@@ -54,6 +55,20 @@ public sealed class UsersController(IMediator mediator, ITenantContext tenantCon
     public async Task<IActionResult> Delete(Guid userId, CancellationToken cancellationToken)
     {
         await mediator.Send(new DeleteUserCommand(userId), cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// GDPR right-to-erasure. Replaces email + password hash with synthetic
+    /// values, flips status to Deleted, and emits <c>UserAnonymizedEvent</c>
+    /// to drive PII cleanup across travel-service + communication-service.
+    /// </summary>
+    [HttpPost("{userId:guid}/delete-and-anonymize")]
+    public async Task<IActionResult> DeleteAndAnonymize(Guid userId, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new AnonymizeUserCommand(userId), cancellationToken);
+        dbContext.IdentityAuditLogs.Add(IdentityAuditLog.Create(tenantContext.TenantId, ResolveActorUserId(), userId, "UserAnonymized", null, null, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Headers.UserAgent.ToString()));
+        await dbContext.SaveChangesAsync(cancellationToken);
         return NoContent();
     }
 

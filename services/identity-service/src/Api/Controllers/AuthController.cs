@@ -10,6 +10,7 @@ using IdentityService.Infrastructure.Auth;
 using IdentityService.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using OtpNet;
@@ -37,6 +38,7 @@ public sealed class AuthController(IMediator mediator, JwtTokenService jwtTokenS
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("auth-login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
         // Resolve the user (and therefore the tenant) directly from the users table.
@@ -113,6 +115,7 @@ public sealed class AuthController(IMediator mediator, JwtTokenService jwtTokenS
     }
 
     [HttpPost("forgot-password")]
+    [EnableRateLimiting("auth-strict")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken cancellationToken)
     {
         var email = request.Email.Trim().ToLowerInvariant();
@@ -146,6 +149,7 @@ public sealed class AuthController(IMediator mediator, JwtTokenService jwtTokenS
     }
 
     [HttpPost("reset-password")]
+    [EnableRateLimiting("auth-strict")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
     {
         var email = request.Email.Trim().ToLowerInvariant();

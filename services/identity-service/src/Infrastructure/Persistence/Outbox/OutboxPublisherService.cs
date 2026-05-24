@@ -65,6 +65,7 @@ public sealed class OutboxPublisherService(
         "UserCreatedEvent" => "identity.user.created",
         "UserPasswordChangedEvent" => "identity.user.password.changed",
         "UserPasswordResetRequestedEvent" => "identity.user.password-reset-requested",
+        "UserAnonymizedEvent" => "identity.user.anonymized",
         _ => eventType
     };
 }

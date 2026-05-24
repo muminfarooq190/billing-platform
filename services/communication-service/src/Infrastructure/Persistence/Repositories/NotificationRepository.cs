@@ -14,6 +14,9 @@ public sealed class NotificationRepository(CommunicationDbContext dbContext) : I
     public Task<Notification?> GetByIdempotencyKeyAsync(Guid tenantId, string idempotencyKey, CancellationToken cancellationToken)
         => dbContext.Notifications.SingleOrDefaultAsync(x => x.TenantId == tenantId && x.IdempotencyKey == idempotencyKey, cancellationToken);
 
+    public Task<Notification?> GetByProviderMessageIdAsync(string providerMessageId, CancellationToken cancellationToken)
+        => dbContext.Notifications.SingleOrDefaultAsync(x => x.ProviderMessageId == providerMessageId, cancellationToken);
+
     public async Task<IReadOnlyList<Notification>> ListByRecipientIdAsync(Guid recipientId, CancellationToken cancellationToken) => await dbContext.Notifications.Where(x => x.RecipientId == recipientId).OrderByDescending(x => x.CreatedAt).Take(50).ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<Notification>> ListPendingAsync(int batchSize, CancellationToken cancellationToken) => await dbContext.Notifications.Where(x => x.Status == NotificationStatus.Queued).OrderBy(x => x.Priority).ThenBy(x => x.CreatedAt).Take(batchSize).ToListAsync(cancellationToken);

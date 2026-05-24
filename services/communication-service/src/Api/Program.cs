@@ -87,6 +87,7 @@ public sealed class Program
         builder.Services.AddScoped<EmailProviderResolver>();
         builder.Services.AddScoped<SmsProviderResolver>();
         builder.Services.AddScoped<WhatsAppProviderResolver>();
+        builder.Services.AddSingleton<ITwilioRequestValidator, TwilioRequestValidator>();
         builder.Services.AddScoped<IChannelPreferenceResolver, ChannelPreferenceResolver>();
         builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
         builder.Services.AddScoped<INotificationTemplateRepository, NotificationTemplateRepository>();
@@ -125,6 +126,7 @@ public sealed class Program
         builder.Services.AddHostedService<NotificationDispatcherService>();
         builder.Services.AddHostedService<BillingEventRelayService>();
         builder.Services.AddHostedService<PasswordResetRequestedConsumerService>();
+        builder.Services.AddHostedService<UserAnonymizedConsumerService>();
         builder.Services.AddHealthChecks();
 
         ConfigureAuth(builder);

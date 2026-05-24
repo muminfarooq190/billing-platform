@@ -36,4 +36,18 @@ public sealed class SubscriptionRepository(BillingDbContext dbContext) : ISubscr
         dbContext.Subscriptions.Update(subscription);
         return Task.CompletedTask;
     }
+
+    public async Task<IReadOnlyList<Subscription>> ListWithPeriodEndingBetweenAsync(
+        DateTimeOffset windowStart,
+        DateTimeOffset windowEnd,
+        IReadOnlyCollection<Domain.Enums.SubscriptionStatus> statuses,
+        CancellationToken cancellationToken)
+    {
+        return await dbContext.Subscriptions
+            .Where(x => x.DeletedAt == null
+                        && statuses.Contains(x.Status)
+                        && x.CurrentPeriodEnd >= windowStart
+                        && x.CurrentPeriodEnd <= windowEnd)
+            .ToListAsync(cancellationToken);
+    }
 }

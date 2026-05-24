@@ -13,11 +13,13 @@ using IdentityService.Infrastructure.Persistence.Repositories;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
 using System.Security.Cryptography;
 using System.IO;
+using System.Threading.RateLimiting;
 
 namespace IdentityService.Api;
 
@@ -69,6 +71,7 @@ public sealed class Program
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 
+        ConfigureRateLimiting(builder);
         ConfigureAuth(builder);
 
         var app = builder.Build();
@@ -82,6 +85,7 @@ public sealed class Program
 
         app.UseSwagger();
         app.UseSwaggerUI();
+        app.UseRateLimiter();
         app.UseAuthentication();
         app.UseAuthorization();
 
@@ -89,6 +93,98 @@ public sealed class Program
         app.MapHealthChecks("/health");
 
         app.Run();
+    }
+
+    /// <summary>
+    /// Rate-limit the unauthenticated auth surface to slow credential
+    /// stuffing / password-reset spam.
+    ///
+    /// Two named policies are exposed:
+    ///   auth-login   → 10 requests/min/IP+email (login form, accommodates retries on typos)
+    ///   auth-strict  → 3  requests/min/IP+email (forgot-password, reset-password — abuse-prone)
+    ///
+    /// We partition by `IP + email` (or IP alone when no email) so a shared
+    /// office NAT can't lock everyone out by exhausting one user's bucket.
+    /// 429 responses include `Retry-After` per spec.
+    ///
+    /// In-memory only — sufficient for single-instance dev; production
+    /// horizontal-scale needs a Redis-backed partitioner. Documented as
+    /// follow-up in the MVP audit.
+    /// </summary>
+    private static void ConfigureRateLimiting(WebApplicationBuilder builder)
+    {
+        builder.Services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.OnRejected = async (context, token) =>
+            {
+                if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+                {
+                    context.HttpContext.Response.Headers.RetryAfter = ((int)retryAfter.TotalSeconds).ToString();
+                }
+                await context.HttpContext.Response.WriteAsJsonAsync(
+                    new { error = "Too many attempts. Take a breath and try again in a minute." }, token);
+            };
+
+            options.AddPolicy("auth-login", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: BuildAuthPartitionKey(httpContext, fallback: "anon"),
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 10,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                    AutoReplenishment = true,
+                }));
+
+            options.AddPolicy("auth-strict", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: BuildAuthPartitionKey(httpContext, fallback: "anon"),
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 3,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                    AutoReplenishment = true,
+                }));
+        });
+    }
+
+    /// <summary>
+    /// Build the rate-limiter partition key. Format: <c>{ip}|{email}</c>.
+    /// Email is sniffed from the JSON body for `login`/`forgot-password`/
+    /// `reset-password`; falls back to the IP alone when absent.
+    /// Body is buffered so MVC can re-read it in the action method.
+    /// </summary>
+    private static string BuildAuthPartitionKey(HttpContext httpContext, string fallback)
+    {
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? fallback;
+        var email = TrySniffEmailFromBody(httpContext);
+        return string.IsNullOrWhiteSpace(email) ? ip : $"{ip}|{email.ToLowerInvariant()}";
+    }
+
+    private static string? TrySniffEmailFromBody(HttpContext httpContext)
+    {
+        try
+        {
+            if (!httpContext.Request.HasJsonContentType()) return null;
+            httpContext.Request.EnableBuffering();
+            var body = httpContext.Request.Body;
+            body.Position = 0;
+            using var reader = new StreamReader(body, leaveOpen: true);
+            var raw = reader.ReadToEnd();
+            body.Position = 0;
+            if (string.IsNullOrWhiteSpace(raw)) return null;
+            using var doc = System.Text.Json.JsonDocument.Parse(raw);
+            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object) return null;
+            if (doc.RootElement.TryGetProperty("email", out var email) && email.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                return email.GetString();
+            }
+        }
+        catch
+        {
+            // Don't break the request path for a partition-key sniff.
+        }
+        return null;
     }
 
     private static void ConfigureAuth(WebApplicationBuilder builder)

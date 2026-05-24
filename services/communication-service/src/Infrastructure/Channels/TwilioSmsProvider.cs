@@ -16,8 +16,8 @@ public sealed class TwilioSmsProvider(HttpClient httpClient, IOptions<SmsChannel
         request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
         request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
         {
-            ["To"] = message.ToPhoneNumber,
-            ["From"] = message.FromPhoneNumber,
+            ["To"] = PhoneNumberNormalizer.Normalize(message.ToPhoneNumber),
+            ["From"] = PhoneNumberNormalizer.Normalize(message.FromPhoneNumber),
             ["Body"] = message.Body
         });
 

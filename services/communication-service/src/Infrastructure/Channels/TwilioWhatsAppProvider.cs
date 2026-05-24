@@ -17,8 +17,8 @@ public sealed class TwilioWhatsAppProvider(HttpClient httpClient, IOptions<Whats
 
         var payload = new Dictionary<string, string>
         {
-            ["To"] = $"whatsapp:{message.ToPhoneNumber}",
-            ["From"] = $"whatsapp:{message.FromPhoneNumber}",
+            ["To"] = $"whatsapp:{PhoneNumberNormalizer.Normalize(message.ToPhoneNumber)}",
+            ["From"] = $"whatsapp:{PhoneNumberNormalizer.Normalize(message.FromPhoneNumber)}",
             ["Body"] = message.Body
         };
 

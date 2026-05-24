@@ -132,13 +132,48 @@ public sealed class Invoice : AggregateRoot
 
     public void MarkOverdue()
     {
-        if (Status is InvoiceStatus.Paid or InvoiceStatus.Void)
+        if (Status is InvoiceStatus.Paid or InvoiceStatus.Void or InvoiceStatus.Refunded)
         {
             return;
         }
 
         Status = InvoiceStatus.Overdue;
         UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>
+    /// Mark a previously Paid invoice as Refunded. Triggered by Stripe
+    /// `charge.refunded` webhook (and eventually a manual admin refund
+    /// command). Idempotent — second call is a no-op.
+    ///
+    /// Currently only models full refunds. Partial refunds would need a
+    /// `RefundedAmount` column + separate transition.
+    /// </summary>
+    public void MarkRefunded(DateTimeOffset refundedAt, string? gateway, string? providerRefundId)
+    {
+        if (Status == InvoiceStatus.Refunded) return;
+
+        if (Status != InvoiceStatus.Paid)
+        {
+            throw new DomainException("Only paid invoices can be refunded.");
+        }
+
+        Status = InvoiceStatus.Refunded;
+        PaymentGateway = gateway?.Trim() ?? PaymentGateway;
+        // Reuse ProviderPaymentId to capture the refund correlation id so
+        // we don't need a schema change. Future: dedicated ProviderRefundId.
+        if (!string.IsNullOrWhiteSpace(providerRefundId))
+            ProviderPaymentId = providerRefundId.Trim();
+        UpdatedAt = DateTimeOffset.UtcNow;
+        AddDomainEvent(new InvoiceRefundedEvent(
+            Id,
+            TenantId,
+            SubscriptionId,
+            Total.Amount,
+            Total.Currency,
+            refundedAt,
+            PaymentGateway,
+            providerRefundId?.Trim()));
     }
 
     private static string GenerateInvoiceNumber(Guid tenantId)

@@ -15,6 +15,13 @@ public sealed class ListBookingsQueryHandler(IReadDbConnectionFactory connection
         var pageSize = request.PageSize <= 0 ? 20 : Math.Min(request.PageSize, 100);
         var offset = (page - 1) * pageSize;
 
+        // Bug fix: TotalPaidAmount used to be hardcoded `0::numeric` and
+        // TotalOutstandingAmount equaled total_sell_amount, so the bookings
+        // list always showed "Paid $0 / Outstanding $TotalSell" even when
+        // payments were recorded via booking_payments. We now project from
+        // the same source the per-booking financial-summary endpoint uses:
+        // sum of Paid + Refunded payments. Refunded reduces the paid total
+        // so outstanding swings back up correctly.
         var items = await dbConnection.QueryAsync<BookingReadModel>(
             @"SELECT b.id,
                       b.tenant_id AS TenantId,
@@ -30,8 +37,8 @@ public sealed class ListBookingsQueryHandler(IReadDbConnectionFactory connection
                       b.travellers_count AS TravellersCount,
                       b.currency,
                       b.total_sell_amount AS TotalSellAmount,
-                      0::numeric AS TotalPaidAmount,
-                      b.total_sell_amount AS TotalOutstandingAmount,
+                      COALESCE(p.paid_amount, 0)::numeric AS TotalPaidAmount,
+                      GREATEST(b.total_sell_amount - COALESCE(p.paid_amount, 0), 0)::numeric AS TotalOutstandingAmount,
                       b.total_cost_amount AS TotalCostAmount,
                       b.margin_amount AS MarginAmount,
                       b.assigned_to_user_id AS AssignedToUserId,
@@ -65,6 +72,13 @@ public sealed class ListBookingsQueryHandler(IReadDbConnectionFactory connection
                     FROM travelers t
                     WHERE t.booking_id = b.id AND t.deleted_at IS NULL
                ) t ON TRUE
+               LEFT JOIN LATERAL (
+                    SELECT COALESCE(SUM(CASE WHEN status = 'Paid' THEN amount
+                                             WHEN status = 'Refunded' THEN -amount
+                                             ELSE 0 END), 0) AS paid_amount
+                    FROM booking_payments
+                    WHERE booking_id = b.id AND deleted_at IS NULL
+               ) p ON TRUE
                LEFT JOIN LATERAL (
                     SELECT id, status, updated_at
                     FROM itineraries

@@ -95,6 +95,36 @@ public sealed class RecipientPreferences : AggregateRoot
     public ChannelPreference? GetPreference(ChannelType channel)
         => _channelPreferences.FirstOrDefault(p => p.Channel == channel);
 
+    /// <summary>
+    /// Honors a STOP / UNSUBSCRIBE / opt-out request for the given channel.
+    /// Sets the existing preference row's Enabled=false (or inserts a
+    /// disabled row when one didn't exist). Returns true when state
+    /// actually changed.
+    ///
+    /// TCPA (US) + GDPR (EU) require honouring opt-outs within a short
+    /// window — this is the canonical aggregate transition the Twilio
+    /// inbound consumer calls when it sees STOP.
+    /// </summary>
+    public bool OptOutChannel(ChannelType channel)
+    {
+        var existing = _channelPreferences.FirstOrDefault(p => p.Channel == channel);
+        if (existing is null)
+        {
+            _channelPreferences.Add(new ChannelPreference(channel, false, false, null, null));
+            SyncChannelPreferencesJson();
+            UpdatedAt = DateTimeOffset.UtcNow;
+            AddDomainEvent(new PreferencesUpdatedEvent(Id, TenantId, RecipientId));
+            return true;
+        }
+        if (!existing.Enabled) return false;
+        _channelPreferences.Remove(existing);
+        _channelPreferences.Add(existing with { Enabled = false });
+        SyncChannelPreferencesJson();
+        UpdatedAt = DateTimeOffset.UtcNow;
+        AddDomainEvent(new PreferencesUpdatedEvent(Id, TenantId, RecipientId));
+        return true;
+    }
+
     public void LoadChannelPreferencesFromJson()
     {
         _channelPreferences.Clear();

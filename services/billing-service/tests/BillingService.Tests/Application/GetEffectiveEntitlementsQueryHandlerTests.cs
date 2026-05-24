@@ -146,6 +146,8 @@ public sealed class GetEffectiveEntitlementsQueryHandlerTests
         public Task<Subscription?> GetByTenantIdAsync(Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(tenantId == subscription.TenantId ? subscription : null);
         public Task<IReadOnlyList<Subscription>> ListDueSubscriptionsAsync(DateOnly billingDate, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<Subscription>>([subscription]);
         public Task UpdateAsync(Subscription subscription, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<IReadOnlyList<Subscription>> ListWithPeriodEndingBetweenAsync(DateTimeOffset windowStart, DateTimeOffset windowEnd, IReadOnlyCollection<BillingService.Domain.Enums.SubscriptionStatus> statuses, CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<Subscription>>([]);
     }
 
     private sealed class InMemoryFeatureEntitlementRepository(params FeatureEntitlement[] entitlements) : IFeatureEntitlementRepository

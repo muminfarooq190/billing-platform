@@ -15,6 +15,15 @@ public sealed class RecipientPreferencesRepository(CommunicationDbContext dbCont
         return preferences;
     }
 
+    public async Task<IReadOnlyList<RecipientPreferences>> ListByPhoneAsync(string phone, CancellationToken cancellationToken)
+    {
+        var rows = await dbContext.RecipientPreferences
+            .Where(x => x.Phone == phone)
+            .ToListAsync(cancellationToken);
+        foreach (var row in rows) row.LoadChannelPreferencesFromJson();
+        return rows;
+    }
+
     public Task UpdateAsync(RecipientPreferences preferences, CancellationToken cancellationToken)
     {
         dbContext.RecipientPreferences.Update(preferences);

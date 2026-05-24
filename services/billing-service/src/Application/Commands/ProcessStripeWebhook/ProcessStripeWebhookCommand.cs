@@ -7,4 +7,6 @@ public sealed record ProcessStripeWebhookCommand(
     Guid InvoiceId,
     string? ProviderPaymentId,
     string? ErrorCode,
-    string? ErrorMessage) : IRequest<string>;
+    string? ErrorMessage,
+    /// <summary>Refund id from <c>charge.refunded</c>; null for other events.</summary>
+    string? RefundId = null) : IRequest<string>;

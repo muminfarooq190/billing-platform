@@ -31,6 +31,7 @@ public sealed class Program
         builder.Services.AddScoped<ITenantSubscriptionPackageRepository, TenantSubscriptionPackageRepository>();
         builder.Services.AddScoped<ITenantFeatureOverrideRepository, TenantFeatureOverrideRepository>();
         builder.Services.AddScoped<ITenantUserFeatureAssignmentRepository, TenantUserFeatureAssignmentRepository>();
+        builder.Services.AddScoped<ITenantStripeLinkRepository, TenantStripeLinkRepository>();
         builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         builder.Services.AddScoped<IBillingPricingResolver, BillingPricingResolver>();
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -53,6 +54,13 @@ public sealed class Program
         {
             builder.Services.AddScoped<IPaymentGateway, MockPaymentGateway>();
         }
+        // Named HTTP client for cross-service refund controller. Independent
+        // of `PAYMENT_GATEWAY` config — refund flow always goes through Stripe
+        // when called (controller short-circuits with 503 if secret missing).
+        builder.Services.AddHttpClient("stripe-refunds", client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["STRIPE_API_BASE_URL"] ?? "https://api.stripe.com/");
+        });
         builder.Services.AddSingleton<IStripeWebhookVerifier, StripeWebhookVerifier>();
 
         builder.Services.AddHostedService<OutboxPublisherService>();
@@ -60,6 +68,7 @@ public sealed class Program
         {
             builder.Services.AddHostedService<BillingSchedulerService>();
             builder.Services.AddHostedService<OverdueInvoiceCheckerService>();
+            builder.Services.AddHostedService<SubscriptionLifecycleWorker>();
         }
         builder.Services.AddHealthChecks();
 

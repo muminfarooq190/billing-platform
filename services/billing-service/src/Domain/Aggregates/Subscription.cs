@@ -56,4 +56,61 @@ public sealed class Subscription : AggregateRoot
         NextBillingDate = CurrentPeriodEnd;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
+
+    /// <summary>
+    /// Flip an Active subscription to PastDue when its invoice clears the
+    /// grace window. Idempotent — only fires the event on first transition.
+    /// </summary>
+    public void MarkPastDue(Guid overdueInvoiceId, DateTimeOffset dueDate, int daysOverdue)
+    {
+        if (Status == SubscriptionStatus.PastDue) return;
+        Status = SubscriptionStatus.PastDue;
+        UpdatedAt = DateTimeOffset.UtcNow;
+        AddDomainEvent(new SubscriptionPastDueEvent(Id, TenantId, overdueInvoiceId, dueDate, daysOverdue));
+    }
+
+    /// <summary>
+    /// Fire the lifecycle event signaling the user-initiated cancel has
+    /// reached its access cutoff. Does NOT change Status — Cancelled is the
+    /// terminal state; "expired" is just `Cancelled` + period elapsed.
+    /// </summary>
+    public void MarkExpired()
+    {
+        UpdatedAt = DateTimeOffset.UtcNow;
+        AddDomainEvent(new SubscriptionExpiredEvent(Id, TenantId, DateTimeOffset.UtcNow));
+    }
+
+    /// <summary>
+    /// Bring a Cancelled or PastDue subscription back to Active. Used by the
+    /// portal "Reactivate" CTA and by the Stripe webhook handler when an
+    /// overdue invoice clears. Throws if called on Active to surface caller
+    /// bugs rather than silently no-op.
+    /// </summary>
+    public void Reactivate()
+    {
+        if (Status == SubscriptionStatus.Active) return;
+
+        var previous = Status.ToString();
+        Status = SubscriptionStatus.Active;
+        CancelledAt = null;
+        UpdatedAt = DateTimeOffset.UtcNow;
+        AddDomainEvent(new SubscriptionReactivatedEvent(Id, TenantId, previous));
+    }
+
+    /// <summary>
+    /// Convenience predicate used by the lifecycle worker: true when this
+    /// subscription has crossed `CurrentPeriodEnd`.
+    /// </summary>
+    public bool IsPeriodElapsed(DateTimeOffset now) => CurrentPeriodEnd <= now;
+
+    /// <summary>
+    /// Fire the expiring-soon domain event without mutating state. Lifecycle
+    /// worker is responsible for idempotency-by-tier — calling twice in the
+    /// same day for the same tier is a worker-side bug.
+    /// </summary>
+    public void AddExpiringSoonNotification(int daysRemaining)
+    {
+        AddDomainEvent(new SubscriptionExpiringSoonEvent(Id, TenantId, daysRemaining, CurrentPeriodEnd));
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
 }
