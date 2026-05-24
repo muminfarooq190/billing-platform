@@ -23,6 +23,11 @@ public sealed class BillingSchedulerService(IServiceScopeFactory scopeFactory) :
         var due = await repo.ListDueSubscriptionsAsync(DateOnly.FromDateTime(DateTime.UtcNow), cancellationToken);
         foreach (var subscription in due)
         {
+            // Stripe-managed subscriptions are renewed + invoiced by Stripe
+            // itself — our cron generating a parallel invoice would double-bill
+            // and stomp on Stripe's invoice_number sequence. Skip them.
+            if (subscription.IsManagedByStripe) continue;
+
             await mediator.Send(new GenerateInvoiceCommand(subscription.Id), cancellationToken);
             subscription.RenewNextCycle();
             await repo.UpdateAsync(subscription, cancellationToken);

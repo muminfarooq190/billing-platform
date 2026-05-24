@@ -20,8 +20,10 @@ public sealed class SubscriptionConfiguration : IEntityTypeConfiguration<Subscri
         builder.Property(x => x.CurrentPeriodEnd).HasColumnName("current_period_end");
         builder.Property(x => x.NextBillingDate).HasColumnName("next_billing_date");
         builder.Property(x => x.CancelledAt).HasColumnName("cancelled_at");
+        builder.Property(x => x.StripeSubscriptionId).HasColumnName("stripe_subscription_id").HasMaxLength(80);
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
+        builder.HasIndex(x => x.StripeSubscriptionId).IsUnique().HasFilter("stripe_subscription_id IS NOT NULL");
     }
 }

@@ -1,7 +1,9 @@
+using System.Text.Json;
 using CommunicationService.Application.Abstractions;
 using CommunicationService.Domain.Enums;
 using CommunicationService.Domain.Repositories;
 using CommunicationService.Infrastructure.Channels;
+using CommunicationService.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -38,6 +40,7 @@ public sealed class TwilioInboundWebhookController(
     IOptions<WhatsAppChannelOptions> waOptions,
     IConfiguration configuration,
     IWebHostEnvironment env,
+    CommunicationDbContext dbContext,
     ILogger<TwilioInboundWebhookController> logger) : ControllerBase
 {
     private static readonly HashSet<string> OptOutKeywords = new(StringComparer.OrdinalIgnoreCase)
@@ -120,11 +123,34 @@ public sealed class TwilioInboundWebhookController(
             return Ok(new { acknowledged = true, optedOut = true, channelsAffected = changed });
         }
 
-        // -- Future: thread inbound message back into inquiry/booking --------
-        // Out of scope for the MVP STOP-handling pass. Twilio retains the
-        // body for 30 days; we just log + 200.
-        logger.LogInformation("Inbound {Channel} from {From}: {Body}", channel, normalizedFrom, body);
-        return Ok(new { acknowledged = true, threaded = false });
+        // -- Emit InboundMessageReceived via outbox for downstream threading --
+        // Travel-service consumes this event, matches the From number against
+        // contacts.phone, and appends a note to the most recent active
+        // inquiry/booking. Comm-service stays agnostic of that thread logic.
+        var providerMessageId = form["MessageSid"].ToString();
+        var to = form["To"].ToString();
+        var payload = JsonSerializer.Serialize(new
+        {
+            from = normalizedFrom,
+            to,
+            body,
+            channel = channel.ToString(),
+            providerMessageId,
+            occurredAt = DateTimeOffset.UtcNow,
+        });
+        dbContext.DomainEvents.Add(new OutboxMessage
+        {
+            Id = Guid.NewGuid(),
+            AggregateType = "inbound",
+            AggregateId = Guid.NewGuid(),
+            EventType = "received",
+            Payload = payload,
+            CreatedAt = DateTimeOffset.UtcNow,
+        });
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Inbound {Channel} from {From} → queued for threading: {Body}", channel, normalizedFrom, body);
+        return Ok(new { acknowledged = true, threaded = true });
     }
 
     private string ReconstructPublicUrl()

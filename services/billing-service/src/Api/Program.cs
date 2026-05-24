@@ -61,6 +61,10 @@ public sealed class Program
         {
             client.BaseAddress = new Uri(builder.Configuration["STRIPE_API_BASE_URL"] ?? "https://api.stripe.com/");
         });
+        // Stripe-native subscription gateway — independent of PAYMENT_GATEWAY
+        // since some packages may be Stripe-recurring while others stay on the
+        // legacy cron path.
+        builder.Services.AddScoped<StripeSubscriptionGateway>();
         builder.Services.AddSingleton<IStripeWebhookVerifier, StripeWebhookVerifier>();
 
         builder.Services.AddHostedService<OutboxPublisherService>();

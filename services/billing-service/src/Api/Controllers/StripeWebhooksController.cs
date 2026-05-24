@@ -1,6 +1,7 @@
 using System.Text.Json;
 using BillingService.Application.Abstractions;
 using BillingService.Application.Commands.ProcessStripeWebhook;
+using BillingService.Application.Commands.SyncStripeSubscription;
 using BillingService.Infrastructure.Payments;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -119,6 +120,16 @@ public sealed class StripeWebhooksController(
             || objectElement.ValueKind != JsonValueKind.Object)
             return BadRequest(new { error = "Stripe webhook payload must include data.object." });
 
+        var eventType = typeElement.GetString() ?? string.Empty;
+
+        // Fork: customer.subscription.* carries a Subscription object, not an
+        // Invoice. Route to the subscription sync handler instead of the
+        // invoice handler (which would fail to resolve invoiceId).
+        if (eventType.StartsWith("customer.subscription.", StringComparison.OrdinalIgnoreCase))
+        {
+            return await HandleSubscriptionEventAsync(eventType, objectElement, stripeEventId, cancellationToken);
+        }
+
         if (!TryResolveInvoiceId(objectElement, out var invoiceId))
             return BadRequest(new { error = "Stripe webhook payload did not contain a resolvable invoice id in metadata.invoiceId or invoice metadata." });
 
@@ -167,6 +178,65 @@ public sealed class StripeWebhooksController(
         }
 
         return Ok(new { result });
+    }
+
+    /// <summary>
+    /// Dispatch <c>customer.subscription.*</c> events to the sync command.
+    /// Mirrors the in-flight / dedup lifecycle of the invoice path so
+    /// behaviour is uniform regardless of event type.
+    /// </summary>
+    private async Task<IActionResult> HandleSubscriptionEventAsync(string eventType, JsonElement subscriptionObject, string? stripeEventId, CancellationToken cancellationToken)
+    {
+        var stripeSubId = ResolveString(subscriptionObject, "id");
+        if (string.IsNullOrWhiteSpace(stripeSubId))
+            return BadRequest(new { error = "customer.subscription.* event missing id." });
+
+        Guid? localSubId = null;
+        if (subscriptionObject.TryGetProperty("metadata", out var metadataEl) && metadataEl.ValueKind == JsonValueKind.Object
+            && metadataEl.TryGetProperty("subscriptionId", out var subIdEl)
+            && subIdEl.ValueKind == JsonValueKind.String
+            && Guid.TryParse(subIdEl.GetString(), out var parsed))
+        {
+            localSubId = parsed;
+        }
+
+        var periodStart = TryReadEpoch(subscriptionObject, "current_period_start");
+        var periodEnd = TryReadEpoch(subscriptionObject, "current_period_end");
+        var status = ResolveString(subscriptionObject, "status");
+
+        string result;
+        try
+        {
+            result = await mediator.Send(new SyncStripeSubscriptionCommand(
+                eventType,
+                stripeSubId!,
+                localSubId,
+                periodStart,
+                periodEnd,
+                status), cancellationToken);
+        }
+        catch
+        {
+            if (!string.IsNullOrWhiteSpace(stripeEventId))
+                await cache.RemoveAsync(InFlightKeyPrefix + stripeEventId, cancellationToken);
+            throw;
+        }
+
+        if (!string.IsNullOrWhiteSpace(stripeEventId))
+        {
+            await cache.SetAsync(DedupKeyPrefix + stripeEventId, DateTimeOffset.UtcNow, DedupTtl, cancellationToken);
+            await cache.RemoveAsync(InFlightKeyPrefix + stripeEventId, cancellationToken);
+        }
+
+        return Ok(new { result });
+    }
+
+    private static DateTimeOffset? TryReadEpoch(JsonElement element, string property)
+    {
+        if (!element.TryGetProperty(property, out var prop)) return null;
+        if (prop.ValueKind != JsonValueKind.Number) return null;
+        if (!prop.TryGetInt64(out var epoch)) return null;
+        return DateTimeOffset.FromUnixTimeSeconds(epoch);
     }
 
     private static string? TryExtractMostRecentRefundId(JsonElement chargeOrRefund)

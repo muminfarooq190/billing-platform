@@ -37,6 +37,16 @@ public sealed class Subscription : AggregateRoot
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
+    /// <summary>
+    /// Stripe Subscription id (`sub_*`) when this subscription is managed
+    /// in Stripe-native subscription-mode. When set, the billing scheduler
+    /// SKIPS this subscription — Stripe drives the renewal cadence and
+    /// invoice creation; we only react to webhooks.
+    ///
+    /// Null = legacy / mock-gateway path where our cron generates invoices
+    /// + StripePaymentGateway uses one-shot Checkout per invoice.
+    /// </summary>
+    public string? StripeSubscriptionId { get; private set; }
 
     public static Subscription Create(Guid tenantId, PlanType planType, BillingCycle billingCycle) => new(tenantId, planType, billingCycle);
 
@@ -102,6 +112,30 @@ public sealed class Subscription : AggregateRoot
     /// subscription has crossed `CurrentPeriodEnd`.
     /// </summary>
     public bool IsPeriodElapsed(DateTimeOffset now) => CurrentPeriodEnd <= now;
+
+    /// <summary>
+    /// Link this subscription to a Stripe `sub_*` id. Once linked,
+    /// <see cref="IsManagedByStripe"/> is true and our cron stops driving
+    /// renewals — Stripe owns the cycle.
+    ///
+    /// Period boundaries are overwritten from the Stripe-reported window
+    /// since Stripe's billing anchor may differ from ours (Stripe charges
+    /// immediately + prorates differently).
+    /// </summary>
+    public void LinkStripeSubscription(string stripeSubscriptionId, DateTimeOffset periodStart, DateTimeOffset periodEnd)
+    {
+        if (string.IsNullOrWhiteSpace(stripeSubscriptionId))
+            throw new ArgumentException("Stripe subscription id is required.", nameof(stripeSubscriptionId));
+
+        StripeSubscriptionId = stripeSubscriptionId.Trim();
+        CurrentPeriodStart = periodStart;
+        CurrentPeriodEnd = periodEnd;
+        NextBillingDate = periodEnd;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>True when Stripe owns the billing schedule.</summary>
+    public bool IsManagedByStripe => !string.IsNullOrWhiteSpace(StripeSubscriptionId);
 
     /// <summary>
     /// Fire the expiring-soon domain event without mutating state. Lifecycle

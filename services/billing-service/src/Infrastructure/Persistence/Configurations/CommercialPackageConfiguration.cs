@@ -17,6 +17,8 @@ public sealed class CommercialPackageConfiguration : IEntityTypeConfiguration<Co
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(1000).IsRequired();
         builder.Property(x => x.IsActive).HasColumnName("is_active");
         builder.Property(x => x.MetadataJson).HasColumnName("metadata_json").HasColumnType("jsonb");
+        builder.Property(x => x.StripePriceIdMonthly).HasColumnName("stripe_price_id_monthly").HasMaxLength(80);
+        builder.Property(x => x.StripePriceIdAnnual).HasColumnName("stripe_price_id_annual").HasMaxLength(80);
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
